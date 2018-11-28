@@ -1,0 +1,24 @@
+image: node:10.9
+
+before_script:
+  - npm install --silent
+
+test:
+  stage: test
+  script:
+    - npm run coverage
+  artifacts:
+    name: "sscrypto_coverage_${CI_BUILD_ID}_${CI_BUILD_REF}"
+    when: always
+    expire_in: 6 mos
+    paths:
+    - coverage/
+
+
+deploy:
+  stage: deploy
+  script:
+    - npm run build
+    - npm publish
+  only:
+    - tags

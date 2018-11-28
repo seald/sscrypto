@@ -1,0 +1,22 @@
+# Directory for the build
+/lib
+
+# Coverage reports
+/coverage
+
+/tmp
+
+/test_resources/running
+
+# IDE stuff
+.idea/
+
+# Node stuff
+node_modules
+*.log
+
+# OS Stuff
+.DS_Store
+Thumbs.db
+
+.nyc_output

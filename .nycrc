@@ -1,0 +1,15 @@
+{
+  "include": [
+    "lib/**/*.js"
+  ],
+  "exclude": [
+    "lib/**/*.spec.js"
+  ],
+  "all": true,
+  "report-dir": "./coverage",
+  "reporter": [
+    "html",
+    "text",
+    "text-summary"
+  ]
+}

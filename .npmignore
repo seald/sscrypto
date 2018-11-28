@@ -1,0 +1,24 @@
+# .babelrc
+.babelrc
+
+# Tests
+/**/*spec.js
+/**/*spec.js.map
+
+# Coverage reports
+/coverage
+
+/tmp
+
+/test_resources
+
+# IDE stuff
+.idea/
+
+# Node stuff
+node_modules
+*.log
+
+# OS Stuff
+.DS_Store
+Thumbs.db
