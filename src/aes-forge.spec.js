@@ -2,57 +2,14 @@
 /* global describe, it */
 
 import forge from 'node-forge'
-import { SymKey } from './aes'
-import MemoryStream from 'memorystream'
+import { SymKey } from './aes-forge'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
+import { _streamHelper, splitLength } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
-
-/**
- * Should compare the input and the output, and throw an error if the output is not as intended.
- * @callback validationCallback
- * @param {string} input
- * @param {string} output
- */
-
-/**
- * Helper function for the tests.
- * @param {Array<String>} chunks - Array of chunks for the input stream
- * @param {Transform} transformStream - stream.Transform instance
- * @param {validationCallback} validation - Function to validate that the output is like intended
- * @returns {Promise} - Promise that is rejected if the validation function throws an Error, resolved otherwise
- */
-const _streamHelper = (chunks, transformStream, validation) => {
-  chunks = chunks.map(c => Buffer.from(c, 'binary'))
-  const inputStream = new MemoryStream()
-  const outputStream = inputStream.pipe(transformStream)
-  let outputText = ''
-
-  const finished = new Promise((resolve, reject) => {
-    outputStream.on('end', resolve)
-    outputStream.on('error', reject)
-  })
-  outputStream.on('data', data => {
-    outputText += data.toString('binary')
-  })
-
-  chunks.forEach(chunk => inputStream.write(chunk))
-  inputStream.end()
-
-  return finished.then(() => validation(chunks.join(''), outputText))
-}
-
-const splitLength = (str, length) => {
-  const chunks = []
-  while (str.length) {
-    chunks.push(str.slice(0, length))
-    str = str.slice(length)
-  }
-  return chunks
-}
 
 describe('Crypto - Unit - AES forge', () => {
   const key = new SymKey(256)
@@ -127,36 +84,34 @@ describe('Crypto - Unit - AES forge', () => {
   })
 
   it('cipher stream & decipher', () => {
-    const chunks = []
-    for (let i = 0; i < 5; i++) {
-      chunks.push(forge.random.getBytesSync(20))
-    }
+    const input = crypto.randomBytes(100)
+    const chunks = splitLength(input, 20)
 
     const cipher = key.encryptStream()
 
-    return _streamHelper(chunks, cipher, (input, output) => {
-      assert.strictEqual(key.decrypt(output), chunks.join(''))
+    return _streamHelper(chunks, cipher).then((output) => {
+      assert.isTrue(Buffer.from(key.decrypt(output.toString('binary')), 'binary').equals(input))
     })
   })
 
   it('Try deciphering a stream with a cipherText with invalid HMAC', () => {
-    const cipheredMessage = key.encrypt(message).slice(0, -1)
+    const cipheredMessage = key.encrypt(message).slice(0, -1).toString('binary')
     const cipherChunks = splitLength(cipheredMessage, 15)
     const decipher = key.decryptStream()
-    return expect(_streamHelper(cipherChunks, decipher, () => {})).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
+    return expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
       assert.include(error.message, 'INVALID_HMAC')
       return true
     })
   })
 
   it('cipher & decipher stream', () => {
-    const clearText = forge.random.getBytesSync(1000)
-    const cipherText = key.encrypt(clearText)
+    const clearText = crypto.randomBytes(1000)
+    const cipherText = Buffer.from(key.encrypt(clearText.toString('binary')), 'binary')
     const cipherChunks = splitLength(cipherText, 15)
     const decipher = key.decryptStream()
 
-    return _streamHelper(cipherChunks, decipher, (input, output) => {
-      assert.strictEqual(clearText, output)
+    return _streamHelper(cipherChunks, decipher).then((output) => {
+      assert.isTrue(output.equals(clearText))
     })
   })
 

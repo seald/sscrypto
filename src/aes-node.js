@@ -100,9 +100,11 @@ export class SymKey {
     const hmac = crypto.createHmac('sha256', this.signingKey)
 
     let firstBlock = true
+    let canceled = false
     return new Transform({
       transform (chunk, encoding, callback) {
         try {
+          if (canceled) throw new Error('STREAM_CANCELED')
           if (firstBlock) {
             hmac.update(iv)
             this.push(iv)
@@ -119,6 +121,7 @@ export class SymKey {
       },
       flush (callback) {
         try {
+          if (canceled) throw new Error('STREAM_CANCELED')
           const crypt = cipher.final()
           hmac.update(crypt)
           this.push(crypt)
@@ -129,6 +132,9 @@ export class SymKey {
         }
       }
     })
+      .on('cancel', () => {
+        canceled = true
+      })
   }
 
   /**
@@ -162,9 +168,12 @@ export class SymKey {
 
     const encryptionKey = this.encryptionKey
     const keySize = this.keySize
+
+    let canceled = false
     return new Transform({
       transform (chunk, encoding, callback) {
         try {
+          if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
           if (!decipher) { // we have not gotten the IV yet, gotta wait for it
             if (buffer.length >= 16) { // length of IV
@@ -191,6 +200,7 @@ export class SymKey {
       },
       flush (callback) {
         try {
+          if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')
           const computedHmac = hmac.digest()
           if (!computedHmac.equals(buffer)) throw new Error('INVALID_HMAC')
@@ -201,5 +211,8 @@ export class SymKey {
         }
       }
     })
+      .on('cancel', () => {
+        canceled = true
+      })
   }
 }

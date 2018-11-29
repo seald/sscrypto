@@ -19,6 +19,7 @@ const getProgress = () => {
 export class SymKey {
   /**
    * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
+   * Defaults to a new 256 bits key.
    * @constructs SymKey
    * @param {number|string} [arg] Size of the key to generate, or the messageKey to construct the SymKey with.
    *  Defaults to a new 256 bits key.

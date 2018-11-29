@@ -1,55 +1,13 @@
-'use strict'
 /* global describe, it */
 import * as crypto from 'crypto'
 import { SymKey } from './aes-node'
-import { SymKey as SymKeyForge } from './aes'
-import MemoryStream from 'memorystream'
 import multipipe from 'multipipe'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import { _streamHelper, splitLength } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
-
-/**
- * Helper function for the tests.
- * @param {Array<Buffer>} chunks - Array of chunks for the input stream
- * @param {Transform|Stream} transformStream - stream.Transform instance
- * @returns {Promise} - Promise that resolves to the output of the transformStream
- */
-const _streamHelper = (chunks, transformStream) => {
-  const inputStream = new MemoryStream()
-  const outputStream = inputStream.pipe(transformStream)
-  let outputText = Buffer.alloc(0)
-
-  const finished = new Promise((resolve, reject) => {
-    outputStream.on('end', resolve)
-    outputStream.on('error', reject)
-  })
-  outputStream.on('data', data => {
-    outputText = Buffer.concat([outputText, data])
-  })
-
-  chunks.forEach(chunk => inputStream.write(chunk))
-  inputStream.end()
-
-  return finished.then(() => outputText)
-}
-
-/**
- * splits the given string or buffer into chunks of given length
- * @param {string|Buffer} input
- * @param {number} length
- * @return {Array<string|Buffer>}
- */
-const splitLength = (input, length) => {
-  const chunks = []
-  while (input.length) {
-    chunks.push(input.slice(0, length))
-    input = input.slice(length)
-  }
-  return chunks
-}
 
 describe('Crypto - Unit - AES node', () => {
   const key128 = new SymKey(128)
@@ -144,51 +102,6 @@ describe('Crypto - Unit - AES node', () => {
 
     const cipher = key256.encryptStream()
     const decipher = key256.decryptStream()
-
-    return _streamHelper(chunks, multipipe(cipher, decipher))
-      .then(output => {
-        assert.isTrue(output.equals(input))
-      })
-  })
-})
-
-describe('Crypto - Unit - AES node/forge', () => {
-  const keyNode = new SymKey(256)
-  const keyForge = SymKeyForge.fromString(Buffer.from(keyNode.toB64(), 'base64').toString('binary'))
-
-  const message = Buffer.from('TESTtest')
-
-  it('cipher forge & decipher node', () => {
-    const cipheredMessage = keyNode.encrypt(message)
-    const decipheredMessage = Buffer.from(keyForge.decrypt(cipheredMessage.toString('binary')), 'binary')
-    assert.isTrue(message.equals(decipheredMessage))
-  })
-
-  it('cipher forge & decipher node', () => {
-    const cipheredMessage = Buffer.from(keyForge.encrypt(message.toString('binary')), 'binary')
-    const decipheredMessage = keyNode.decrypt(cipheredMessage)
-    assert.isTrue(message.equals(decipheredMessage))
-  })
-
-  it('cipher stream node & decipher stream forge', () => {
-    const input = crypto.randomBytes(100)
-    const chunks = splitLength(input, 20)
-
-    const cipher = keyNode.encryptStream()
-    const decipher = keyForge.decryptStream()
-
-    return _streamHelper(chunks, multipipe(cipher, decipher))
-      .then(output => {
-        assert.isTrue(output.equals(input))
-      })
-  })
-
-  it('cipher stream forge & decipher stream node', () => {
-    const input = crypto.randomBytes(100)
-    const chunks = splitLength(input, 20)
-
-    const cipher = keyForge.encryptStream()
-    const decipher = keyNode.decryptStream()
 
     return _streamHelper(chunks, multipipe(cipher, decipher))
       .then(output => {
