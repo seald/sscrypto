@@ -1,7 +1,7 @@
-/* global describe, it, before */
+/* eslint-env mocha */
 
 import forge from 'node-forge'
-import { PrivateKey, PublicKey } from './rsa'
+import { PrivateKey, PublicKey } from './rsa-forge'
 import { intToBytes } from './utils'
 import crc32 from 'crc-32'
 import chai from 'chai'
@@ -10,7 +10,7 @@ import chaiAsPromised from 'chai-as-promised'
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-describe('Crypto - Unit - RSA', () => {
+describe('RSA forge', () => {
   let privateKey, privateKey2
   before('generate keys', () =>
     Promise.all([
