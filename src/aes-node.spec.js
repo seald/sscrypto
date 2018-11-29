@@ -1,4 +1,5 @@
 /* global describe, it */
+
 import * as crypto from 'crypto'
 import { SymKey } from './aes-node'
 import multipipe from 'multipipe'

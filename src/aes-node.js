@@ -1,24 +1,13 @@
 import * as crypto from 'crypto'
+import { getProgress } from './utils'
 import { Transform } from 'stream'
-
-const getProgress = () => {
-  let counter = 0
-  let lastEmitProgress
-  return (increment, stream, delay = 30) => { // don't send progress more than each 30ms
-    counter += increment
-    if (delay === false || !lastEmitProgress || Date.now() - lastEmitProgress > delay) {
-      lastEmitProgress = Date.now()
-      stream.emit('progress', counter)
-    }
-  }
-}
 
 export class SymKey {
   /**
    * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
+   * Defaults to a new 256 bits key.
    * @constructs SymKey
    * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
-   *  Defaults to a new 256 bits key.
    */
   constructor (arg = 256) {
     if (typeof arg === 'number') {
@@ -30,22 +19,33 @@ export class SymKey {
       this.signingKey = arg.slice(0, this.keySize)
       this.encryptionKey = arg.slice(this.keySize)
     } else {
-      throw new Error('INVALID_INPUT: invalid argument type')
+      throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
     }
-    if ([32, 24, 16].indexOf(this.keySize) === -1) {
-      throw new Error('INVALID_INPUT: invalid key size')
+    if (![32, 24, 16].includes(this.keySize)) {
+      throw new Error(`INVALID_ARG : Key size is invalid`)
     }
   }
 
   /**
-   * Static method to construct a new SymKey from a b64 encoded encryption key
+   * Static method to construct a new SymKey from a binary string encoded messageKey
    * @method
    * @static
-   * @param {string} key - b64 encoded key
+   * @param {string} messageKey binary encoded messageKey
    * @returns {SymKey}
    */
-  static fromB64 (key) {
-    return new SymKey(Buffer.from(key, 'base64'))
+  static fromString (messageKey) {
+    return new SymKey(Buffer.from(messageKey, 'binary'))
+  }
+
+  /**
+   * Static method to construct a new SymKey from a b64 encoded key
+   * @method
+   * @static
+   * @param {string} messageKey b64 encoded messageKey
+   * @returns {SymKey}
+   */
+  static fromB64 (messageKey) {
+    return new SymKey(Buffer.from(messageKey, 'base64'))
   }
 
   /**
@@ -55,6 +55,10 @@ export class SymKey {
    */
   toB64 () {
     return Buffer.concat([this.signingKey, this.encryptionKey]).toString('base64')
+  }
+
+  toString () {
+    return `${this.signingKey.toString('binary')}${this.encryptionKey.toString('binary')}`
   }
 
   /**
@@ -72,7 +76,7 @@ export class SymKey {
   /**
    * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
    * SymKey#signingKey, returns it concatenated in the following order:
-   * \x80 InitializationVector CipherText HMAC
+   * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
    * @returns {Buffer}

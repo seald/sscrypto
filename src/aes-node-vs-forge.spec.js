@@ -13,18 +13,18 @@ const { assert } = chai
 
 describe('Crypto - Unit - AES node/forge', () => {
   const keyNode = new SymKeyNode(256)
-  const keyForge = SymKeyForge.fromString(Buffer.from(keyNode.toB64(), 'base64').toString('binary'))
+  const keyForge = SymKeyForge.fromString(keyNode.toString())
 
-  const message = Buffer.from('TESTtest')
+  const message = Buffer.from('TESTtest', 'ascii')
 
-  it('cipher forge & decipher node', () => {
+  it('cipher node & decipher forge', () => {
     const cipheredMessage = keyNode.encrypt(message)
-    const decipheredMessage = Buffer.from(keyForge.decrypt(cipheredMessage.toString('binary')), 'binary')
+    const decipheredMessage = keyForge.decrypt(cipheredMessage)
     assert.isTrue(message.equals(decipheredMessage))
   })
 
   it('cipher forge & decipher node', () => {
-    const cipheredMessage = Buffer.from(keyForge.encrypt(message.toString('binary')), 'binary')
+    const cipheredMessage = keyForge.encrypt(message)
     const decipheredMessage = keyNode.decrypt(cipheredMessage)
     assert.isTrue(message.equals(decipheredMessage))
   })

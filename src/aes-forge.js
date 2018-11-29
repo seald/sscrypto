@@ -1,43 +1,27 @@
-'use strict'
-
 import forge from 'node-forge'
-import { b64, unb64 } from './utils'
+import { getProgress } from './utils'
 import { Transform } from 'stream'
-
-const getProgress = () => {
-  let counter = 0
-  let lastEmitProgress
-  return (increment, stream, delay = 30) => { // don't send progress more than each 30ms
-    counter += increment
-    if (delay === false || !lastEmitProgress || Date.now() - lastEmitProgress > delay) {
-      lastEmitProgress = Date.now()
-      stream.emit('progress', counter)
-    }
-  }
-}
 
 export class SymKey {
   /**
    * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
    * Defaults to a new 256 bits key.
    * @constructs SymKey
-   * @param {number|string} [arg] Size of the key to generate, or the messageKey to construct the SymKey with.
-   *  Defaults to a new 256 bits key.
+   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
    */
-  constructor (arg) {
-    arg = arg || 256
+  constructor (arg = 256) {
     if (typeof arg === 'number') {
       this.keySize = arg / 8
-      this.encryptionKey = forge.random.getBytesSync(this.keySize)
       this.signingKey = forge.random.getBytesSync(this.keySize)
-    } else if (typeof arg === 'string') {
+      this.encryptionKey = forge.random.getBytesSync(this.keySize)
+    } else if (Buffer.isBuffer(arg)) {
       this.keySize = arg.length / 2
-      this.signingKey = arg.slice(0, this.keySize)
-      this.encryptionKey = arg.slice(this.keySize)
+      this.signingKey = arg.slice(0, this.keySize).toString('binary')
+      this.encryptionKey = arg.slice(this.keySize).toString('binary')
     } else {
       throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
     }
-    if ([32, 24, 16].indexOf(this.keySize) === -1) {
+    if (![32, 24, 16].includes(this.keySize)) {
       throw new Error(`INVALID_ARG : Key size is invalid`)
     }
   }
@@ -50,7 +34,7 @@ export class SymKey {
    * @returns {SymKey}
    */
   static fromString (messageKey) {
-    return new SymKey(messageKey)
+    return new SymKey(Buffer.from(messageKey, 'binary'))
   }
 
   /**
@@ -61,7 +45,7 @@ export class SymKey {
    * @returns {SymKey}
    */
   static fromB64 (messageKey) {
-    return SymKey.fromString(unb64(messageKey))
+    return new SymKey(Buffer.from(messageKey, 'base64'))
   }
 
   /**
@@ -69,8 +53,8 @@ export class SymKey {
    * @method
    * @returns {string}
    */
-  serialize () {
-    return b64(this.toString())
+  toB64 () {
+    return Buffer.from(this.toString(), 'binary').toString('base64')
   }
 
   toString () {
@@ -80,14 +64,14 @@ export class SymKey {
   /**
    * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
    * @method
-   * @param {string} textToAuthenticate
-   * @returns {string}
+   * @param {Buffer} textToAuthenticate
+   * @returns {Buffer}
    */
   calculateHMAC (textToAuthenticate) {
     const hmac = forge.hmac.create()
     hmac.start('sha256', this.signingKey)
-    hmac.update(textToAuthenticate)
-    return hmac.digest().data
+    hmac.update(textToAuthenticate.toString('binary'))
+    return Buffer.from(hmac.digest().data, 'binary')
   }
 
   /**
@@ -95,19 +79,20 @@ export class SymKey {
    * SymKey#signingKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
-   * @param {string} clearText
-   * @returns {string}
+   * @param {Buffer} clearText
+   * @returns {Buffer}
    */
   encrypt (clearText) {
     const iv = forge.random.getBytesSync(16)
 
     const cipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
     cipher.start({ iv: iv })
-    cipher.update(forge.util.createBuffer(clearText))
+    cipher.update(forge.util.createBuffer(clearText.toString('binary')))
     cipher.finish()
 
-    const cipherTextWithIV = `${iv}${cipher.output.data}`
-    return `${cipherTextWithIV}${this.calculateHMAC(cipherTextWithIV)}`
+    const cipherText = Buffer.from(`${iv}${cipher.output.data}`, 'binary')
+
+    return Buffer.concat([cipherText, this.calculateHMAC(cipherText)])
   }
 
   /**
@@ -173,19 +158,20 @@ export class SymKey {
   /**
    * Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
    * @method
-   * @param {string} cipheredMessage
-   * @returns {string}
+   * @param {Buffer} cipheredMessage
+   * @returns {Buffer}
    */
   decrypt (cipheredMessage) {
     const iv = cipheredMessage.slice(0, 16)
-    const hmac = cipheredMessage.slice(-32)
     const cipherText = cipheredMessage.slice(16, -32)
-    if (this.calculateHMAC(`${iv}${cipherText}`) === hmac) {
+    const hmac = cipheredMessage.slice(-32)
+
+    if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
       const cipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
-      cipher.start({ iv: iv })
-      cipher.update(forge.util.createBuffer(cipherText))
+      cipher.start({ iv: iv.toString('binary') })
+      cipher.update(forge.util.createBuffer(cipherText.toString('binary')))
       cipher.finish()
-      return cipher.output.data
+      return Buffer.from(cipher.output.data, 'binary')
     } else throw new Error('INVALID_HMAC')
   }
 

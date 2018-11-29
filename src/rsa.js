@@ -1,7 +1,4 @@
-'use strict'
-
 import forge from 'node-forge'
-// noinspection JSUnresolvedVariable
 import crc32 from 'crc-32'
 import { b64, intToBytes, sha256, unb64 } from './utils'
 

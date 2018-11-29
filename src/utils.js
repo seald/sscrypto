@@ -1,5 +1,3 @@
-'use strict'
-
 import forge from 'node-forge'
 
 /**
@@ -70,3 +68,15 @@ export const randomBytes = length => forge.random.getBytesSync(length)
 export const encodeUTF8 = string => forge.util.encodeUtf8(string)
 
 export const decodeUTF8 = string => forge.util.decodeUtf8(string)
+
+export const getProgress = () => {
+  let counter = 0
+  let lastEmitProgress
+  return (increment, stream, delay = 30) => { // don't send progress more than each 30ms
+    counter += increment
+    if (delay === false || !lastEmitProgress || Date.now() - lastEmitProgress > delay) {
+      lastEmitProgress = Date.now()
+      stream.emit('progress', counter)
+    }
+  }
+}

@@ -1,7 +1,5 @@
-'use strict'
 /* global describe, it */
 
-import forge from 'node-forge'
 import { SymKey } from './aes-forge'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
@@ -17,7 +15,7 @@ describe('Crypto - Unit - AES forge', () => {
 
   const message = 'TESTtest'
   const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
-  const messageBinary = forge.random.getBytesSync(100)
+  const messageBinary = crypto.randomBytes(100)
 
   it('Try creating a key with an invalid type in constructor', () => {
     expect(() => new SymKey({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy(error => {
@@ -41,7 +39,7 @@ describe('Crypto - Unit - AES forge', () => {
   })
 
   it('Try deciphering a cipherText with invalid HMAC', () => {
-    const cipheredMessage = key.encrypt(message)
+    const cipheredMessage = key.encrypt(Buffer.from(message, 'ascii'))
     expect(() => key.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_HMAC')
       return true
@@ -49,26 +47,25 @@ describe('Crypto - Unit - AES forge', () => {
   })
 
   it('cipher & decipher', () => {
-    const cipheredMessage = key.encrypt(message)
-    const decipheredMessage = key.decrypt(cipheredMessage)
+    const cipheredMessage = key.encrypt(Buffer.from(message, 'ascii'))
+    const decipheredMessage = key.decrypt(cipheredMessage).toString('ascii')
     assert.strictEqual(message, decipheredMessage)
   })
 
   it('cipher & decipher UTF8', () => {
-    const cipheredMessage = key.encrypt(Buffer.from(messageUtf8, 'utf8').toString('binary'))
-    const decipheredMessage = Buffer.from(key.decrypt(cipheredMessage), 'binary').toString('utf8')
+    const cipheredMessage = key.encrypt(Buffer.from(messageUtf8, 'utf8'))
+    const decipheredMessage = key.decrypt(cipheredMessage).toString('utf8')
     assert.strictEqual(messageUtf8, decipheredMessage)
   })
 
   it('cipher & decipher Binary', () => {
-    // noinspection JSCheckFunctionSignatures
     const cipheredMessage = key.encrypt(messageBinary)
     const decipheredMessage = key.decrypt(cipheredMessage)
-    assert.strictEqual(messageBinary, decipheredMessage)
+    assert.isTrue(messageBinary.equals(decipheredMessage))
   })
 
   it('fail with bad key', () => {
-    const cipheredMessage = key.encrypt(message)
+    const cipheredMessage = key.encrypt(Buffer.from(message, 'ascii'))
     expect(() => badKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_HMAC')
       return true
@@ -76,10 +73,10 @@ describe('Crypto - Unit - AES forge', () => {
   })
 
   it('serialize and import key', () => {
-    const cipheredMessage = key.encrypt(message)
-    const exportedKey = key.serialize()
+    const cipheredMessage = key.encrypt(Buffer.from(message, 'ascii'))
+    const exportedKey = key.toB64()
     const importedKey = SymKey.fromB64(exportedKey)
-    const decipheredMessage = importedKey.decrypt(cipheredMessage)
+    const decipheredMessage = importedKey.decrypt(cipheredMessage).toString('ascii')
     assert.strictEqual(message, decipheredMessage)
   })
 
@@ -90,12 +87,12 @@ describe('Crypto - Unit - AES forge', () => {
     const cipher = key.encryptStream()
 
     return _streamHelper(chunks, cipher).then((output) => {
-      assert.isTrue(Buffer.from(key.decrypt(output.toString('binary')), 'binary').equals(input))
+      assert.isTrue(key.decrypt(output).equals(input))
     })
   })
 
   it('Try deciphering a stream with a cipherText with invalid HMAC', () => {
-    const cipheredMessage = key.encrypt(message).slice(0, -1).toString('binary')
+    const cipheredMessage = key.encrypt(Buffer.from(message, 'ascii')).slice(0, -1)
     const cipherChunks = splitLength(cipheredMessage, 15)
     const decipher = key.decryptStream()
     return expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
@@ -106,7 +103,7 @@ describe('Crypto - Unit - AES forge', () => {
 
   it('cipher & decipher stream', () => {
     const clearText = crypto.randomBytes(1000)
-    const cipherText = Buffer.from(key.encrypt(clearText.toString('binary')), 'binary')
+    const cipherText = key.encrypt(clearText)
     const cipherChunks = splitLength(cipherText, 15)
     const decipher = key.decryptStream()
 

@@ -1,6 +1,5 @@
-'use strict'
 /* global describe, it, before */
-// noinspection NpmUsedModulesInstalled, JSUnresolvedVariable
+
 import forge from 'node-forge'
 import { PrivateKey, PublicKey } from './rsa'
 import { intToBytes } from './utils'
