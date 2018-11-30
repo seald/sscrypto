@@ -8,7 +8,6 @@
     "pretest": "npm run lint && npm run build",
     "test": "mocha --require source-map-support/register --timeout 30000 $(find lib -name '*.spec.js')",
     "build": "tsc",
-    "precoverage": "cm clean-coverage",
     "coverage": "nyc npm test"
   },
   "repository": {
