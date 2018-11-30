@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "./lib",
+    "target": "es5",
+    "esModuleInterop": true,
+    "lib": [
+      "es2017"
+    ],
+    "declaration": true
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}

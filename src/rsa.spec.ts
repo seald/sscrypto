@@ -23,13 +23,12 @@ describe('RSA forge', () => {
       })
   )
 
-  // noinspection SpellCheckingInspection
   const message = 'TESTtest'
-  // noinspection SpellCheckingInspection
   const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
   const messageBinary = forge.random.getBytesSync(32)
 
   it('Fail to construct a PublicKey because of an invalid type of argument', () => {
+    // @ts-ignore
     expect(PrivateKey.generate('notAValidType')).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
       assert.include(error.message, 'INVALID_INPUT')
       return true
@@ -51,6 +50,7 @@ describe('RSA forge', () => {
   })
 
   it('fail to import PrivateKey because of an invalid type', () => {
+    // @ts-ignore
     expect(() => new PrivateKey(2)).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_KEY')
       return true
@@ -99,7 +99,6 @@ describe('RSA forge', () => {
 
   it('cipher & decipher with invalid CRC', () => {
     const textToEncrypt = intToBytes(crc32.bstr('ThisIsNotTheClearText')) + message
-    // noinspection JSCheckFunctionSignatures
     const cipheredMessage = privateKey.publicKey.encrypt(textToEncrypt, 'RSA-OAEP', {
       md: forge.md.sha1.create(),
       mgf1: {
@@ -119,7 +118,6 @@ describe('RSA forge', () => {
   })
 
   it('cipher & decipher binary', () => {
-    // noinspection JSCheckFunctionSignatures
     const cipheredMessage = privateKey.encrypt(messageBinary)
     assert.strictEqual(privateKey.decrypt(cipheredMessage), messageBinary, 'Message cannot be deciphered')
   })

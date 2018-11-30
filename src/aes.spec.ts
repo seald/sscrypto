@@ -23,6 +23,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
     const messageBinary = crypto.randomBytes(100)
 
     it('Try creating a key with an invalid type in constructor', () => {
+      // @ts-ignore
       expect(() => new SymKey({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy(error => {
         assert.include(error.message, 'INVALID_ARG')
         return true
@@ -162,6 +163,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       })
       if (!progress) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
+      // @ts-ignore
       assert.include(error.message, 'STREAM_CANCELED')
     })
 
@@ -185,6 +187,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       })
       if (!progress) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
+      // @ts-ignore
       assert.include(error.message, 'STREAM_CANCELED')
     })
   })

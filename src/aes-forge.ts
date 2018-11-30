@@ -1,23 +1,27 @@
-import * as crypto from 'crypto'
+import forge from 'node-forge'
 import { getProgress } from './utils'
 import { Transform } from 'stream'
 
 export class SymKey {
+  public keySize: number
+  private readonly signingKey: string
+  private readonly encryptionKey: string
+
   /**
    * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
    * Defaults to a new 256 bits key.
    * @constructs SymKey
    * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
    */
-  constructor (arg = 256) {
+  constructor (arg: number | Buffer = 256) {
     if (typeof arg === 'number') {
       this.keySize = arg / 8
-      this.signingKey = crypto.randomBytes(this.keySize)
-      this.encryptionKey = crypto.randomBytes(this.keySize)
+      this.signingKey = forge.random.getBytesSync(this.keySize)
+      this.encryptionKey = forge.random.getBytesSync(this.keySize)
     } else if (Buffer.isBuffer(arg)) {
       this.keySize = arg.length / 2
-      this.signingKey = arg.slice(0, this.keySize)
-      this.encryptionKey = arg.slice(this.keySize)
+      this.signingKey = arg.slice(0, this.keySize).toString('binary')
+      this.encryptionKey = arg.slice(this.keySize).toString('binary')
     } else {
       throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
     }
@@ -33,18 +37,18 @@ export class SymKey {
    * @param {string} messageKey binary encoded messageKey
    * @returns {SymKey}
    */
-  static fromString (messageKey) {
+  static fromString (messageKey: string): SymKey {
     return new SymKey(Buffer.from(messageKey, 'binary'))
   }
 
   /**
-   * Static method to construct a new SymKey from a b64 encoded key
+   * Static method to construct a new SymKey from a b64 encoded messageKey
    * @method
    * @static
    * @param {string} messageKey b64 encoded messageKey
    * @returns {SymKey}
    */
-  static fromB64 (messageKey) {
+  static fromB64 (messageKey: string): SymKey {
     return new SymKey(Buffer.from(messageKey, 'base64'))
   }
 
@@ -53,12 +57,17 @@ export class SymKey {
    * @method
    * @returns {string}
    */
-  toB64 () {
-    return Buffer.concat([this.signingKey, this.encryptionKey]).toString('base64')
+  toB64 (): string {
+    return Buffer.from(this.toString(), 'binary').toString('base64')
   }
 
-  toString () {
-    return `${this.signingKey.toString('binary')}${this.encryptionKey.toString('binary')}`
+  /**
+   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
+   * @method
+   * @returns {string}
+   */
+  toString (): string {
+    return `${this.signingKey}${this.encryptionKey}`
   }
 
   /**
@@ -67,10 +76,11 @@ export class SymKey {
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
    */
-  calculateHMAC (textToAuthenticate) {
-    const hmac = crypto.createHmac('sha256', this.signingKey)
-    hmac.update(textToAuthenticate)
-    return hmac.digest()
+  calculateHMAC (textToAuthenticate: Buffer): Buffer {
+    const hmac = forge.hmac.create()
+    hmac.start('sha256', this.signingKey)
+    hmac.update(textToAuthenticate.toString('binary'))
+    return Buffer.from(hmac.digest().data, 'binary')
   }
 
   /**
@@ -81,12 +91,15 @@ export class SymKey {
    * @param {Buffer} clearText
    * @returns {Buffer}
    */
-  encrypt (clearText) {
-    const iv = crypto.randomBytes(16)
+  encrypt (clearText: Buffer): Buffer {
+    const iv = forge.random.getBytesSync(16)
 
-    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
-    const crypt = cipher.update(clearText)
-    const cipherText = Buffer.concat([iv, crypt, cipher.final()])
+    const cipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
+    cipher.start({ iv: iv })
+    cipher.update(forge.util.createBuffer(clearText.toString('binary')))
+    cipher.finish()
+
+    const cipherText = Buffer.from(`${iv}${cipher.output.data}`, 'binary')
 
     return Buffer.concat([cipherText, this.calculateHMAC(cipherText)])
   }
@@ -95,28 +108,33 @@ export class SymKey {
    * Creates a Transform stream that encrypts the data piped to it.
    * @returns {Transform}
    */
-  encryptStream () {
+  encryptStream (): Transform {
+    let canceled = false
     const progress = getProgress()
-    const iv = crypto.randomBytes(16)
+    const iv = forge.random.getBytesSync(16)
 
-    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    const cipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
+    cipher.start({ iv: iv })
 
-    const hmac = crypto.createHmac('sha256', this.signingKey)
+    const hmac = forge.hmac.create()
+    hmac.start('sha256', this.signingKey)
 
     let firstBlock = true
-    let canceled = false
     return new Transform({
       transform (chunk, encoding, callback) {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (firstBlock) {
-            hmac.update(iv)
-            this.push(iv)
+            const header = iv
+            hmac.update(header)
+            const buffer = Buffer.from(header, 'binary')
+            this.push(buffer)
             firstBlock = false
           }
-          const crypt = cipher.update(chunk)
-          hmac.update(crypt)
-          this.push(crypt)
+          const output = cipher.output.getBytes()
+          cipher.update(forge.util.createBuffer(chunk.toString('binary')))
+          hmac.update(output)
+          this.push(Buffer.from(output, 'binary'))
           progress(chunk.length, this)
           callback()
         } catch (e) {
@@ -126,10 +144,15 @@ export class SymKey {
       flush (callback) {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
-          const crypt = cipher.final()
-          hmac.update(crypt)
-          this.push(crypt)
-          this.push(hmac.digest())
+          progress(0, this, 0)
+          cipher.finish()
+          const output = cipher.output.getBytes()
+          hmac.update(output)
+          let buffer = Buffer.from(output, 'binary')
+          this.push(buffer)
+          const digest = hmac.digest()
+          buffer = Buffer.from(digest.getBytes(), 'binary')
+          this.push(buffer)
           callback()
         } catch (e) {
           callback(e)
@@ -142,19 +165,22 @@ export class SymKey {
   }
 
   /**
-   * Decrypts the cipherText using the same algorithms as SymKey#encrypt
+   * Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
    * @method
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
    */
-  decrypt (cipheredMessage) {
+  decrypt (cipheredMessage: Buffer): Buffer {
     const iv = cipheredMessage.slice(0, 16)
     const cipherText = cipheredMessage.slice(16, -32)
     const hmac = cipheredMessage.slice(-32)
 
     if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
-      const decipher = crypto.createDecipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
-      return Buffer.concat([decipher.update(cipherText), decipher.final()])
+      const cipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
+      cipher.start({ iv: iv.toString('binary') })
+      cipher.update(forge.util.createBuffer(cipherText.toString('binary')))
+      cipher.finish()
+      return Buffer.from(cipher.output.data, 'binary')
     } else throw new Error('INVALID_HMAC')
   }
 
@@ -162,38 +188,40 @@ export class SymKey {
    * Creates a Transform stream that decrypts the encrypted data piped to it.
    * @returns {Transform}
    */
-  decryptStream () {
+  decryptStream (): Transform {
+    let canceled = false
+
     const progress = getProgress()
 
-    const hmac = crypto.createHmac('sha256', this.signingKey)
+    const decipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
 
-    let decipher
+    const hmac = forge.hmac.create()
+    hmac.start('sha256', this.signingKey)
+
     let buffer = Buffer.alloc(0)
+    let gotIv = false
 
-    const encryptionKey = this.encryptionKey
-    const keySize = this.keySize
-
-    let canceled = false
     return new Transform({
       transform (chunk, encoding, callback) {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
-          if (!decipher) { // we have not gotten the IV yet, gotta wait for it
+          if (!gotIv) { // we have not gotten the IV yet, gotta wait for it
             if (buffer.length >= 16) { // length of IV
-              const iv = buffer.slice(0, 16)
+              const iv = buffer.slice(0, 16).toString('binary')
               buffer = buffer.slice(16)
-              decipher = crypto.createDecipheriv(`aes-${keySize * 8}-cbc`, encryptionKey, iv)
+              decipher.start({ iv: iv })
               hmac.update(iv)
+              gotIv = true
             }
           }
-          if (decipher) { // we have the IV, can decrypt
+          if (gotIv) { // we have the IV, can decrypt
             if (buffer.length > 32) { // we have to leave 32 bytes, they may be the HMAC
-              const cipherText = buffer.slice(0, -32)
+              const cipherText = buffer.slice(0, -32).toString('binary')
               buffer = buffer.slice(-32)
-              const plainText = decipher.update(cipherText)
-              this.push(plainText)
               hmac.update(cipherText)
+              this.push(Buffer.from(decipher.output.getBytes(), 'binary'))
+              decipher.update(forge.util.createBuffer(cipherText))
             }
           }
           progress(chunk.length, this)
@@ -206,9 +234,11 @@ export class SymKey {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')
-          const computedHmac = hmac.digest()
-          if (!computedHmac.equals(buffer)) throw new Error('INVALID_HMAC')
-          this.push(decipher.final())
+          decipher.finish()
+          progress(32, this, 0)
+          const digest = hmac.digest().getBytes()
+          if (digest !== buffer.toString('binary')) throw new Error('INVALID_HMAC')
+          this.push(Buffer.from(decipher.output.getBytes(), 'binary'))
           callback()
         } catch (e) {
           callback(e)

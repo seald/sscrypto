@@ -4,10 +4,10 @@
   "description": "Super Simple Cryptography",
   "main": "index.js",
   "scripts": {
-    "lint": "standard",
+    "lint": "standard 'src/**/*.js' 'src/**/*.ts'",
     "pretest": "npm run lint && npm run build",
     "test": "mocha --require source-map-support/register --timeout 30000 $(find lib -name '*.spec.js')",
-    "build": "cm build",
+    "build": "tsc",
     "precoverage": "cm clean-coverage",
     "coverage": "nyc npm test"
   },
@@ -17,22 +17,29 @@
   },
   "author": "Seald SAS",
   "license": "MIT",
+  "standard": {
+    "parser": "typescript-eslint-parser",
+    "plugins": [
+      "typescript"
+    ]
+  },
   "dependencies": {
     "crc-32": "^1.2.0",
     "multipipe": "^2.0.3",
     "node-forge": "^0.7.6"
   },
   "devDependencies": {
-    "@babel/core": "^7.1.6",
-    "@babel/preset-env": "^7.1.6",
-    "centimaitre": "^1.0.2",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.12.10",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "fs-jetpack": "^2.2.0",
+    "eslint-plugin-typescript": "^0.14.0",
     "memorystream": "^0.3.1",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0",
     "source-map-support": "^0.5.9",
-    "standard": "^12.0.1"
+    "standard": "^12.0.1",
+    "typescript": "^3.1.6",
+    "typescript-eslint-parser": "^21.0.1"
   }
 }
