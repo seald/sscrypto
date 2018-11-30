@@ -31,6 +31,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
     })
 
     it('Try creating a key with an invalid size', () => {
+      // @ts-ignore
       expect(() => new SymKey(42)).to.throw(Error).and.satisfy(error => {
         assert.include(error.message, 'INVALID_ARG')
         return true
@@ -148,7 +149,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       const input = crypto.randomBytes(size)
       const chunks = splitLength(input, 20)
 
-      let progress
+      let progress: number
 
       const error = await new Promise(async (resolve, reject) => {
         const stream = key256.encryptStream()
@@ -172,7 +173,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       const input = crypto.randomBytes(size)
       const chunks = splitLength(input, 20)
 
-      let progress
+      let progress: number
 
       const error = await new Promise(async (resolve, reject) => {
         const stream = key256.decryptStream()

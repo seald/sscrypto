@@ -2,16 +2,18 @@
 
 import forge from 'node-forge'
 import { PrivateKey, PublicKey } from './rsa-forge'
-import { intToBytes } from './utils'
+import { intToBuffer } from './utils'
 import crc32 from 'crc-32'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import * as crypto from 'crypto'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
 describe('RSA forge', () => {
-  let privateKey, privateKey2
+  let privateKey: PrivateKey, privateKey2: PrivateKey
+
   before('generate keys', () =>
     Promise.all([
       PrivateKey.generate(1024),
@@ -23,9 +25,9 @@ describe('RSA forge', () => {
       })
   )
 
-  const message = 'TESTtest'
+  const message = Buffer.from('TESTtest', 'ascii')
   const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
-  const messageBinary = forge.random.getBytesSync(32)
+  const messageBinary = crypto.randomBytes(32)
 
   it('Fail to construct a PublicKey because of an invalid type of argument', () => {
     // @ts-ignore
@@ -36,6 +38,7 @@ describe('RSA forge', () => {
   })
 
   it('fail to produce a new PrivateKey with a wrong size', () => {
+    // @ts-ignore
     expect(PrivateKey.generate(588)).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
       assert.include(error.message, 'INVALID_INPUT')
       return true
@@ -43,7 +46,7 @@ describe('RSA forge', () => {
   })
 
   it('fail to import PrivateKey', () => {
-    expect(() => PrivateKey.from(privateKey.serialize().slice(0, -2))).to.throw(Error).and.satisfy(error => {
+    expect(() => PrivateKey.fromB64(privateKey.toB64().slice(2))).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_KEY')
       return true
     })
@@ -58,15 +61,15 @@ describe('RSA forge', () => {
   })
 
   it('fail to import PublicKey', () => {
-    expect(() => PublicKey.from(privateKey.serialize({ publicOnly: true }).slice(0, -2))).to.throw(Error).and.satisfy(error => {
+    expect(() => PublicKey.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_KEY')
       return true
     })
   })
 
   it('export public key then import', () => {
-    const _publicKeyImported = PublicKey.from(privateKey.serialize({ publicOnly: true }))
-    const publicKeyImported = PublicKey.from(_publicKeyImported.serialize())
+    const _publicKeyImported = PublicKey.fromB64(privateKey.toB64({ publicOnly: true }))
+    const publicKeyImported = PublicKey.fromB64(_publicKeyImported.toB64())
     const publicKeyProperties = ['n', 'e']
 
     publicKeyProperties.forEach((property) => {
@@ -77,7 +80,7 @@ describe('RSA forge', () => {
   })
 
   it('export the private key then import it', () => {
-    const privateKeyImported = PrivateKey.from(privateKey.serialize())
+    const privateKeyImported = PrivateKey.fromB64(privateKey.toB64())
     const privateKeyProperties = ['n', 'e', 'd', 'p', 'q', 'dP', 'dQ', 'qInv']
 
     privateKeyProperties.forEach((property) => {
@@ -89,22 +92,25 @@ describe('RSA forge', () => {
 
   it('cipher & decipher', () => {
     const cipheredMessage = privateKey.encrypt(message)
-    assert.strictEqual(privateKey.decrypt(cipheredMessage), message, 'Message cannot be deciphered')
+    assert.isTrue(privateKey.decrypt(cipheredMessage).equals(message), 'Message cannot be deciphered')
   })
 
   it('cipher & decipher without CRC', () => {
     const cipheredMessage = privateKey.encrypt(message, false)
-    assert.strictEqual(privateKey.decrypt(cipheredMessage, false), message, 'Message cannot be deciphered')
+    assert.isTrue(privateKey.decrypt(cipheredMessage, false).equals(message), 'Message cannot be deciphered')
   })
 
   it('cipher & decipher with invalid CRC', () => {
-    const textToEncrypt = intToBytes(crc32.bstr('ThisIsNotTheClearText')) + message
-    const cipheredMessage = privateKey.publicKey.encrypt(textToEncrypt, 'RSA-OAEP', {
-      md: forge.md.sha1.create(),
-      mgf1: {
-        md: forge.md.sha1.create()
-      }
-    })
+    const textToEncrypt = Buffer.concat([intToBuffer(crc32.bstr('ThisIsNotTheClearText')), message])
+    const cipheredMessage = Buffer.from(
+      privateKey.publicKey.encrypt(textToEncrypt.toString('binary'), 'RSA-OAEP', {
+        md: forge.md.sha1.create(),
+        mgf1: {
+          md: forge.md.sha1.create()
+        }
+      }),
+      'binary'
+    )
     expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy(error => {
       assert.include(error.message, 'INVALID_CRC32')
       return true
@@ -112,14 +118,14 @@ describe('RSA forge', () => {
   })
 
   it('cipher & decipher UTF8', () => {
-    const cipheredMessage = privateKey.encrypt(Buffer.from(messageUtf8, 'utf8').toString('binary'))
-    const decipheredMessage = Buffer.from(privateKey.decrypt(cipheredMessage), 'binary').toString('utf8')
+    const cipheredMessage = privateKey.encrypt(Buffer.from(messageUtf8, 'utf8'))
+    const decipheredMessage = privateKey.decrypt(cipheredMessage).toString('utf8')
     assert.strictEqual(decipheredMessage, messageUtf8, 'Message cannot be deciphered')
   })
 
   it('cipher & decipher binary', () => {
     const cipheredMessage = privateKey.encrypt(messageBinary)
-    assert.strictEqual(privateKey.decrypt(cipheredMessage), messageBinary, 'Message cannot be deciphered')
+    assert.isTrue(privateKey.decrypt(cipheredMessage).equals(messageBinary), 'Message cannot be deciphered')
   })
 
   it('fail with bad key', () => {
@@ -138,6 +144,6 @@ describe('RSA forge', () => {
   it('get hash', () => {
     const hash = privateKey.getHash()
     assert.strictEqual(hash, privateKey.getHash())
-    assert.notEqual(hash, privateKey2.getHash())
+    assert.notStrictEqual(hash, privateKey2.getHash())
   })
 })

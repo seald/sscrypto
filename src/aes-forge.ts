@@ -2,6 +2,29 @@ import forge from 'node-forge'
 import { getProgress } from './utils'
 import { Transform } from 'stream'
 
+/* eslint-disable*/
+
+// Necessary stuff because node-forge typings are incomplete...
+declare module 'node-forge' {
+  namespace hmac {
+    interface HMAC {
+      start (algorithm: string, singingKey: string): void
+
+      update (str: string): void
+
+      getMac (): forge.util.ByteStringBuffer
+
+      digest (): forge.util.ByteStringBuffer
+    }
+
+    function create (): HMAC
+  }
+}
+
+/* eslint-enable */
+
+export type SymKeySize = 128 | 192 | 256
+
 export class SymKey {
   public keySize: number
   private readonly signingKey: string
@@ -13,7 +36,7 @@ export class SymKey {
    * @constructs SymKey
    * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
    */
-  constructor (arg: number | Buffer = 256) {
+  constructor (arg: SymKeySize | Buffer = 256) {
     if (typeof arg === 'number') {
       this.keySize = arg / 8
       this.signingKey = forge.random.getBytesSync(this.keySize)
@@ -94,9 +117,9 @@ export class SymKey {
   encrypt (clearText: Buffer): Buffer {
     const iv = forge.random.getBytesSync(16)
 
-    const cipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
+    const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
     cipher.start({ iv: iv })
-    cipher.update(forge.util.createBuffer(clearText.toString('binary')))
+    cipher.update(forge.util.createBuffer(clearText.toString('binary'), 'binary'))
     cipher.finish()
 
     const cipherText = Buffer.from(`${iv}${cipher.output.data}`, 'binary')
@@ -113,7 +136,7 @@ export class SymKey {
     const progress = getProgress()
     const iv = forge.random.getBytesSync(16)
 
-    const cipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
+    const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
     cipher.start({ iv: iv })
 
     const hmac = forge.hmac.create()
@@ -121,7 +144,7 @@ export class SymKey {
 
     let firstBlock = true
     return new Transform({
-      transform (chunk, encoding, callback) {
+      transform (chunk: Buffer, encoding, callback) {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (firstBlock) {
@@ -132,7 +155,7 @@ export class SymKey {
             firstBlock = false
           }
           const output = cipher.output.getBytes()
-          cipher.update(forge.util.createBuffer(chunk.toString('binary')))
+          cipher.update(forge.util.createBuffer(chunk.toString('binary'), 'binary'))
           hmac.update(output)
           this.push(Buffer.from(output, 'binary'))
           progress(chunk.length, this)
@@ -176,9 +199,9 @@ export class SymKey {
     const hmac = cipheredMessage.slice(-32)
 
     if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
-      const cipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
+      const cipher: forge.cipher.BlockCipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
       cipher.start({ iv: iv.toString('binary') })
-      cipher.update(forge.util.createBuffer(cipherText.toString('binary')))
+      cipher.update(forge.util.createBuffer(cipherText.toString('binary'), 'binary'))
       cipher.finish()
       return Buffer.from(cipher.output.data, 'binary')
     } else throw new Error('INVALID_HMAC')
@@ -193,7 +216,7 @@ export class SymKey {
 
     const progress = getProgress()
 
-    const decipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
+    const decipher: forge.cipher.BlockCipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
 
     const hmac = forge.hmac.create()
     hmac.start('sha256', this.signingKey)
@@ -202,7 +225,7 @@ export class SymKey {
     let gotIv = false
 
     return new Transform({
-      transform (chunk, encoding, callback) {
+      transform (chunk: Buffer, encoding, callback) {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
@@ -221,7 +244,7 @@ export class SymKey {
               buffer = buffer.slice(-32)
               hmac.update(cipherText)
               this.push(Buffer.from(decipher.output.getBytes(), 'binary'))
-              decipher.update(forge.util.createBuffer(cipherText))
+              decipher.update(forge.util.createBuffer(cipherText, 'binary'))
             }
           }
           progress(chunk.length, this)

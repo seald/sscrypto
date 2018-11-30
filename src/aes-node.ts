@@ -2,6 +2,8 @@ import * as crypto from 'crypto'
 import { getProgress } from './utils'
 import { Transform } from 'stream'
 
+export type SymKeySize = 128 | 192 | 256
+
 export class SymKey {
   public keySize: number
   private readonly signingKey: Buffer
@@ -13,7 +15,7 @@ export class SymKey {
    * @constructs SymKey
    * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
    */
-  constructor (arg: number | Buffer = 256) {
+  constructor (arg: SymKeySize | Buffer = 256) {
     if (typeof arg === 'number') {
       this.keySize = arg / 8
       this.signingKey = crypto.randomBytes(this.keySize)
