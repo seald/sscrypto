@@ -1,29 +1,11 @@
-import forge from 'node-forge'
+import * as crypto from 'crypto'
 import crc32 from 'crc-32'
-import { intToBuffer } from './utils'
-import { BigInteger } from 'jsbn' // eslint-disable-line no-unused-vars
+import { convertDERToPEM, convertPEMToDER, intToBuffer, privateToPublic, publicKeyModel } from './utils'
 
-/* eslint-disable*/
-
-// Necessary stuff because node-forge typings are incomplete...
-declare module 'node-forge' {
-  namespace pki {
-    function publicKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PublicKey
-
-    function privateKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PrivateKey
-
-    function publicKeyToAsn1 (key: forge.pki.rsa.PublicKey): forge.asn1.Asn1
-
-    function privateKeyToAsn1 (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
-  }
-}
-
-/* eslint-enable */
-
-const sha256 = (str: string): forge.util.ByteStringBuffer => {
-  const md = forge.md.sha256.create()
-  md.update(str)
-  return md.digest()
+const sha256 = (buffer: Buffer): string => {
+  const md = crypto.createHash('sha256')
+  md.update(buffer)
+  return md.digest('hex')
 }
 
 /**
@@ -31,22 +13,21 @@ const sha256 = (str: string): forge.util.ByteStringBuffer => {
  * @property publicKey
  */
 export class PublicKey {
-  public publicKey: forge.pki.rsa.PublicKey
+  public publicKey: string // TODO: crypto.RsaPublicKey ?
 
   /**
    * PublicKey constructor. Should be given a Buffer containing a DER serialization of the key.
    * @constructs PublicKey
-   * @param {Buffer|null} key
+   * @param {Buffer} key
    */
-  constructor (key: Buffer | null) {
+  constructor (key: Buffer) {
     if (key) {
       if (Buffer.isBuffer(key)) {
         try {
-          this.publicKey = forge.pki.publicKeyFromAsn1(forge.asn1.fromDer(
-            forge.util.createBuffer(key.toString('binary'), 'binary')
-          ))
+          publicKeyModel.decode(key)
+          this.publicKey = convertDERToPEM(key, 'RSA PUBLIC KEY')
         } catch (e) {
-          throw new Error(`INVALID_KEY : ${e.message}`)
+          throw new Error(`INVALID_KEY : ${e.message}`) // TODO
         }
       } else {
         throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
@@ -72,7 +53,7 @@ export class PublicKey {
    * @returns {string}
    */
   toB64 (options: object = null): string {
-    return Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(this.publicKey)).getBytes(), 'binary').toString('base64')
+    return convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY').toString('base64')
   }
 
   /**
@@ -89,14 +70,13 @@ export class PublicKey {
         clearText
       ])
       : clearText
-    return Buffer.from(
-      this.publicKey.encrypt(textToEncrypt.toString('binary'), 'RSA-OAEP', {
-        md: forge.md.sha1.create(),
-        mgf1: {
-          md: forge.md.sha1.create()
-        }
-      }),
-      'binary'
+    return crypto.publicEncrypt(
+      {
+        key: this.publicKey,
+        // @ts-ignore
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+      },
+      textToEncrypt
     )
   }
 
@@ -107,38 +87,23 @@ export class PublicKey {
    * @returns {boolean}
    */
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
-    try {
-      const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2 // TODO: EXPLAIN, EXPLAIN ! // TODO: why a variable ?
-      const pss = forge.pss.create({
-        md: forge.md.sha256.create(),
-        mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
-        saltLength: saltLength
-      })
-      return this.publicKey.verify(
-        sha256(textToCheckAgainst.toString('binary')).getBytes(),
-        signature.toString('binary'),
-        pss
-      )
-    } catch (e) {
-      return false
-    }
+    const verify = crypto.createVerify('SHA256')
+    verify.update(textToCheckAgainst) // TODO: check if sha256(textToCheckAgainst) ?
+    return verify.verify(this.publicKey, signature)
   }
 
   /**
    * @returns {string}
    */
   getHash (): string {
-    return sha256(this.toB64({ publicOnly: true })).toHex()
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii'))
   }
 
   /**
    * @returns {string}
    */
   getB64Hash (): string {
-    return Buffer.from(
-      sha256(this.toB64({ publicOnly: true })).bytes(),
-      'binary'
-    ).toString('base64')
+    return Buffer.from(this.getHash(), 'hex').toString('base64')
   }
 }
 
@@ -150,24 +115,21 @@ export type AsymKeySize = 4096 | 2048 | 1024
  * @property publicKey
  */
 export class PrivateKey extends PublicKey {
-  public privateKey: forge.pki.rsa.PrivateKey
+  public privateKey: string
 
   /**
    * Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
    * @constructs PrivateKey
    * @param {Buffer} arg
    */
-  constructor (arg: object | Buffer) {
-    super(null)
+  constructor (arg: Buffer) {
     if (Buffer.isBuffer(arg)) {
       try {
-        this.privateKey = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(
-          forge.util.createBuffer(arg.toString('binary'), 'binary')
-        ))
+        super(privateToPublic(arg))
+        this.privateKey = convertDERToPEM(arg, 'RSA PRIVATE KEY')
       } catch (e) {
         throw new Error(`INVALID_KEY : ${e.message}`)
       }
-      this.publicKey = forge.pki.rsa.setPublicKey(this.privateKey.n, this.privateKey.e)
     } else {
       throw new Error(`INVALID_KEY : Type of ${arg} is ${typeof arg}`)
     }
@@ -193,13 +155,22 @@ export class PrivateKey extends PublicKey {
     if (![4096, 2048, 1024].includes(size)) {
       throw new Error('INVALID_INPUT')
     } else {
-      const privateKey = await new Promise((resolve: (key: forge.pki.rsa.PrivateKey) => void, reject) => {
-        forge.pki.rsa.generateKeyPair({
-          bits: size,
-          workers: -1
-        }, (error, keyPair) => error ? reject(error) : resolve(keyPair.privateKey))
+      const privateKey = await new Promise((resolve: (key: Buffer) => void, reject) => {
+        crypto.generateKeyPair(
+          // @ts-ignore : node typing sucks
+          'rsa',
+          {
+            modulusLength: size,
+            publicKeyEncoding: { type: 'pkcs1', format: 'der' },
+            privateKeyEncoding: { type: 'pkcs1', format: 'der' }
+          },
+          (err, publicKey, privateKey) => {
+            if (err) return reject(err)
+            resolve(privateKey)
+          }
+        )
       })
-      return new PrivateKey(Buffer.from(forge.asn1.toDer(forge.pki.privateKeyToAsn1(privateKey)).getBytes(), 'binary'))
+      return new PrivateKey(privateKey)
     }
   }
 
@@ -211,13 +182,9 @@ export class PrivateKey extends PublicKey {
    * @returns {string}
    */
   toB64 ({ publicOnly = false } = {}): string {
-    return Buffer.from(
-      forge.asn1.toDer(publicOnly
-        ? forge.pki.publicKeyToAsn1(this.publicKey)
-        : forge.pki.privateKeyToAsn1(this.privateKey)
-      ).getBytes()
-      , 'binary'
-    ).toString('base64')
+    return publicOnly
+      ? convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY').toString('base64')
+      : convertPEMToDER(this.privateKey, 'RSA PRIVATE KEY').toString('base64')
   }
 
   /**
@@ -229,16 +196,14 @@ export class PrivateKey extends PublicKey {
   decrypt (cipherText: Buffer, doCRC: boolean = true): Buffer {
     let clearText
     try {
-      clearText = Buffer.from(this.privateKey.decrypt(
-        cipherText.toString('binary'),
-        'RSA-OAEP',
+      clearText = crypto.privateDecrypt(
         {
-          md: forge.md.sha1.create(),
-          mgf1: {
-            md: forge.md.sha1.create()
-          }
-        }
-      ), 'binary')
+          key: this.privateKey,
+          // @ts-ignore
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+        },
+        cipherText
+      )
     } catch (e) {
       throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
     }
@@ -262,14 +227,8 @@ export class PrivateKey extends PublicKey {
    * @returns {Buffer}
    */
   sign (textToSign: Buffer): Buffer {
-    const md = forge.md.sha256.create()
-    md.update(textToSign.toString('binary'))
-    const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2 // TODO: EXPLAIN, EXPLAIN !
-    const pss = forge.pss.create({
-      md: forge.md.sha256.create(),
-      mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
-      saltLength: saltLength
-    })
-    return Buffer.from(this.privateKey.sign(md, pss), 'binary')
+    const sign = crypto.createSign('SHA256')
+    sign.update(textToSign)
+    return sign.sign(this.privateKey)
   }
 }
