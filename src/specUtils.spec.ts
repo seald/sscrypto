@@ -1,5 +1,4 @@
-import MemoryStream from 'memorystream'
-import { Transform } from 'stream' // eslint-disable-line no-unused-vars
+import { Transform, PassThrough } from 'stream' // eslint-disable-line no-unused-vars
 
 /**
  * Helper function for the tests.
@@ -8,7 +7,7 @@ import { Transform } from 'stream' // eslint-disable-line no-unused-vars
  * @returns {Promise<Buffer>} - Promise that resolves to the output of the transformStream
  */
 export const _streamHelper = async (chunks: Array<Buffer>, transformStream: Transform): Promise<Buffer> => {
-  const inputStream = new MemoryStream()
+  const inputStream = new PassThrough()
   const outputStream = inputStream.pipe(transformStream)
   let outputBuffer = Buffer.alloc(0)
 
@@ -20,7 +19,7 @@ export const _streamHelper = async (chunks: Array<Buffer>, transformStream: Tran
     outputBuffer = Buffer.concat([outputBuffer, data])
   })
 
-  chunks.forEach(chunk => inputStream.write(chunk))
+  chunks.forEach(chunk => inputStream.push(chunk))
   inputStream.end()
 
   await finished

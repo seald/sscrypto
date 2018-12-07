@@ -1,19 +1,19 @@
 import * as crypto from 'crypto'
-import { getProgress } from './utils'
+import { getProgress, staticImplements } from './utils'
 import { Transform } from 'stream'
+import { SymKey, SymKeyConstructor, SymKeySize } from './aes' // eslint-disable-line no-unused-vars
 
-export type SymKeySize = 128 | 192 | 256
-
-export class SymKey {
-  public keySize: number
+@staticImplements<SymKeyConstructor>()
+class SymKeyNode implements SymKey {
+  public readonly keySize: number
   private readonly signingKey: Buffer
   private readonly encryptionKey: Buffer
 
   /**
-   * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
+   * Constructor of SymKeyNode, if you want to construct an SymKeyNode with an existing key, use the static methods SymKeyNode.fromString or fromB64
    * Defaults to a new 256 bits key.
-   * @constructs SymKey
-   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
+   * @constructs SymKeyNode
+   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKeyNode with.
    */
   constructor (arg: SymKeySize | Buffer = 256) {
     if (typeof arg === 'number') {
@@ -33,29 +33,29 @@ export class SymKey {
   }
 
   /**
-   * Static method to construct a new SymKey from a binary string encoded messageKey
+   * Static method to construct a new SymKeyNode from a binary string encoded messageKey
    * @method
    * @static
    * @param {string} messageKey binary encoded messageKey
-   * @returns {SymKey}
+   * @returns {SymKeyNode}
    */
-  static fromString (messageKey: string): SymKey {
-    return new SymKey(Buffer.from(messageKey, 'binary'))
+  static fromString (messageKey: string): SymKeyNode {
+    return new this(Buffer.from(messageKey, 'binary'))
   }
 
   /**
-   * Static method to construct a new SymKey from a b64 encoded key
+   * Static method to construct a new SymKeyNode from a b64 encoded key
    * @method
    * @static
    * @param {string} messageKey b64 encoded messageKey
-   * @returns {SymKey}
+   * @returns {SymKeyNode}
    */
-  static fromB64 (messageKey: string): SymKey {
-    return new SymKey(Buffer.from(messageKey, 'base64'))
+  static fromB64 (messageKey: string): SymKeyNode {
+    return new this(Buffer.from(messageKey, 'base64'))
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated encoded with b64
+   * Returns both SymKeyNode#signingKey and SymKeyNode#encryptionKey concatenated encoded with b64
    * @method
    * @returns {string}
    */
@@ -64,7 +64,7 @@ export class SymKey {
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
+   * Returns both SymKeyNode#signingKey and SymKeyNode#encryptionKey concatenated as a binary string
    * @method
    * @returns {string}
    */
@@ -73,7 +73,7 @@ export class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKeyNode#signingKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
@@ -85,8 +85,8 @@ export class SymKey {
   }
 
   /**
-   * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKey#signingKey, returns it concatenated in the following order:
+   * Encrypts the clearText with SymKeyNode#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKeyNode#signingKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
@@ -154,7 +154,7 @@ export class SymKey {
   }
 
   /**
-   * Decrypts the cipherText using the same algorithms as SymKey#encrypt
+   * Decrypts the cipherText using the same algorithms as SymKeyNode#encrypt
    * @method
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
@@ -179,7 +179,7 @@ export class SymKey {
 
     const hmac = crypto.createHmac('sha256', this.signingKey)
 
-    let decipher
+    let decipher: crypto.Decipher
     let buffer = Buffer.alloc(0)
 
     const encryptionKey = this.encryptionKey
@@ -233,3 +233,5 @@ export class SymKey {
       })
   }
 }
+
+export default SymKeyNode

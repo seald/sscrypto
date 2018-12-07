@@ -1,45 +1,47 @@
 /* eslint-env mocha */
 
-import { SymKey as SymKeyForge } from './aes-forge'
-import { SymKey as SymKeyNode } from './aes-node'
+import SymKeyForge from './aes-forge'
+import SymKeyNode from './aes-node'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
+// @ts-ignore: TODO: typings
 import multipipe from 'multipipe'
+import { SymKeyConstructor } from './aes' // eslint-disable-line no-unused-vars
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymKeyNode })) {
+const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor) => {
   describe(`AES ${name}`, () => {
-    const key128 = new SymKey(128)
-    const key192 = new SymKey(192)
-    const key256 = new SymKey(256)
-    const badKey = new SymKey(256)
+    const key128 = new SymKeyClass(128)
+    const key192 = new SymKeyClass(192)
+    const key256 = new SymKeyClass(256)
+    const badKey = new SymKeyClass(256)
 
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
     const messageBinary = crypto.randomBytes(100)
 
     it('Try creating a key with an invalid type in constructor', () => {
-      // @ts-ignore
-      expect(() => new SymKey({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy(error => {
+      // @ts-ignore: voluntary test of what happens with bad type
+      expect(() => new SymKeyClass({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('Try creating a key with an invalid size', () => {
-      // @ts-ignore
-      expect(() => new SymKey(42)).to.throw(Error).and.satisfy(error => {
+      // @ts-ignore: voluntary test of what happens with bad type
+      expect(() => new SymKeyClass(42)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('Try creating a key with an invalid size buffer', () => {
-      expect(() => new SymKey(Buffer.from('zkejglzeigh', 'binary'))).to.throw(Error).and.satisfy(error => {
+      expect(() => new SymKeyClass(Buffer.from('zkejglzeigh', 'binary'))).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
         return true
       })
@@ -47,7 +49,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
 
     it('Try deciphering a cipherText with invalid HMAC', () => {
       const cipheredMessage = key256.encrypt(message)
-      expect(() => key256.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy(error => {
+      expect(() => key256.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_HMAC')
         return true
       })
@@ -85,7 +87,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
 
     it('fail with bad key', () => {
       const cipheredMessage = key256.encrypt(message)
-      expect(() => badKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy(error => {
+      expect(() => badKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_HMAC')
         return true
       })
@@ -94,7 +96,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
     it('serialize and import key', () => {
       const cipheredMessage = key256.encrypt(message)
       const exportedKey = key256.toB64()
-      const importedKey = SymKey.fromB64(exportedKey)
+      const importedKey = SymKeyClass.fromB64(exportedKey)
       const decipheredMessage = importedKey.decrypt(cipheredMessage)
       assert.isTrue(message.equals(decipheredMessage))
     })
@@ -138,7 +140,7 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       const cipheredMessage = key256.encrypt(message).slice(0, -1)
       const cipherChunks = splitLength(cipheredMessage, 15)
       const decipher = key256.decryptStream()
-      return expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
+      return expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_HMAC')
         return true
       })
@@ -151,9 +153,9 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
 
       let progress: number
 
-      const error = await new Promise(async (resolve, reject) => {
+      const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
         const stream = key256.encryptStream()
-          .on('end', reject)
+          .on('end', () => reject(new Error('stream succeeded')))
           .on('error', resolve)
           .on('progress', _progress => {
             progress = _progress
@@ -164,7 +166,6 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       })
       if (!progress) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
-      // @ts-ignore
       assert.include(error.message, 'STREAM_CANCELED')
     })
 
@@ -175,9 +176,9 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
 
       let progress: number
 
-      const error = await new Promise(async (resolve, reject) => {
+      const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
         const stream = key256.decryptStream()
-          .on('end', reject)
+          .on('end', () => reject(new Error('stream succeeded')))
           .on('error', resolve)
           .on('progress', _progress => {
             progress = _progress
@@ -188,11 +189,12 @@ for (const [name, SymKey] of Object.entries({ 'forge': SymKeyForge, 'node': SymK
       })
       if (!progress) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
-      // @ts-ignore
       assert.include(error.message, 'STREAM_CANCELED')
     })
   })
 }
+testSymKeyImplem('node', SymKeyNode)
+testSymKeyImplem('forge', SymKeyForge)
 
 describe('AES node/forge', () => {
   const keyNode = new SymKeyNode(256)

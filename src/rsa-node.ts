@@ -1,6 +1,23 @@
 import * as crypto from 'crypto'
 import crc32 from 'crc-32'
-import { convertDERToPEM, convertPEMToDER, intToBuffer, privateToPublic, publicKeyModel } from './utils'
+import {
+  convertDERToPEM,
+  convertPEMToDER,
+  intToBuffer,
+  privateToPublic,
+  publicKeyModel,
+  staticImplements
+} from './utils'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
+
+/* eslint-disable */
+// Necessary stuff because node typings are incomplete...
+declare module 'crypto' {
+  namespace constants {
+    const RSA_PKCS1_OAEP_PADDING: number
+  }
+}
+/* eslint-enable */
 
 const sha256 = (buffer: Buffer): string => {
   const md = crypto.createHash('sha256')
@@ -9,41 +26,39 @@ const sha256 = (buffer: Buffer): string => {
 }
 
 /**
- * @class PublicKey
+ * @class PublicKeyNode
  * @property publicKey
  */
-export class PublicKey {
-  public publicKey: string // TODO: crypto.RsaPublicKey ?
+@staticImplements<PublicKeyConstructor>()
+class PublicKeyNode implements PublicKey {
+  protected publicKey: string
 
   /**
-   * PublicKey constructor. Should be given a Buffer containing a DER serialization of the key.
-   * @constructs PublicKey
+   * PublicKeyNode constructor. Should be given a Buffer containing a DER serialization of the key.
+   * @constructs PublicKeyNode
    * @param {Buffer} key
    */
   constructor (key: Buffer) {
-    if (key) {
-      if (Buffer.isBuffer(key)) {
-        try {
-          publicKeyModel.decode(key)
-          this.publicKey = convertDERToPEM(key, 'RSA PUBLIC KEY')
-        } catch (e) {
-          throw new Error(`INVALID_KEY : ${e.message}`) // TODO
-        }
-      } else {
-        throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
-      }
+    if (!Buffer.isBuffer(key)) {
+      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
+    }
+    try {
+      publicKeyModel.decode(key)
+      this.publicKey = convertDERToPEM(key, 'RSA PUBLIC KEY')
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
   /**
-   * Returns a PublicKey from it's DER base64 serialization.
+   * Returns a PublicKeyNode from it's DER base64 serialization.
    * @method
    * @static
    * @param {string} b64DERFormattedPublicKey - a b64 encoded public key formatted with DER
-   * @returns {PublicKey}
+   * @returns {PublicKeyNode}
    */
-  static fromB64 (b64DERFormattedPublicKey: string): PublicKey {
-    return new PublicKey(Buffer.from(b64DERFormattedPublicKey, 'base64'))
+  static fromB64 (b64DERFormattedPublicKey: string): PublicKeyNode {
+    return new this(Buffer.from(b64DERFormattedPublicKey, 'base64'))
   }
 
   /**
@@ -57,7 +72,7 @@ export class PublicKey {
   }
 
   /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKey.
+   * Encrypts a clearText for the Private Key corresponding to this PublicKeyNode.
    * @method
    * @param {Buffer} clearText
    * @param {boolean} doCRC
@@ -73,7 +88,6 @@ export class PublicKey {
     return crypto.publicEncrypt(
       {
         key: this.publicKey,
-        // @ts-ignore
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
       },
       textToEncrypt
@@ -81,7 +95,7 @@ export class PublicKey {
   }
 
   /**
-   * Verify that the message has been signed with the Private Key corresponding to this PublicKey.
+   * Verify that the message has been signed with the Private Key corresponding to this PublicKeyNode.
    * @param {Buffer} textToCheckAgainst
    * @param {Buffer} signature
    * @returns {boolean}
@@ -107,53 +121,49 @@ export class PublicKey {
   }
 }
 
-export type AsymKeySize = 4096 | 2048 | 1024
-
 /**
- * @class PrivateKey
- * @property privateKey
- * @property publicKey
+ * @class PrivateKeyNode
  */
-export class PrivateKey extends PublicKey {
-  public privateKey: string
+@staticImplements<PrivateKeyConstructor>()
+class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
+  protected privateKey: string
 
   /**
    * Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
-   * @constructs PrivateKey
-   * @param {Buffer} arg
+   * @constructs PrivateKeyNode
+   * @param {Buffer} key
    */
-  constructor (arg: Buffer) {
-    if (Buffer.isBuffer(arg)) {
-      try {
-        super(privateToPublic(arg))
-        this.privateKey = convertDERToPEM(arg, 'RSA PRIVATE KEY')
-      } catch (e) {
-        throw new Error(`INVALID_KEY : ${e.message}`)
-      }
-    } else {
-      throw new Error(`INVALID_KEY : Type of ${arg} is ${typeof arg}`)
+  constructor (key: Buffer) {
+    if (!Buffer.isBuffer(key)) {
+      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
+    }
+    try {
+      super(privateToPublic(key))
+      this.privateKey = convertDERToPEM(key, 'RSA PRIVATE KEY')
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
   /**
-   * Returns a PrivateKey from it's DER base64 serialization.
+   * Returns a PrivateKeyNode from it's DER base64 serialization.
    * @method
    * @static
    * @param {string} b64DERFormattedPrivateKey - a b64 encoded private key formatted with DER
-   * @returns {PrivateKey}
+   * @returns {PrivateKeyNode}
    */
-  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKey {
-    return new PrivateKey(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
+  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKeyNode {
+    return new this(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
   }
 
   /**
-   * Generates a PrivateKey asynchronously
+   * Generates a PrivateKeyNode asynchronously
    * @param {Number} [size = 4096] - key size in bits
-   * @returns {PrivateKey}
+   * @returns {PrivateKeyNode}
    */
-  static async generate (size: AsymKeySize = 4096) {
+  static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyNode> {
     if (![4096, 2048, 1024].includes(size)) {
-      throw new Error('INVALID_INPUT')
+      throw new Error('INVALID_ARG')
     } else {
       const privateKey = await new Promise((resolve: (key: Buffer) => void, reject) => {
         crypto.generateKeyPair(
@@ -164,13 +174,13 @@ export class PrivateKey extends PublicKey {
             publicKeyEncoding: { type: 'pkcs1', format: 'der' },
             privateKeyEncoding: { type: 'pkcs1', format: 'der' }
           },
-          (err, publicKey, privateKey) => {
+          (err: Error, publicKey: Buffer, privateKey: Buffer) => {
             if (err) return reject(err)
             resolve(privateKey)
           }
         )
       })
-      return new PrivateKey(privateKey)
+      return new this(privateKey)
     }
   }
 
@@ -199,7 +209,6 @@ export class PrivateKey extends PublicKey {
       clearText = crypto.privateDecrypt(
         {
           key: this.privateKey,
-          // @ts-ignore
           padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
         },
         cipherText
@@ -232,3 +241,5 @@ export class PrivateKey extends PublicKey {
     return sign.sign(this.privateKey)
   }
 }
+
+export { PublicKeyNode as PublicKey, PrivateKeyNode as PrivateKey }

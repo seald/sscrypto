@@ -1,10 +1,10 @@
 import forge from 'node-forge'
 import crc32 from 'crc-32'
-import { intToBuffer } from './utils'
+import { intToBuffer, staticImplements } from './utils'
 import { BigInteger } from 'jsbn' // eslint-disable-line no-unused-vars
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
 
-/* eslint-disable*/
-
+/* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
 declare module 'node-forge' {
   namespace pki {
@@ -17,7 +17,6 @@ declare module 'node-forge' {
     function privateKeyToAsn1 (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
   }
 }
-
 /* eslint-enable */
 
 const sha256 = (str: string): forge.util.ByteStringBuffer => {
@@ -27,42 +26,40 @@ const sha256 = (str: string): forge.util.ByteStringBuffer => {
 }
 
 /**
- * @class PublicKey
+ * @class PublicKeyForge
  * @property publicKey
  */
-export class PublicKey {
-  public publicKey: forge.pki.rsa.PublicKey
+@staticImplements<PublicKeyConstructor>()
+class PublicKeyForge implements PublicKey {
+  protected publicKey: forge.pki.rsa.PublicKey
 
   /**
-   * PublicKey constructor. Should be given a Buffer containing a DER serialization of the key.
-   * @constructs PublicKey
-   * @param {Buffer|null} key
+   * PublicKeyForge constructor. Should be given a Buffer containing a DER serialization of the key.
+   * @constructs PublicKeyForge
+   * @param {Buffer} key
    */
-  constructor (key: Buffer | null) {
-    if (key) {
-      if (Buffer.isBuffer(key)) {
-        try {
-          this.publicKey = forge.pki.publicKeyFromAsn1(forge.asn1.fromDer(
-            forge.util.createBuffer(key.toString('binary'), 'binary')
-          ))
-        } catch (e) {
-          throw new Error(`INVALID_KEY : ${e.message}`)
-        }
-      } else {
-        throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
-      }
+  constructor (key: Buffer) {
+    if (!Buffer.isBuffer(key)) {
+      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
+    }
+    try {
+      this.publicKey = forge.pki.publicKeyFromAsn1(forge.asn1.fromDer(
+        forge.util.createBuffer(key.toString('binary'), 'binary')
+      ))
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
   /**
-   * Returns a PublicKey from it's DER base64 serialization.
+   * Returns a PublicKeyForge from it's DER base64 serialization.
    * @method
    * @static
    * @param {string} b64DERFormattedPublicKey - a b64 encoded public key formatted with DER
-   * @returns {PublicKey}
+   * @returns {PublicKeyForge}
    */
-  static fromB64 (b64DERFormattedPublicKey: string): PublicKey {
-    return new PublicKey(Buffer.from(b64DERFormattedPublicKey, 'base64'))
+  static fromB64 (b64DERFormattedPublicKey: string): PublicKeyForge {
+    return new PublicKeyForge(Buffer.from(b64DERFormattedPublicKey, 'base64'))
   }
 
   /**
@@ -71,12 +68,12 @@ export class PublicKey {
    * @param {object} [options]
    * @returns {string}
    */
-  toB64 (options: object = null): string {
+  toB64 (options: {} = null): string {
     return Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(this.publicKey)).getBytes(), 'binary').toString('base64')
   }
 
   /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKey.
+   * Encrypts a clearText for the Private Key corresponding to this PublicKeyForge.
    * @method
    * @param {Buffer} clearText
    * @param {boolean} doCRC
@@ -101,14 +98,14 @@ export class PublicKey {
   }
 
   /**
-   * Verify that the message has been signed with the Private Key corresponding to this PublicKey.
+   * Verify that the message has been signed with the Private Key corresponding to this PublicKeyForge.
    * @param {Buffer} textToCheckAgainst
    * @param {Buffer} signature
    * @returns {boolean}
    */
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     try {
-      const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2 // TODO: EXPLAIN, EXPLAIN ! // TODO: why a variable ?
+      const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2 // TODO: EXPLAIN, EXPLAIN !
       const pss = forge.pss.create({
         md: forge.md.sha256.create(),
         mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
@@ -142,56 +139,53 @@ export class PublicKey {
   }
 }
 
-export type AsymKeySize = 4096 | 2048 | 1024
-
 /**
- * @class PrivateKey
- * @property privateKey
- * @property publicKey
+ * @class PrivateKeyForge
  */
-export class PrivateKey extends PublicKey {
-  public privateKey: forge.pki.rsa.PrivateKey
+@staticImplements<PrivateKeyConstructor>()
+class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
+  protected privateKey: forge.pki.rsa.PrivateKey
 
   /**
    * Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
-   * @constructs PrivateKey
-   * @param {Buffer} arg
+   * @constructs PrivateKeyForge
+   * @param {Buffer} key
    */
-  constructor (arg: object | Buffer) {
-    super(null)
-    if (Buffer.isBuffer(arg)) {
-      try {
-        this.privateKey = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(
-          forge.util.createBuffer(arg.toString('binary'), 'binary')
-        ))
-      } catch (e) {
-        throw new Error(`INVALID_KEY : ${e.message}`)
-      }
-      this.publicKey = forge.pki.rsa.setPublicKey(this.privateKey.n, this.privateKey.e)
-    } else {
-      throw new Error(`INVALID_KEY : Type of ${arg} is ${typeof arg}`)
+  constructor (key: Buffer) {
+    if (!Buffer.isBuffer(key)) {
+      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
+    }
+    try {
+      const privateKey = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(
+        forge.util.createBuffer(key.toString('binary'), 'binary')
+      ))
+      const publicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e)
+      super(Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(publicKey)).getBytes(), 'binary'))
+      this.privateKey = privateKey
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
   /**
-   * Returns a PrivateKey from it's DER base64 serialization.
+   * Returns a PrivateKeyForge from it's DER base64 serialization.
    * @method
    * @static
    * @param {string} b64DERFormattedPrivateKey - a b64 encoded private key formatted with DER
-   * @returns {PrivateKey}
+   * @returns {PrivateKeyForge}
    */
-  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKey {
-    return new PrivateKey(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
+  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKeyForge {
+    return new PrivateKeyForge(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
   }
 
   /**
-   * Generates a PrivateKey asynchronously
+   * Generates a PrivateKeyForge asynchronously
    * @param {Number} [size = 4096] - key size in bits
-   * @returns {PrivateKey}
+   * @returns {PrivateKeyForge}
    */
-  static async generate (size: AsymKeySize = 4096) {
+  static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyForge> {
     if (![4096, 2048, 1024].includes(size)) {
-      throw new Error('INVALID_INPUT')
+      throw new Error('INVALID_ARG')
     } else {
       const privateKey = await new Promise((resolve: (key: forge.pki.rsa.PrivateKey) => void, reject) => {
         forge.pki.rsa.generateKeyPair({
@@ -199,7 +193,7 @@ export class PrivateKey extends PublicKey {
           workers: -1
         }, (error, keyPair) => error ? reject(error) : resolve(keyPair.privateKey))
       })
-      return new PrivateKey(Buffer.from(forge.asn1.toDer(forge.pki.privateKeyToAsn1(privateKey)).getBytes(), 'binary'))
+      return new PrivateKeyForge(Buffer.from(forge.asn1.toDer(forge.pki.privateKeyToAsn1(privateKey)).getBytes(), 'binary'))
     }
   }
 
@@ -273,3 +267,5 @@ export class PrivateKey extends PublicKey {
     return Buffer.from(this.privateKey.sign(md, pss), 'binary')
   }
 }
+
+export { PublicKeyForge as PublicKey, PrivateKeyForge as PrivateKey }

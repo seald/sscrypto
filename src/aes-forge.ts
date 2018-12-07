@@ -1,9 +1,9 @@
 import forge from 'node-forge'
-import { getProgress } from './utils'
+import { getProgress, staticImplements } from './utils'
 import { Transform } from 'stream'
+import { SymKey, SymKeyConstructor, SymKeySize } from './aes' // eslint-disable-line no-unused-vars
 
-/* eslint-disable*/
-
+/* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
 declare module 'node-forge' {
   namespace hmac {
@@ -20,21 +20,19 @@ declare module 'node-forge' {
     function create (): HMAC
   }
 }
-
 /* eslint-enable */
 
-export type SymKeySize = 128 | 192 | 256
-
-export class SymKey {
-  public keySize: number
+@staticImplements<SymKeyConstructor>()
+class SymKeyForge implements SymKey {
+  public readonly keySize: number
   private readonly signingKey: string
   private readonly encryptionKey: string
 
   /**
-   * Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static method SymKey.from
+   * Constructor of SymKeyForge, if you want to construct an SymKeyForge with an existing key, use the static methods SymKeyForge.fromString or fromB64
    * Defaults to a new 256 bits key.
-   * @constructs SymKey
-   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKey with.
+   * @constructs SymKeyForge
+   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKeyForge with.
    */
   constructor (arg: SymKeySize | Buffer = 256) {
     if (typeof arg === 'number') {
@@ -54,29 +52,29 @@ export class SymKey {
   }
 
   /**
-   * Static method to construct a new SymKey from a binary string encoded messageKey
+   * Static method to construct a new SymKeyForge from a binary string encoded messageKey
    * @method
    * @static
    * @param {string} messageKey binary encoded messageKey
-   * @returns {SymKey}
+   * @returns {SymKeyForge}
    */
-  static fromString (messageKey: string): SymKey {
-    return new SymKey(Buffer.from(messageKey, 'binary'))
+  static fromString (messageKey: string): SymKeyForge {
+    return new this(Buffer.from(messageKey, 'binary'))
   }
 
   /**
-   * Static method to construct a new SymKey from a b64 encoded messageKey
+   * Static method to construct a new SymKeyForge from a b64 encoded messageKey
    * @method
    * @static
    * @param {string} messageKey b64 encoded messageKey
-   * @returns {SymKey}
+   * @returns {SymKeyForge}
    */
-  static fromB64 (messageKey: string): SymKey {
-    return new SymKey(Buffer.from(messageKey, 'base64'))
+  static fromB64 (messageKey: string): SymKeyForge {
+    return new this(Buffer.from(messageKey, 'base64'))
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated encoded with b64
+   * Returns both SymKeyForge#signingKey and SymKeyForge#encryptionKey concatenated encoded with b64
    * @method
    * @returns {string}
    */
@@ -85,7 +83,7 @@ export class SymKey {
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
+   * Returns both SymKeyForge#signingKey and SymKeyForge#encryptionKey concatenated as a binary string
    * @method
    * @returns {string}
    */
@@ -94,7 +92,7 @@ export class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKeyForge#signingKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
@@ -107,8 +105,8 @@ export class SymKey {
   }
 
   /**
-   * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKey#signingKey, returns it concatenated in the following order:
+   * Encrypts the clearText with SymKeyForge#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKeyForge#signingKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
@@ -188,7 +186,7 @@ export class SymKey {
   }
 
   /**
-   * Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
+   * Decrypts the cipheredMessage using the same algorithms as SymKeyForge#encrypt
    * @method
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
@@ -273,3 +271,5 @@ export class SymKey {
       })
   }
 }
+
+export default SymKeyForge

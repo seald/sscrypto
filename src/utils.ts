@@ -1,4 +1,5 @@
 import { Stream } from 'stream' // eslint-disable-line no-unused-vars
+// @ts-ignore: TODO: typings
 import asn from 'asn1.js'
 
 /**
@@ -17,7 +18,7 @@ export const intToBuffer = (n: number): Buffer => {
  */
 export const getProgress: () => (increment: number, stream: Stream, delay?: number) => void = () => {
   let counter = 0
-  let lastEmitProgress
+  let lastEmitProgress: number
   /**
    * @param {number} increment
    * @param {Stream} stream
@@ -104,4 +105,8 @@ export const publicKeyModel = asn.define('publicKeyModel', function () {
 export const privateToPublic = (buff: Buffer): Buffer => {
   const privateKey = privateKeyModel.decode(buff, 'der')
   return publicKeyModel.encode({ 'n': privateKey['n'], 'e': privateKey['e'] }, 'der')
+}
+
+export function staticImplements<T> () {
+  return (constructor: T) => {}
 }

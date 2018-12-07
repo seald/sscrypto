@@ -5,19 +5,16 @@ import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from './rsa-
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
+import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-for (const [name, { PrivateKey, PublicKey }] of Object.entries({
-  'forge': { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge },
-  'node': { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode }
-})) {
+const testAsymKeyImplem = (name: string, { PrivateKey, PublicKey }: { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }) => {
   describe(`RSA ${name}`, () => {
-    let privateKey: PrivateKeyNode, privateKey2: PrivateKeyNode
+    let privateKey: PrivateKey, privateKey2: PrivateKey
 
     before('generate keys', () =>
-      // @ts-ignore
       Promise.all([
         PrivateKey.generate(1024),
         PrivateKey.generate(1024)
@@ -33,38 +30,38 @@ for (const [name, { PrivateKey, PublicKey }] of Object.entries({
     const messageBinary = crypto.randomBytes(32)
 
     it('Fail to construct a PublicKey because of an invalid type of argument', () => {
-      // @ts-ignore
-      expect(PrivateKey.generate('notAValidType')).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
-        assert.include(error.message, 'INVALID_INPUT')
+      // @ts-ignore: voluntary test of what happens with bad type
+      expect(PrivateKey.generate('notAValidType')).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('fail to produce a new PrivateKey with a wrong size', () => {
-      // @ts-ignore
-      expect(PrivateKey.generate(588)).to.be.rejectedWith(Error).and.eventually.satisfy(error => {
-        assert.include(error.message, 'INVALID_INPUT')
+      // @ts-ignore: voluntary test of what happens with bad type
+      expect(PrivateKey.generate(588)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('fail to import bad PrivateKey', () => {
-      expect(() => PrivateKey.fromB64(privateKey.toB64().slice(2))).to.throw(Error).and.satisfy(error => {
+      expect(() => PrivateKey.fromB64(privateKey.toB64().slice(2))).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
     })
 
     it('fail to import PrivateKey because of an invalid type', () => {
-      // @ts-ignore
-      expect(() => new PrivateKey(2)).to.throw(Error).and.satisfy(error => {
+      // @ts-ignore: voluntary test of what happens with bad type
+      expect(() => new PrivateKey(2)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
     })
 
     it('fail to import bad PublicKey', () => {
-      expect(() => PublicKey.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))).to.throw(Error).and.satisfy(error => {
+      expect(() => PublicKey.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
@@ -94,7 +91,7 @@ for (const [name, { PrivateKey, PublicKey }] of Object.entries({
 
     it('cipher & decipher with invalid CRC', () => {
       const cipheredMessage = privateKey.encrypt(message, false)
-      expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy(error => {
+      expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CRC32')
         return true
       })
@@ -113,7 +110,7 @@ for (const [name, { PrivateKey, PublicKey }] of Object.entries({
 
     it('fail with bad key', () => {
       const cipheredMessage = privateKey2.encrypt(message)
-      expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy(error => {
+      expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CIPHER_TEXT')
         return true
       })
@@ -131,6 +128,8 @@ for (const [name, { PrivateKey, PublicKey }] of Object.entries({
     })
   })
 }
+testAsymKeyImplem('node', { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode })
+testAsymKeyImplem('forge', { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge })
 
 describe('RSA node/forge', () => {
   let privateKeyNode: PrivateKeyNode, privateKeyForge: PrivateKeyForge
