@@ -155,8 +155,8 @@ describe('RSA node/forge', () => {
     const decipheredMessage = privateKey_.decrypt(cipherText)
     assert.isTrue(message.equals(decipheredMessage))
 
-    // const signature = privateKeyNode.sign(message) // TODO fix
-    // assert.isTrue(privateKey_.verify(message, signature))
+    const signature = privateKeyNode.sign(message)
+    assert.isTrue(privateKey_.verify(message, signature))
   })
 
   it('export forge & import node, encrypt & sign', () => {
@@ -167,7 +167,7 @@ describe('RSA node/forge', () => {
     const decipheredMessage = privateKey_.decrypt(cipherText)
     assert.isTrue(message.equals(decipheredMessage))
 
-    // const signature = privateKeyForge.sign(message) // TODO fix
-    // assert.isTrue(privateKey_.verify(message, signature))
+    const signature = privateKeyForge.sign(message)
+    assert.isTrue(privateKey_.verify(message, signature))
   })
 })

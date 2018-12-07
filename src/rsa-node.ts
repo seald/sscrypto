@@ -15,6 +15,8 @@ import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyCon
 declare module 'crypto' {
   namespace constants {
     const RSA_PKCS1_OAEP_PADDING: number
+    const RSA_PKCS1_PSS_PADDING: number
+    const RSA_PSS_SALTLEN_MAX_SIGN: number
   }
 }
 /* eslint-enable */
@@ -102,8 +104,15 @@ class PublicKeyNode implements PublicKey {
    */
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     const verify = crypto.createVerify('SHA256')
-    verify.update(textToCheckAgainst) // TODO: check if sha256(textToCheckAgainst) ?
-    return verify.verify(this.publicKey, signature)
+    verify.update(textToCheckAgainst)
+    return verify.verify(
+      {
+        key: this.publicKey,
+        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+        saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
+      },
+      signature
+    )
   }
 
   /**
@@ -238,7 +247,11 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
   sign (textToSign: Buffer): Buffer {
     const sign = crypto.createSign('SHA256')
     sign.update(textToSign)
-    return sign.sign(this.privateKey)
+    return sign.sign({
+      key: this.privateKey,
+      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+      saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
+    })
   }
 }
 
