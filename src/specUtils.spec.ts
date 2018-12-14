@@ -1,23 +1,25 @@
-import { Transform, PassThrough } from 'stream' // eslint-disable-line no-unused-vars
+import { PassThrough, pipeline, Transform, Readable, Writable } from 'stream' // eslint-disable-line no-unused-vars
+import { promisify } from 'util'
+
+const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pipeline)
 
 /**
  * Helper function for the tests.
  * @param {Array<Buffer>} chunks - Array of chunks for the input stream
- * @param {Transform} transformStream - stream.Transform instance
+ * @param {Transform[]} transformStreams - stream.Transform instance
  * @returns {Promise<Buffer>} - Promise that resolves to the output of the transformStream
  */
-export const _streamHelper = async (chunks: Array<Buffer>, transformStream: Transform): Promise<Buffer> => {
+export const _streamHelper = async (chunks: Array<Buffer>, ...transformStreams: Transform[]): Promise<Buffer> => {
   const inputStream = new PassThrough()
-  const outputStream = inputStream.pipe(transformStream)
+  const outputStream = new PassThrough()
+
   let outputBuffer = Buffer.alloc(0)
 
-  const finished = new Promise((resolve, reject) => {
-    outputStream.on('end', resolve)
-    outputStream.on('error', reject)
-  })
   outputStream.on('data', data => {
     outputBuffer = Buffer.concat([outputBuffer, data])
   })
+
+  const finished = pipelineAsync(inputStream, ...transformStreams, outputStream)
 
   chunks.forEach(chunk => inputStream.push(chunk))
   inputStream.end()

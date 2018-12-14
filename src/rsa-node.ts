@@ -176,7 +176,7 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
     } else {
       const privateKey = await new Promise((resolve: (key: Buffer) => void, reject) => {
         crypto.generateKeyPair(
-          // @ts-ignore : node typing sucks
+          // @ts-ignore : node typing are not perfect...
           'rsa',
           {
             modulusLength: size,

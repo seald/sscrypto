@@ -6,8 +6,6 @@ import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
-// @ts-ignore: TODO: typings
-import multipipe from 'multipipe'
 import { SymKeyConstructor } from './aes' // eslint-disable-line no-unused-vars
 
 chai.use(chaiAsPromised)
@@ -130,7 +128,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor) => {
       const cipher = key256.encryptStream()
       const decipher = key256.decryptStream()
 
-      return _streamHelper(chunks, multipipe(cipher, decipher))
+      return _streamHelper(chunks, cipher, decipher)
         .then(output => {
           assert.isTrue(output.equals(input))
         })
@@ -221,7 +219,7 @@ describe('AES node/forge', () => {
     const cipher = keyNode.encryptStream()
     const decipher = keyForge.decryptStream()
 
-    return _streamHelper(chunks, multipipe(cipher, decipher))
+    return _streamHelper(chunks, cipher, decipher)
       .then(output => {
         assert.isTrue(output.equals(input))
       })
@@ -234,7 +232,7 @@ describe('AES node/forge', () => {
     const cipher = keyForge.encryptStream()
     const decipher = keyNode.decryptStream()
 
-    return _streamHelper(chunks, multipipe(cipher, decipher))
+    return _streamHelper(chunks, cipher, decipher)
       .then(output => {
         assert.isTrue(output.equals(input))
       })
