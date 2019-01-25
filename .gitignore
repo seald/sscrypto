@@ -1,5 +1,11 @@
-# Directory for the build
-/lib
+# Build
+/forge
+/node
+/utils
+/tests
+/index.js
+/index.js.map
+/index.d.ts
 
 # Coverage reports
 /coverage

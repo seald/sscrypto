@@ -7,8 +7,8 @@ import {
   privateToPublic,
   publicKeyModel,
   staticImplements
-} from './utils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
+} from '../utils/utils'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
 
 /* eslint-disable */
 // Necessary stuff because node typings are incomplete...

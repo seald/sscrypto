@@ -1,7 +1,7 @@
 import forge from 'node-forge'
-import { getProgress, staticImplements } from './utils'
+import { getProgress, staticImplements } from '../utils/utils'
 import { Transform } from 'stream'
-import { SymKey, SymKeyConstructor, SymKeySize } from './aes' // eslint-disable-line no-unused-vars
+import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes' // eslint-disable-line no-unused-vars
 
 /* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
@@ -117,7 +117,7 @@ class SymKeyForge implements SymKey {
 
     const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
     cipher.start({ iv: iv })
-    cipher.update(forge.util.createBuffer(clearText.toString('binary'), 'binary'))
+    cipher.update(forge.util.createBuffer(clearText))
     cipher.finish()
 
     const cipherText = Buffer.from(`${iv}${cipher.output.data}`, 'binary')
@@ -153,7 +153,7 @@ class SymKeyForge implements SymKey {
             firstBlock = false
           }
           const output = cipher.output.getBytes()
-          cipher.update(forge.util.createBuffer(chunk.toString('binary'), 'binary'))
+          cipher.update(forge.util.createBuffer(chunk))
           hmac.update(output)
           this.push(Buffer.from(output, 'binary'))
           progress(chunk.length, this)
@@ -199,7 +199,7 @@ class SymKeyForge implements SymKey {
     if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
       const cipher: forge.cipher.BlockCipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
       cipher.start({ iv: iv.toString('binary') })
-      cipher.update(forge.util.createBuffer(cipherText.toString('binary'), 'binary'))
+      cipher.update(forge.util.createBuffer(cipherText))
       cipher.finish()
       return Buffer.from(cipher.output.data, 'binary')
     } else throw new Error('INVALID_HMAC')
@@ -238,11 +238,11 @@ class SymKeyForge implements SymKey {
           }
           if (gotIv) { // we have the IV, can decrypt
             if (buffer.length > 32) { // we have to leave 32 bytes, they may be the HMAC
-              const cipherText = buffer.slice(0, -32).toString('binary')
+              const cipherText = buffer.slice(0, -32)
               buffer = buffer.slice(-32)
-              hmac.update(cipherText)
+              hmac.update(cipherText.toString('binary'))
               this.push(Buffer.from(decipher.output.getBytes(), 'binary'))
-              decipher.update(forge.util.createBuffer(cipherText, 'binary'))
+              decipher.update(forge.util.createBuffer(cipherText))
             }
           }
           progress(chunk.length, this)

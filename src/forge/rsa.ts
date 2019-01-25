@@ -1,8 +1,8 @@
 import forge from 'node-forge'
 import crc32 from 'crc-32'
-import { intToBuffer, staticImplements } from './utils'
+import { intToBuffer, staticImplements } from '../utils/utils'
 import { BigInteger } from 'jsbn' // eslint-disable-line no-unused-vars
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
 
 /* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
@@ -44,7 +44,7 @@ class PublicKeyForge implements PublicKey {
     }
     try {
       this.publicKey = forge.pki.publicKeyFromAsn1(forge.asn1.fromDer(
-        forge.util.createBuffer(key.toString('binary'), 'binary')
+        forge.util.createBuffer(key)
       ))
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
@@ -158,7 +158,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
     }
     try {
       const privateKey = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(
-        forge.util.createBuffer(key.toString('binary'), 'binary')
+        forge.util.createBuffer(key)
       ))
       const publicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e)
       super(Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(publicKey)).getBytes(), 'binary'))

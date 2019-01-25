@@ -1,11 +1,12 @@
 /* eslint-env mocha */
 
-import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from './rsa-forge'
-import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from './rsa-node'
+import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge'
+import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from '../node'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
-import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from './rsa' // eslint-disable-line no-unused-vars
+import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
+import { forge, node } from '../index'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
@@ -146,6 +147,13 @@ describe('RSA node/forge', () => {
   )
 
   const message = Buffer.from('TESTtest', 'ascii')
+
+  it('packaging', () => {
+    assert.strictEqual(node.PublicKey, PublicKeyNode)
+    assert.strictEqual(node.PrivateKey, PrivateKeyNode)
+    assert.strictEqual(forge.PublicKey, PublicKeyForge)
+    assert.strictEqual(forge.PrivateKey, PrivateKeyForge)
+  })
 
   it('export node & import forge, encrypt & sign', () => {
     const privateKeyB64 = privateKeyNode.toB64()

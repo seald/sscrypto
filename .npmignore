@@ -4,6 +4,7 @@
 # Tests
 /**/*spec.js
 /**/*spec.js.map
+/**/*spec.d.ts
 
 # Coverage reports
 /coverage

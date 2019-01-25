@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "standard 'src/**/*.js' 'src/**/*.ts'",
     "pretest": "npm run lint && npm run build",
-    "test": "mocha --require source-map-support/register --timeout 30000 $(find lib -name '*.spec.js')",
+    "test": "mocha --require source-map-support/register --timeout 30000 $(find tests -name '*.spec.js')",
+    "prebuild": "rm -rf ./forge ./node ./utils ./tests index.js index.d.ts",
     "build": "tsc",
     "coverage": "nyc npm test"
   },
@@ -32,17 +33,17 @@
     "@types/chai-as-promised": "^7.1.0",
     "@types/jsbn": "^1.2.29",
     "@types/mocha": "^5.2.5",
-    "@types/node": "^10.12.15",
-    "@types/node-forge": "^0.7.10",
+    "@types/node": "^10.12.18",
+    "@types/node-forge": "^0.7.11",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint-plugin-typescript": "^0.14.0",
     "jsbn": "^1.1.0",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0",
-    "source-map-support": "^0.5.9",
+    "source-map-support": "^0.5.10",
     "standard": "^12.0.1",
-    "typescript": "^3.2.2",
-    "typescript-eslint-parser": "^21.0.2"
+    "typescript": "^3.2.4",
+    "typescript-eslint-parser": "^22.0.0"
   }
 }

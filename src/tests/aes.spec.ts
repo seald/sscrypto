@@ -1,12 +1,13 @@
 /* eslint-env mocha */
 
-import SymKeyForge from './aes-forge'
-import SymKeyNode from './aes-node'
+import { SymKey as SymKeyForge } from '../forge'
+import { SymKey as SymKeyNode } from '../node'
+import { forge, node } from '../'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
-import { SymKeyConstructor } from './aes' // eslint-disable-line no-unused-vars
+import { SymKeyConstructor } from '../utils/aes' // eslint-disable-line no-unused-vars
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
@@ -199,6 +200,11 @@ describe('AES node/forge', () => {
   const keyForge = SymKeyForge.fromString(keyNode.toString())
 
   const message = Buffer.from('TESTtest', 'ascii')
+
+  it('packaging', () => {
+    assert.strictEqual(node.SymKey, SymKeyNode)
+    assert.strictEqual(forge.SymKey, SymKeyForge)
+  })
 
   it('cipher node & decipher forge', () => {
     const cipheredMessage = keyNode.encrypt(message)

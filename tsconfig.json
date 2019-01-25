@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
+    "outDir": "./",
     "target": "es6",
     "module": "CommonJS",
     "esModuleInterop": true,
@@ -15,5 +15,6 @@
   },
   "include": [
     "./src/**/*"
-  ]
+  ],
+  "exclude": []
 }
