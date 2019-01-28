@@ -1,9 +1,11 @@
 {
   "include": [
-    "lib/**/*.js"
+    "forge/**/*.js",
+    "node/**/*.js",
+    "utils/**/*.js"
   ],
   "exclude": [
-    "lib/**/*.spec.js"
+    "tests/**/*.js"
   ],
   "all": true,
   "report-dir": "./coverage",
