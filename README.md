@@ -2,8 +2,6 @@ SSCrypto
 ==========
 
 [![npm version](https://img.shields.io/npm/v/sscrypto.svg)](https://www.npmjs.com/package/sscrypto)
-[![pipeline status](https://gitlab.tardis.seald.io/seald/sscrypto/badges/master/pipeline.svg)](https://gitlab.tardis.seald.io/seald/sscrypto/commits/master)
-[![coverage report](https://gitlab.tardis.seald.io/seald/sscrypto/badges/master/coverage.svg)](https://gitlab.tardis.seald.io/seald/sscrypto/commits/master)
 
 _Super-Simple Crypto_ is a wrapper around other cryptography libraries, intended to be simple to use, provide a consistent interface for multiple encryption backends (for now, forge and nodeJS crypto), and well-chosen parameters.
 
@@ -115,13 +113,13 @@ const SymKey = require('sscrypto/forge/aes')
 const { PrivateKey, PublicKey } = require('sscrypto/forge/rsa')
 ```
 
-# Class: SymKey
-
 <a id="symkey"></a>
 
-## Constructor
+# Class: SymKey
 
 <a id="symkey-constructor"></a>
+
+## Constructor
 
 ⊕ **new SymKey**(arg?: *[SymKeySize](#symkeysize) \| `Buffer`*): [SymKey](#symkey)
 
@@ -296,9 +294,9 @@ Static method to construct a new SymKey from a binary string encoded messageKey
 ___
 
 
-# Class: PublicKey
-
 <a id="publickey"></a>
+
+# Class: PublicKey
 
 ## Hierarchy
 
@@ -308,9 +306,9 @@ ___
 
 ---
 
-## Constructor
-
 <a id="publickey-constructor"></a>
+
+## Constructor
 
 ⊕ **new PublicKey**(key: *`Buffer`*): [PublicKey](#publickey)
 
@@ -437,9 +435,9 @@ Returns a PublicKey from it's DER base64 serialization.
 
 ___
 
-# Class: PrivateKey
-
 <a id="privatekey"></a>
+
+# Class: PrivateKey
 
 ## Hierarchy
 
@@ -449,9 +447,9 @@ ___
 
 ---
 
-## Constructor
-
 <a id="privatekey-constructor"></a>
+
+## Constructor
 
 ⊕ **new PrivateKey**(key: *`Buffer`*): [PrivateKey](#privatekey)
 
