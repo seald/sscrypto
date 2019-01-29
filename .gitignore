@@ -9,20 +9,17 @@
 
 # Coverage reports
 /coverage
+/.nyc_output
 
 /tmp
 
-/test_resources/running
-
 # IDE stuff
-.idea/
+/.idea/
 
 # Node stuff
-node_modules
+/node_modules
 *.log
 
 # OS Stuff
 .DS_Store
 Thumbs.db
-
-.nyc_output

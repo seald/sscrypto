@@ -1,6 +1,6 @@
 {
   "name": "sscrypto",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Super Simple Cryptography",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "@types/chai-as-promised": "^7.1.0",
     "@types/jsbn": "^1.2.29",
     "@types/mocha": "^5.2.5",
-    "@types/node": "^10.12.18",
+    "@types/node": "^10.12.19",
     "@types/node-forge": "^0.7.11",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",

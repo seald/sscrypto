@@ -1,7 +1,7 @@
 SSCrypto
 ==========
 
-[![npm version](https://img.shields.io/npm/v/sscrypto.svg?style=flat-square)](https://www.npmjs.com/package/sscrypto)
+[![npm version](https://img.shields.io/npm/v/sscrypto.svg)](https://www.npmjs.com/package/sscrypto)
 [![pipeline status](https://gitlab.tardis.seald.io/seald/sscrypto/badges/master/pipeline.svg)](https://gitlab.tardis.seald.io/seald/sscrypto/commits/master)
 [![coverage report](https://gitlab.tardis.seald.io/seald/sscrypto/badges/master/coverage.svg)](https://gitlab.tardis.seald.io/seald/sscrypto/commits/master)
 
@@ -644,6 +644,8 @@ ___
 ▸ **generate**(size?: *[AsymKeySize](#asymkeysize)*): `Promise`<[PrivateKey](#privatekey)>
 
 Generates a PrivateKey asynchronously
+
+⚠️ On nodeJS back-end, this is only available if you have node 10.12 or newer
 
 **Parameters:**
 

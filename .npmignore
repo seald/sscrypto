@@ -1,5 +1,12 @@
-# .babelrc
-.babelrc
+# Config files
+/.babelrc
+/.nycrc
+/.gitignore
+/.gitlab-ci.yml
+/tsconfig.json
+
+# Source files
+/src/**/*
 
 # Tests
 /**/*spec.js
@@ -8,16 +15,14 @@
 
 # Coverage reports
 /coverage
+/.nyc_output
 
 /tmp
 
-/test_resources
-
 # IDE stuff
-.idea/
+/.idea/
 
 # Node stuff
-node_modules
 *.log
 
 # OS Stuff
