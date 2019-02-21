@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.tardis.seald.io/seald/sscrypto"
+    "url": "https://github.com/arantes555/sscrypto"
   },
   "author": "Seald SAS",
   "license": "MIT",
@@ -25,27 +25,30 @@
   },
   "dependencies": {
     "asn1.js": "^5.0.1",
-    "crc-32": "^1.2.0",
-    "node-forge": "^0.7.6"
+    "crc-32": "^1.2.0"
+  },
+  "peerDependencies": {
+    "node-forge": "^0.8.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
     "@types/jsbn": "^1.2.29",
-    "@types/mocha": "^5.2.5",
-    "@types/node": "^10.12.19",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^11.9.4",
     "@types/node-forge": "^0.7.11",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint-plugin-typescript": "^0.14.0",
     "jsbn": "^1.1.0",
-    "mocha": "^5.2.0",
-    "nyc": "^13.1.0",
+    "mocha": "^6.0.0",
+    "node-forge": "^0.8.0",
+    "nyc": "^13.3.0",
     "source-map-support": "^0.5.10",
     "standard": "^12.0.1",
     "typedoc": "^0.14.2",
-    "typedoc-plugin-markdown": "^1.1.25",
-    "typescript": "^3.2.4",
+    "typedoc-plugin-markdown": "^1.1.26",
+    "typescript": "^3.3.3",
     "typescript-eslint-parser": "^22.0.0"
   }
 }

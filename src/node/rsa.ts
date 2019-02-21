@@ -10,17 +10,6 @@ import {
 } from '../utils/utils'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
 
-/* eslint-disable */
-// Necessary stuff because node typings are incomplete...
-declare module 'crypto' {
-  namespace constants {
-    const RSA_PKCS1_OAEP_PADDING: number
-    const RSA_PKCS1_PSS_PADDING: number
-    const RSA_PSS_SALTLEN_MAX_SIGN: number
-  }
-}
-/* eslint-enable */
-
 const sha256 = (buffer: Buffer): string => {
   const md = crypto.createHash('sha256')
   md.update(buffer)
