@@ -5,6 +5,8 @@ SSCrypto
 
 _Super-Simple Crypto_ is a wrapper around other cryptography libraries, intended to be simple to use, provide a consistent interface for multiple encryption backends (for now, forge and nodeJS crypto), and well-chosen parameters.
 
+It was created by [Seald](https://www.seald.io/) to unify crypto accross its projects.
+
 # Table of Contents
 
 [Installation](#installation)  
@@ -64,6 +66,11 @@ _Super-Simple Crypto_ is a wrapper around other cryptography libraries, intended
     * [fromB64](#privatekey-fromb64)
     * [generate](#privatekey-generate)
 
+- [Utils](#utils)
+
+  * [randomBytes](#randombytes)
+  * [sha256](#sha256)
+
 
 # Installation
 
@@ -99,18 +106,18 @@ npm i -S sscrypto node-forge
 // ES Module syntax
 import { forge } from 'sscrypto'
 // or
-import { SymKey, PrivateKey, PublicKey } from 'sscrypto/forge'
+import { SymKey, PrivateKey, PublicKey, utils } from 'sscrypto/forge'
 // or
 import SymKey from 'sscrypto/forge/aes'
 import { PrivateKey, PublicKey } from 'sscrypto/forge/rsa'
 
 // CommonJS syntax
-const { forge } = require('sscrypto')
+const { node } = require('sscrypto')
 // or
-const { SymKey, PrivateKey, PublicKey } = require('sscrypto/forge')
+const { SymKey, PrivateKey, PublicKey, utils } = require('sscrypto/node')
 // or
-const SymKey = require('sscrypto/forge/aes')
-const { PrivateKey, PublicKey } = require('sscrypto/forge/rsa')
+const SymKey = require('sscrypto/node/aes')
+const { PrivateKey, PublicKey } = require('sscrypto/node/rsa')
 ```
 
 <a id="symkey"></a>
@@ -652,6 +659,45 @@ Generates a PrivateKey asynchronously
 | `Default value` size | [AsymKeySize](#asymkeysize) | 4096 |
 
 **Returns:** `Promise`<[PrivateKey](#privatekey)>
+
+___
+
+<a id="utils"></a>
+
+# Utils
+
+<a id="randombytes"></a>
+
+### randomBytes
+
+▸ **randomBytes**(length?: *`number`*): `Buffer`
+
+Returns a Buffer of random bytes
+
+**Parameters:**
+
+| Name | Type | Default value |
+| ------ | ------ | ------ |
+| `Default value` length | `number` | 10 |
+
+**Returns:** `Buffer`
+
+___
+<a id="sha256"></a>
+
+### sha256
+
+▸ **sha256**(data: *`Buffer`*): `Buffer`
+
+Returns a Buffer containing the hash of the given data
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| data | `Buffer` |  \- |
+
+**Returns:** `Buffer`
 
 ___
 

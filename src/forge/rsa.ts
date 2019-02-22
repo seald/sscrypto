@@ -1,6 +1,6 @@
 import forge from 'node-forge'
 import crc32 from 'crc-32'
-import { intToBuffer, staticImplements } from '../utils/utils'
+import { intToBuffer, staticImplements } from '../utils/commonUtils'
 import { BigInteger } from 'jsbn' // eslint-disable-line no-unused-vars
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
 

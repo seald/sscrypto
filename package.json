@@ -9,11 +9,12 @@
     "test": "mocha --require source-map-support/register --timeout 30000 $(find tests -name '*.spec.js')",
     "prebuild": "rm -rf ./forge ./node ./utils ./tests index.js index.d.ts",
     "build": "tsc",
-    "coverage": "nyc npm test"
+    "coverage": "nyc npm test",
+    "doc": "typedoc --theme markdown --out doc"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/arantes555/sscrypto"
+    "url": "https://github.com/seald/sscrypto"
   },
   "author": "Seald SAS",
   "license": "MIT",

@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import { getProgress, staticImplements } from '../utils/utils'
+import { getProgress, staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes' // eslint-disable-line no-unused-vars
 

@@ -7,6 +7,9 @@
 /index.js.map
 /index.d.ts
 
+# Doc
+/doc
+
 # Coverage reports
 /coverage
 /.nyc_output

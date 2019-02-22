@@ -7,7 +7,7 @@ import {
   privateToPublic,
   publicKeyModel,
   staticImplements
-} from '../utils/utils'
+} from '../utils/commonUtils'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
 
 const sha256 = (buffer: Buffer): string => {
