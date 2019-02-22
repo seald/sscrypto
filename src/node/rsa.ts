@@ -8,13 +8,8 @@ import {
   publicKeyModel,
   staticImplements
 } from '../utils/commonUtils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
-
-const sha256 = (buffer: Buffer): string => {
-  const md = crypto.createHash('sha256')
-  md.update(buffer)
-  return md.digest('hex')
-}
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
+import { sha256 } from './utils'
 
 /**
  * @class PublicKeyNode
@@ -108,14 +103,14 @@ class PublicKeyNode implements PublicKey {
    * @returns {string}
    */
   getHash (): string {
-    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii'))
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('hex')
   }
 
   /**
    * @returns {string}
    */
   getB64Hash (): string {
-    return Buffer.from(this.getHash(), 'hex').toString('base64')
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('base64')
   }
 }
 

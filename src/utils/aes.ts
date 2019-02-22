@@ -1,4 +1,4 @@
-import { Transform } from 'stream' // eslint-disable-line no-unused-vars
+import { Transform } from 'stream'
 
 export type SymKeySize = 128 | 192 | 256
 

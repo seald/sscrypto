@@ -1,4 +1,4 @@
-import { PassThrough, pipeline, Transform, Readable, Writable } from 'stream' // eslint-disable-line no-unused-vars
+import { PassThrough, pipeline, Transform, Readable, Writable } from 'stream'
 import { promisify } from 'util'
 
 const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pipeline)
@@ -9,7 +9,7 @@ const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => 
  * @param {Transform[]} transformStreams - stream.Transform instance
  * @returns {Promise<Buffer>} - Promise that resolves to the output of the transformStream
  */
-export const _streamHelper = async (chunks: Array<Buffer>, ...transformStreams: Transform[]): Promise<Buffer> => {
+export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Transform[]): Promise<Buffer> => {
   const inputStream = new PassThrough()
   const outputStream = new PassThrough()
 
@@ -34,7 +34,7 @@ export const _streamHelper = async (chunks: Array<Buffer>, ...transformStreams: 
  * @param {number} length
  * @return {Array<Buffer>}
  */
-export const splitLength = (input: Buffer, length: number): Array<Buffer> => {
+export const splitLength = (input: Buffer, length: number): Buffer[] => {
   const chunks = []
   while (input.length) {
     chunks.push(input.slice(0, length))

@@ -5,20 +5,20 @@ import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from '../nod
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
-import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
+import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { forge, node } from '../index'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-const testAsymKeyImplem = (name: string, { PrivateKey, PublicKey }: { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }) => {
+const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }): void => {
   describe(`RSA ${name}`, () => {
     let privateKey: PrivateKey, privateKey2: PrivateKey
 
     before('generate keys', () =>
       Promise.all([
-        PrivateKey.generate(1024),
-        PrivateKey.generate(1024)
+        PrivateKey_.generate(1024),
+        PrivateKey_.generate(1024)
       ])
         .then(([_key1, _key2]) => {
           privateKey = _key1
@@ -31,51 +31,61 @@ const testAsymKeyImplem = (name: string, { PrivateKey, PublicKey }: { PrivateKey
     const messageBinary = crypto.randomBytes(32)
 
     it('Fail to construct a PublicKey because of an invalid type of argument', () => {
-      // @ts-ignore: voluntary test of what happens with bad type
-      expect(PrivateKey.generate('notAValidType')).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+      expect(
+        PrivateKey_
+        // @ts-ignore: voluntary test of what happens with bad type
+          .generate('notAValidType')
+      ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('fail to produce a new PrivateKey with a wrong size', () => {
-      // @ts-ignore: voluntary test of what happens with bad type
-      expect(PrivateKey.generate(588)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+      expect(
+        PrivateKey_
+        // @ts-ignore: voluntary test of what happens with bad type
+          .generate(588)
+      ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
         return true
       })
     })
 
     it('fail to import bad PrivateKey', () => {
-      expect(() => PrivateKey.fromB64(privateKey.toB64().slice(2))).to.throw(Error).and.satisfy((error: Error) => {
+      expect(() => PrivateKey_.fromB64(privateKey.toB64().slice(2))).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
     })
 
     it('fail to import PrivateKey because of an invalid type', () => {
-      // @ts-ignore: voluntary test of what happens with bad type
-      expect(() => new PrivateKey(2)).to.throw(Error).and.satisfy((error: Error) => {
+      expect(
+        // @ts-ignore: voluntary test of what happens with bad type
+        () => new PrivateKey_(2)
+      ).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
     })
 
     it('fail to import bad PublicKey', () => {
-      expect(() => PublicKey.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))).to.throw(Error).and.satisfy((error: Error) => {
+      expect(
+        () => PublicKey_.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))
+      ).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
       })
     })
 
     it('export public key then import', () => {
-      const publicKeyImported = PublicKey.fromB64(privateKey.toB64({ publicOnly: true }))
+      const publicKeyImported = PublicKey_.fromB64(privateKey.toB64({ publicOnly: true }))
 
       assert.strictEqual(publicKeyImported.toB64(), privateKey.toB64({ publicOnly: true }))
     })
 
     it('export the private key then import it', () => {
-      const privateKeyImported = PrivateKey.fromB64(privateKey.toB64())
+      const privateKeyImported = PrivateKey_.fromB64(privateKey.toB64())
 
       assert.strictEqual(privateKeyImported.toB64(), privateKey.toB64({ publicOnly: false }))
     })
@@ -155,27 +165,65 @@ describe('RSA node/forge', () => {
     assert.strictEqual(forge.PrivateKey, PrivateKeyForge)
   })
 
-  it('export node & import forge, encrypt & sign', () => {
-    const privateKeyB64 = privateKeyNode.toB64()
-    const privateKey_ = PrivateKeyForge.fromB64(privateKeyB64)
+  it('export node & import forge, hash, encrypt & sign', () => {
+    const privateKey = privateKeyNode
+    const privateKey_ = PrivateKeyForge.fromB64(privateKey.toB64())
+    const publicKey_ = PublicKeyForge.fromB64(privateKey.toB64({ publicOnly: true }))
 
-    const cipherText = privateKeyNode.encrypt(message)
-    const decipheredMessage = privateKey_.decrypt(cipherText)
-    assert.isTrue(message.equals(decipheredMessage))
+    // compatibility
+    const cipherText1 = privateKey.encrypt(message)
+    const decipheredMessage1 = privateKey_.decrypt(cipherText1)
+    assert.isTrue(message.equals(decipheredMessage1))
 
-    const signature = privateKeyNode.sign(message)
+    const cipherText2 = privateKey_.encrypt(message)
+    const decipheredMessage2 = privateKey.decrypt(cipherText2)
+    assert.isTrue(message.equals(decipheredMessage2))
+
+    const cipherText3 = publicKey_.encrypt(message)
+    const decipheredMessage3 = privateKey.decrypt(cipherText3)
+    assert.isTrue(message.equals(decipheredMessage3))
+
+    const signature = privateKey.sign(message)
     assert.isTrue(privateKey_.verify(message, signature))
+    assert.isTrue(publicKey_.verify(message, signature))
+
+    // equality
+    assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
+    assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
+    assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
+
+    assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
+    assert.strictEqual(privateKey.getB64Hash(), privateKey_.getB64Hash())
   })
 
-  it('export forge & import node, encrypt & sign', () => {
-    const privateKeyB64 = privateKeyForge.toB64()
-    const privateKey_ = PrivateKeyNode.fromB64(privateKeyB64)
+  it('export forge & import node, hash encrypt & sign', () => {
+    const privateKey = privateKeyForge
+    const privateKey_ = PrivateKeyNode.fromB64(privateKey.toB64())
+    const publicKey_ = PublicKeyNode.fromB64(privateKey.toB64({ publicOnly: true }))
 
-    const cipherText = privateKeyForge.encrypt(message)
-    const decipheredMessage = privateKey_.decrypt(cipherText)
-    assert.isTrue(message.equals(decipheredMessage))
+    // compatibility
+    const cipherText1 = privateKey.encrypt(message)
+    const decipheredMessage1 = privateKey_.decrypt(cipherText1)
+    assert.isTrue(message.equals(decipheredMessage1))
 
-    const signature = privateKeyForge.sign(message)
+    const cipherText2 = privateKey_.encrypt(message)
+    const decipheredMessage2 = privateKey.decrypt(cipherText2)
+    assert.isTrue(message.equals(decipheredMessage2))
+
+    const cipherText3 = publicKey_.encrypt(message)
+    const decipheredMessage3 = privateKey.decrypt(cipherText3)
+    assert.isTrue(message.equals(decipheredMessage3))
+
+    const signature = privateKey.sign(message)
     assert.isTrue(privateKey_.verify(message, signature))
+    assert.isTrue(publicKey_.verify(message, signature))
+
+    // equality
+    assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
+    assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
+    assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
+
+    assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
+    assert.strictEqual(privateKey.getB64Hash(), privateKey_.getB64Hash())
   })
 })

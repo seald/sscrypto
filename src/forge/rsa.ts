@@ -1,13 +1,13 @@
 import forge from 'node-forge'
 import crc32 from 'crc-32'
 import { intToBuffer, staticImplements } from '../utils/commonUtils'
-import { BigInteger } from 'jsbn' // eslint-disable-line no-unused-vars
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa' // eslint-disable-line no-unused-vars
+import { BigInteger } from 'jsbn'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
+import { sha256 } from './utils'
 
-/* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
 declare module 'node-forge' {
-  namespace pki {
+  namespace pki { // eslint-disable-line @typescript-eslint/no-namespace
     function publicKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PublicKey
 
     function privateKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PrivateKey
@@ -16,13 +16,6 @@ declare module 'node-forge' {
 
     function privateKeyToAsn1 (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
   }
-}
-/* eslint-enable */
-
-const sha256 = (str: string): forge.util.ByteStringBuffer => {
-  const md = forge.md.sha256.create()
-  md.update(str)
-  return md.digest()
 }
 
 /**
@@ -106,14 +99,14 @@ class PublicKeyForge implements PublicKey {
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     try {
       // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
-      const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2
+      const saltLength = ((this.publicKey.n as BigInteger).bitLength() / 8) - 32 - 2
       const pss = forge.pss.create({
         md: forge.md.sha256.create(),
         mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
         saltLength: saltLength
       })
       return this.publicKey.verify(
-        sha256(textToCheckAgainst.toString('binary')).getBytes(),
+        sha256(textToCheckAgainst).toString('binary'),
         signature.toString('binary'),
         pss
       )
@@ -126,17 +119,14 @@ class PublicKeyForge implements PublicKey {
    * @returns {string}
    */
   getHash (): string {
-    return sha256(this.toB64({ publicOnly: true })).toHex()
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('hex')
   }
 
   /**
    * @returns {string}
    */
   getB64Hash (): string {
-    return Buffer.from(
-      sha256(this.toB64({ publicOnly: true })).bytes(),
-      'binary'
-    ).toString('base64')
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('base64')
   }
 }
 
@@ -260,7 +250,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
     const md = forge.md.sha256.create()
     md.update(textToSign.toString('binary'))
     // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
-    const saltLength = ((<BigInteger> this.publicKey.n).bitLength() / 8) - 32 - 2
+    const saltLength = ((this.publicKey.n as BigInteger).bitLength() / 8) - 32 - 2
     const pss = forge.pss.create({
       md: forge.md.sha256.create(),
       mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),

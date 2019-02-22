@@ -1,12 +1,11 @@
 import forge from 'node-forge'
 import { getProgress, staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
-import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes' // eslint-disable-line no-unused-vars
+import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
 
-/* eslint-disable */
 // Necessary stuff because node-forge typings are incomplete...
 declare module 'node-forge' {
-  namespace hmac {
+  namespace hmac { // eslint-disable-line @typescript-eslint/no-namespace
     interface HMAC {
       start (algorithm: string, singingKey: string): void
 
@@ -20,7 +19,6 @@ declare module 'node-forge' {
     function create (): HMAC
   }
 }
-/* eslint-enable */
 
 @staticImplements<SymKeyConstructor>()
 class SymKeyForge implements SymKey {

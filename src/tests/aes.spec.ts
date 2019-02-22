@@ -7,12 +7,12 @@ import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
-import { SymKeyConstructor } from '../utils/aes' // eslint-disable-line no-unused-vars
+import { SymKeyConstructor } from '../utils/aes'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor) => {
+const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void => {
   describe(`AES ${name}`, () => {
     const key128 = new SymKeyClass(128)
     const key192 = new SymKeyClass(192)

@@ -1,4 +1,4 @@
-import { Stream } from 'stream' // eslint-disable-line no-unused-vars
+import { Stream } from 'stream'
 // @ts-ignore: TODO: typings
 import asn from 'asn1.js'
 
@@ -13,10 +13,12 @@ export const intToBuffer = (n: number): Buffer => {
   return buff
 }
 
+type progressCallback = (increment: number, stream: Stream, delay?: number) => void
+
 /**
  * Helper thingy for Stream progress
  */
-export const getProgress: () => (increment: number, stream: Stream, delay?: number) => void = () => {
+export const getProgress: () => progressCallback = (): progressCallback => {
   let counter = 0
   let lastEmitProgress: number
   /**
@@ -107,6 +109,6 @@ export const privateToPublic = (buff: Buffer): Buffer => {
   return publicKeyModel.encode({ 'n': privateKey['n'], 'e': privateKey['e'] }, 'der')
 }
 
-export function staticImplements<T> () {
+export function staticImplements<T> (): ((constructor: T) => void) {
   return (constructor: T) => {}
 }
