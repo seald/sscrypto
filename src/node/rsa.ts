@@ -1,17 +1,16 @@
 import * as crypto from 'crypto'
 import crc32 from 'crc-32'
+import { intToBuffer, staticImplements } from '../utils/commonUtils'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
+import { sha256 } from './utils'
 import {
   convertDERToPEM,
   convertPEMToDER,
-  intToBuffer,
   privateToPublic,
   publicKeyModel,
-  staticImplements,
   unwrapPublicKey,
   wrapPublicKey
-} from '../utils/commonUtils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
-import { sha256 } from './utils'
+} from './rsaUtils'
 
 /**
  * @class PublicKeyNode
