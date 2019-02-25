@@ -103,14 +103,7 @@ class PublicKeyNode implements PublicKey {
    * @returns {string}
    */
   getHash (): string {
-    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('hex')
-  }
-
-  /**
-   * @returns {string}
-   */
-  getB64Hash (): string {
-    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('base64')
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
   }
 }
 

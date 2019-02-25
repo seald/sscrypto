@@ -1,6 +1,6 @@
 import { Stream } from 'stream'
 // @ts-ignore: TODO: typings
-import asn from 'asn1.js'
+import asn from 'asn1.js' // TODO: move to node implem
 
 /**
  * Converts the given number to a Buffer.

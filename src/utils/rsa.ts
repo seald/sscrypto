@@ -14,8 +14,6 @@ export interface PublicKey {
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean
 
   getHash (): string
-
-  getB64Hash (): string
 }
 
 export interface PrivateKeyConstructor extends PublicKeyConstructor {

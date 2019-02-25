@@ -12,9 +12,7 @@ declare module 'node-forge' {
 
     function privateKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PrivateKey
 
-    function publicKeyToAsn1 (key: forge.pki.rsa.PublicKey): forge.asn1.Asn1
-
-    function privateKeyToAsn1 (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
+    function privateKeyToRSAPrivateKey (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
   }
 }
 
@@ -62,7 +60,7 @@ class PublicKeyForge implements PublicKey {
    * @returns {string}
    */
   toB64 (options: {} = null): string {
-    return Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(this.publicKey)).getBytes(), 'binary').toString('base64')
+    return Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToRSAPublicKey(this.publicKey)).getBytes(), 'binary').toString('base64')
   }
 
   /**
@@ -119,14 +117,7 @@ class PublicKeyForge implements PublicKey {
    * @returns {string}
    */
   getHash (): string {
-    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('hex')
-  }
-
-  /**
-   * @returns {string}
-   */
-  getB64Hash (): string {
-    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'ascii')).toString('base64')
+    return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
   }
 }
 
@@ -151,7 +142,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
         forge.util.createBuffer(key)
       ))
       const publicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e)
-      super(Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(publicKey)).getBytes(), 'binary'))
+      super(Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToRSAPublicKey(publicKey)).getBytes(), 'binary'))
       this.privateKey = privateKey
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
@@ -184,7 +175,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
           workers: -1
         }, (error, keyPair) => error ? reject(error) : resolve(keyPair.privateKey))
       })
-      return new PrivateKeyForge(Buffer.from(forge.asn1.toDer(forge.pki.privateKeyToAsn1(privateKey)).getBytes(), 'binary'))
+      return new PrivateKeyForge(Buffer.from(forge.asn1.toDer(forge.pki.privateKeyToRSAPrivateKey(privateKey)).getBytes(), 'binary'))
     }
   }
 
@@ -196,13 +187,14 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
    * @returns {string}
    */
   toB64 ({ publicOnly = false } = {}): string {
-    return Buffer.from(
-      forge.asn1.toDer(publicOnly
-        ? forge.pki.publicKeyToAsn1(this.publicKey)
-        : forge.pki.privateKeyToAsn1(this.privateKey)
-      ).getBytes()
-      , 'binary'
-    ).toString('base64')
+    if (publicOnly) {
+      return super.toB64()
+    } else {
+      return Buffer.from(
+        forge.asn1.toDer(forge.pki.privateKeyToRSAPrivateKey(this.privateKey)).getBytes(),
+        'binary'
+      ).toString('base64')
+    }
   }
 
   /**

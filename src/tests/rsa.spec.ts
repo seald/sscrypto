@@ -193,7 +193,6 @@ describe('RSA node/forge', () => {
     assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
 
     assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
-    assert.strictEqual(privateKey.getB64Hash(), privateKey_.getB64Hash())
   })
 
   it('export forge & import node, hash encrypt & sign', () => {
@@ -224,6 +223,5 @@ describe('RSA node/forge', () => {
     assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
 
     assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
-    assert.strictEqual(privateKey.getB64Hash(), privateKey_.getB64Hash())
   })
 })
