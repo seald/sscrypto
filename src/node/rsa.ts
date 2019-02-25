@@ -6,7 +6,9 @@ import {
   intToBuffer,
   privateToPublic,
   publicKeyModel,
-  staticImplements
+  staticImplements,
+  unwrapPublicKey,
+  wrapPublicKey
 } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
 import { sha256 } from './utils'
@@ -29,8 +31,9 @@ class PublicKeyNode implements PublicKey {
       throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
     }
     try {
-      publicKeyModel.decode(key)
-      this.publicKey = convertDERToPEM(key, 'RSA PUBLIC KEY')
+      const unwrappedKey = unwrapPublicKey(key)
+      publicKeyModel.decode(unwrappedKey) // just to check that the key is valid
+      this.publicKey = convertDERToPEM(unwrappedKey, 'RSA PUBLIC KEY')
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
     }
@@ -54,7 +57,7 @@ class PublicKeyNode implements PublicKey {
    * @returns {string}
    */
   toB64 (options: object = null): string {
-    return convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY').toString('base64')
+    return wrapPublicKey(convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY')).toString('base64')
   }
 
   /**
@@ -179,7 +182,7 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
    */
   toB64 ({ publicOnly = false } = {}): string {
     return publicOnly
-      ? convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY').toString('base64')
+      ? super.toB64()
       : convertPEMToDER(this.privateKey, 'RSA PRIVATE KEY').toString('base64')
   }
 

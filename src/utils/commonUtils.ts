@@ -99,6 +99,27 @@ export const publicKeyModel = asn.define('publicKeyModel', function () {
   )
 })
 
+const publicKeyWrapperModel = asn.define('publicKeyModel', function () {
+  this.seq().obj(
+    this.key('wrapper').seq().obj(
+      this.key('desc').objid({ '1.2.840.113549.1.1.1': 'RSA' }),
+      this.key('empty').null_()
+    ),
+    this.key('key').bitstr()
+  )
+})
+
+export const wrapPublicKey = (buff: Buffer): Buffer => {
+  return publicKeyWrapperModel.encode({
+    wrapper: { desc: 'RSA', empty: null },
+    key: { unused: 0, data: buff }
+  })
+}
+
+export const unwrapPublicKey = (buff: Buffer): Buffer => {
+  return publicKeyWrapperModel.decode(buff).key.data
+}
+
 /**
  * privateToPublic
  * @param {Buffer} buff
@@ -106,7 +127,7 @@ export const publicKeyModel = asn.define('publicKeyModel', function () {
  */
 export const privateToPublic = (buff: Buffer): Buffer => {
   const privateKey = privateKeyModel.decode(buff, 'der')
-  return publicKeyModel.encode({ 'n': privateKey['n'], 'e': privateKey['e'] }, 'der')
+  return wrapPublicKey(publicKeyModel.encode({ 'n': privateKey['n'], 'e': privateKey['e'] }, 'der'))
 }
 
 export function staticImplements<T> (): ((constructor: T) => void) {

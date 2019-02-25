@@ -1,3 +1,7 @@
+## v0.3.0
+
+- Go with Forge's way of serializing publicKeys for legacy purposes
+
 ## v0.2.0
 
 - Add util functions for sha256 and randomBytes
