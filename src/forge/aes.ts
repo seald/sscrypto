@@ -45,7 +45,7 @@ class SymKeyForge implements SymKey {
       throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
     }
     if (![32, 24, 16].includes(this.keySize)) {
-      throw new Error(`INVALID_ARG : Key size is invalid`)
+      throw new Error('INVALID_ARG : Key size is invalid')
     }
   }
 

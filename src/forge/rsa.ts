@@ -70,7 +70,7 @@ class PublicKeyForge implements PublicKey {
    * @param {boolean} doCRC
    * @returns {Buffer}
    */
-  encrypt (clearText: Buffer, doCRC: boolean = true): Buffer {
+  encrypt (clearText: Buffer, doCRC = true): Buffer {
     const textToEncrypt = doCRC
       ? Buffer.concat([
         intToBuffer(crc32.buf(clearText)),
@@ -203,7 +203,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
    * @param {boolean} [doCRC]
    * @returns {Buffer}
    */
-  decrypt (cipherText: Buffer, doCRC: boolean = true): Buffer {
+  decrypt (cipherText: Buffer, doCRC = true): Buffer {
     let clearText
     try {
       clearText = Buffer.from(this.privateKey.decrypt(

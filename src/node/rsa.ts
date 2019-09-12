@@ -1,4 +1,4 @@
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import crc32 from 'crc-32'
 import { intToBuffer, staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
@@ -66,7 +66,7 @@ class PublicKeyNode implements PublicKey {
    * @param {boolean} doCRC
    * @returns {Buffer}
    */
-  encrypt (clearText: Buffer, doCRC: boolean = true): Buffer {
+  encrypt (clearText: Buffer, doCRC = true): Buffer {
     const textToEncrypt = doCRC
       ? Buffer.concat([
         intToBuffer(crc32.buf(clearText)),
@@ -191,7 +191,7 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
    * @param {boolean} [doCRC]
    * @returns {Buffer}
    */
-  decrypt (cipherText: Buffer, doCRC: boolean = true): Buffer {
+  decrypt (cipherText: Buffer, doCRC = true): Buffer {
     let clearText
     try {
       clearText = crypto.privateDecrypt(

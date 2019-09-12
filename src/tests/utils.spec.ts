@@ -9,9 +9,9 @@ chai.use(chaiAsPromised)
 const { assert } = chai
 
 const knownHashes: { [key: string]: string } = {
-  'test': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-  'test2': '60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752',
-  'testTEST': '3a16f0fd02b75b2607d5157a73dab35453dbeb02cdca2d50b73392503e56c6dc'
+  test: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+  test2: '60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752',
+  testTEST: '3a16f0fd02b75b2607d5157a73dab35453dbeb02cdca2d50b73392503e56c6dc'
 }
 
 const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }): void => {

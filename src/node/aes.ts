@@ -1,4 +1,4 @@
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import { getProgress, staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
@@ -28,7 +28,7 @@ class SymKeyNode implements SymKey {
       throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
     }
     if (![32, 24, 16].includes(this.keySize)) {
-      throw new Error(`INVALID_ARG : Key size is invalid`)
+      throw new Error('INVALID_ARG : Key size is invalid')
     }
   }
 

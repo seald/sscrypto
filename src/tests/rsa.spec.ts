@@ -4,7 +4,7 @@ import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../f
 import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from '../node'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { forge, node } from '../index'
 

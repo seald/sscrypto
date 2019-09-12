@@ -7,7 +7,7 @@ import asn from 'asn1.js'
  * @param {string} label
  * @return {string}
  */
-export const convertDERToPEM = (der: Buffer, label: string = 'RSA PUBLIC KEY'): string => {
+export const convertDERToPEM = (der: Buffer, label = 'RSA PUBLIC KEY'): string => {
   const base64 = der.toString('base64')
   const lines = []
   let i = 0
@@ -25,7 +25,7 @@ export const convertDERToPEM = (der: Buffer, label: string = 'RSA PUBLIC KEY'): 
  * @param {string} label
  * @return {RegExp}
  */
-const getRegExpForPEM = (label: string = 'RSA PUBLIC KEY'): RegExp => {
+const getRegExpForPEM = (label = 'RSA PUBLIC KEY'): RegExp => {
   const head = `\\-\\-\\-\\-\\-BEGIN ${label}\\-\\-\\-\\-\\-`
   const body = '(?:[a-zA-Z0-9\\+/=]{64}\n)*[a-zA-Z0-9\\+/=]{1,64}'
   const end = `\\-\\-\\-\\-\\-END ${label}\\-\\-\\-\\-\\-`
@@ -38,7 +38,7 @@ const getRegExpForPEM = (label: string = 'RSA PUBLIC KEY'): RegExp => {
  * @param {string} label
  * @return {Buffer}
  */
-export const convertPEMToDER = (pem: string, label: string = 'RSA PUBLIC KEY'): Buffer => {
+export const convertPEMToDER = (pem: string, label = 'RSA PUBLIC KEY'): Buffer => {
   const regexp = getRegExpForPEM(label)
   const base64 = regexp.exec(pem)[1].replace(/\n/g, '')
   return Buffer.from(base64, 'base64')
@@ -103,5 +103,5 @@ export const unwrapPublicKey = (buff: Buffer): Buffer => {
  */
 export const privateToPublic = (buff: Buffer): Buffer => {
   const privateKey = privateKeyModel.decode(buff, 'der')
-  return wrapPublicKey(publicKeyModel.encode({ 'n': privateKey['n'], 'e': privateKey['e'] }, 'der'))
+  return wrapPublicKey(publicKeyModel.encode({ n: privateKey.n, e: privateKey.e }, 'der'))
 }

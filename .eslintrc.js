@@ -11,6 +11,7 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   rules: {
     '@typescript-eslint/indent': 'off',
+    '@typescript-eslint/ban-ts-ignore': 'off',
     '@typescript-eslint/explicit-member-accessibility': 'off',
     '@typescript-eslint/member-delimiter-style': ['error', {
       multiline: {

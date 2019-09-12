@@ -24,7 +24,7 @@ export const getProgress: () => progressCallback = (): progressCallback => {
    * @param {Stream} stream
    * @param {number} delay
    */
-  return (increment: number, stream: Stream, delay: number = 30) => { // don't send progress more than each 30ms
+  return (increment: number, stream: Stream, delay = 30) => { // don't send progress more than each 30ms
     counter += increment
     if (delay === 0 || !lastEmitProgress || Date.now() - lastEmitProgress > delay) {
       lastEmitProgress = Date.now()

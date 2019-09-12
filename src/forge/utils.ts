@@ -16,4 +16,4 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length: number = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')
+export const randomBytes = (length = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')

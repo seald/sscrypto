@@ -5,7 +5,7 @@ import { SymKey as SymKeyNode } from '../node'
 import { forge, node } from '../'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
 import { SymKeyConstructor } from '../utils/aes'
 
@@ -152,7 +152,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
 
       let progress: number
 
-      const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
+      const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
         const stream = key256.encryptStream()
           .on('end', () => reject(new Error('stream succeeded')))
           .on('error', resolve)
@@ -175,7 +175,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
 
       let progress: number
 
-      const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
+      const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
         const stream = key256.decryptStream()
           .on('end', () => reject(new Error('stream succeeded')))
           .on('error', resolve)

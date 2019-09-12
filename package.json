@@ -19,34 +19,34 @@
   "author": "Seald SAS",
   "license": "MIT",
   "dependencies": {
-    "asn1.js": "^5.0.1",
+    "asn1.js": "^5.2.0",
     "crc-32": "^1.2.0"
   },
   "peerDependencies": {
-    "node-forge": "^0.8.1"
+    "node-forge": "^0.9.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/chai-as-promised": "^7.1.0",
+    "@types/chai": "^4.2.2",
+    "@types/chai-as-promised": "^7.1.2",
     "@types/jsbn": "^1.2.29",
-    "@types/mocha": "^5.2.6",
-    "@types/node": "^11.9.5",
-    "@types/node-forge": "^0.7.11",
-    "@typescript-eslint/eslint-plugin": "^1.4.1",
-    "@typescript-eslint/parser": "^1.4.1",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.7.5",
+    "@types/node-forge": "^0.8.6",
+    "@typescript-eslint/eslint-plugin": "^2.2.0",
+    "@typescript-eslint/parser": "^2.2.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^5.14.1",
-    "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-standard": "^4.0.0",
+    "eslint": "^6.3.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-standard": "^4.0.1",
     "jsbn": "^1.1.0",
-    "mocha": "^6.0.1",
-    "node-forge": "^0.8.1",
-    "nyc": "^13.3.0",
-    "source-map-support": "^0.5.10",
-    "standard": "^12.0.1",
-    "typedoc": "^0.14.2",
-    "typedoc-plugin-markdown": "^1.1.27",
-    "typescript": "^3.3.3333"
+    "mocha": "^6.2.0",
+    "node-forge": "^0.9.0",
+    "nyc": "^14.1.1",
+    "source-map-support": "^0.5.13",
+    "standard": "^14.2.0",
+    "typedoc": "^0.15.0",
+    "typedoc-plugin-markdown": "^2.1.12",
+    "typescript": "^3.6.3"
   }
 }

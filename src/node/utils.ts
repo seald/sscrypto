@@ -1,4 +1,4 @@
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 
 /**
  * Returns a Buffer containing the hash of the given data
@@ -16,4 +16,4 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length: number = 10): Buffer => crypto.randomBytes(length)
+export const randomBytes = (length = 10): Buffer => crypto.randomBytes(length)
