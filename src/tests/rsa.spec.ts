@@ -5,7 +5,7 @@ import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from '../nod
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as crypto from 'crypto'
-import { PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { forge, node } from '../index'
 
 chai.use(chaiAsPromised)
@@ -142,86 +142,92 @@ const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: P
 testAsymKeyImplem('node', { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode })
 testAsymKeyImplem('forge', { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge })
 
-describe('RSA node/forge', () => {
-  let privateKeyNode: PrivateKeyNode, privateKeyForge: PrivateKeyForge
+const testAsymKeyCompatibility = (keySize: AsymKeySize): void => {
+  describe(`RSA node/forge ${keySize}`, () => {
+    let privateKeyNode: PrivateKeyNode, privateKeyForge: PrivateKeyForge
 
-  before('generate keys', () =>
-    Promise.all([
-      PrivateKeyNode.generate(1024),
-      PrivateKeyForge.generate(1024)
-    ])
-      .then(([_key1, _key2]) => {
-        privateKeyNode = _key1
-        privateKeyForge = _key2
-      })
-  )
+    before('generate keys', () =>
+      Promise.all([
+        PrivateKeyNode.generate(keySize),
+        PrivateKeyForge.generate(keySize)
+      ])
+        .then(([_key1, _key2]) => {
+          privateKeyNode = _key1
+          privateKeyForge = _key2
+        })
+    )
 
-  const message = Buffer.from('TESTtest', 'ascii')
+    const message = Buffer.from('TESTtest', 'ascii')
 
-  it('packaging', () => {
-    assert.strictEqual(node.PublicKey, PublicKeyNode)
-    assert.strictEqual(node.PrivateKey, PrivateKeyNode)
-    assert.strictEqual(forge.PublicKey, PublicKeyForge)
-    assert.strictEqual(forge.PrivateKey, PrivateKeyForge)
+    it('packaging', () => {
+      assert.strictEqual(node.PublicKey, PublicKeyNode)
+      assert.strictEqual(node.PrivateKey, PrivateKeyNode)
+      assert.strictEqual(forge.PublicKey, PublicKeyForge)
+      assert.strictEqual(forge.PrivateKey, PrivateKeyForge)
+    })
+
+    it('export node & import forge, hash, encrypt & sign', () => {
+      const privateKey = privateKeyNode
+      const privateKey_ = PrivateKeyForge.fromB64(privateKey.toB64())
+      const publicKey_ = PublicKeyForge.fromB64(privateKey.toB64({ publicOnly: true }))
+
+      // compatibility
+      const cipherText1 = privateKey.encrypt(message)
+      const decipheredMessage1 = privateKey_.decrypt(cipherText1)
+      assert.isTrue(message.equals(decipheredMessage1))
+
+      const cipherText2 = privateKey_.encrypt(message)
+      const decipheredMessage2 = privateKey.decrypt(cipherText2)
+      assert.isTrue(message.equals(decipheredMessage2))
+
+      const cipherText3 = publicKey_.encrypt(message)
+      const decipheredMessage3 = privateKey.decrypt(cipherText3)
+      assert.isTrue(message.equals(decipheredMessage3))
+
+      const signature = privateKey.sign(message)
+      assert.isTrue(privateKey_.verify(message, signature))
+      assert.isTrue(publicKey_.verify(message, signature))
+
+      // equality
+      assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
+      assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
+      assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
+
+      assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
+    })
+
+    it('export forge & import node, hash encrypt & sign', () => {
+      const privateKey = privateKeyForge
+      const privateKey_ = PrivateKeyNode.fromB64(privateKey.toB64())
+      const publicKey_ = PublicKeyNode.fromB64(privateKey.toB64({ publicOnly: true }))
+
+      // compatibility
+      const cipherText1 = privateKey.encrypt(message)
+      const decipheredMessage1 = privateKey_.decrypt(cipherText1)
+      assert.isTrue(message.equals(decipheredMessage1))
+
+      const cipherText2 = privateKey_.encrypt(message)
+      const decipheredMessage2 = privateKey.decrypt(cipherText2)
+      assert.isTrue(message.equals(decipheredMessage2))
+
+      const cipherText3 = publicKey_.encrypt(message)
+      const decipheredMessage3 = privateKey.decrypt(cipherText3)
+      assert.isTrue(message.equals(decipheredMessage3))
+
+      const signature = privateKey.sign(message)
+      assert.isTrue(privateKey_.verify(message, signature))
+      assert.isTrue(publicKey_.verify(message, signature))
+
+      // equality
+      assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
+      assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
+      assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
+
+      assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
+    })
   })
+}
 
-  it('export node & import forge, hash, encrypt & sign', () => {
-    const privateKey = privateKeyNode
-    const privateKey_ = PrivateKeyForge.fromB64(privateKey.toB64())
-    const publicKey_ = PublicKeyForge.fromB64(privateKey.toB64({ publicOnly: true }))
-
-    // compatibility
-    const cipherText1 = privateKey.encrypt(message)
-    const decipheredMessage1 = privateKey_.decrypt(cipherText1)
-    assert.isTrue(message.equals(decipheredMessage1))
-
-    const cipherText2 = privateKey_.encrypt(message)
-    const decipheredMessage2 = privateKey.decrypt(cipherText2)
-    assert.isTrue(message.equals(decipheredMessage2))
-
-    const cipherText3 = publicKey_.encrypt(message)
-    const decipheredMessage3 = privateKey.decrypt(cipherText3)
-    assert.isTrue(message.equals(decipheredMessage3))
-
-    const signature = privateKey.sign(message)
-    assert.isTrue(privateKey_.verify(message, signature))
-    assert.isTrue(publicKey_.verify(message, signature))
-
-    // equality
-    assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
-    assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
-    assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
-
-    assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
-  })
-
-  it('export forge & import node, hash encrypt & sign', () => {
-    const privateKey = privateKeyForge
-    const privateKey_ = PrivateKeyNode.fromB64(privateKey.toB64())
-    const publicKey_ = PublicKeyNode.fromB64(privateKey.toB64({ publicOnly: true }))
-
-    // compatibility
-    const cipherText1 = privateKey.encrypt(message)
-    const decipheredMessage1 = privateKey_.decrypt(cipherText1)
-    assert.isTrue(message.equals(decipheredMessage1))
-
-    const cipherText2 = privateKey_.encrypt(message)
-    const decipheredMessage2 = privateKey.decrypt(cipherText2)
-    assert.isTrue(message.equals(decipheredMessage2))
-
-    const cipherText3 = publicKey_.encrypt(message)
-    const decipheredMessage3 = privateKey.decrypt(cipherText3)
-    assert.isTrue(message.equals(decipheredMessage3))
-
-    const signature = privateKey.sign(message)
-    assert.isTrue(privateKey_.verify(message, signature))
-    assert.isTrue(publicKey_.verify(message, signature))
-
-    // equality
-    assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
-    assert.strictEqual(privateKey.toB64({ publicOnly: true }), publicKey_.toB64({ publicOnly: true }))
-    assert.strictEqual(privateKey.toB64({ publicOnly: true }), privateKey_.toB64({ publicOnly: true }))
-
-    assert.strictEqual(privateKey.getHash(), privateKey_.getHash())
-  })
-})
+testAsymKeyCompatibility(1024)
+testAsymKeyCompatibility(2048)
+testAsymKeyCompatibility(4096)
