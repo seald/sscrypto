@@ -1,9 +1,8 @@
-image: node:11.6
-
 before_script:
   - npm install --silent
 
-test:
+test-node:
+  image: node:10
   stage: test
   script:
     - npm run coverage
@@ -14,8 +13,14 @@ test:
     paths:
     - coverage/
 
+test-browser:
+  image: nexus-docker.tardis.seald.io/seald/docker-browser-testing:CHROME_76
+  stage: test
+  script:
+    - npm run test-browser
 
 .deploy:
+  image: node:10
   stage: deploy
   script:
     - npm run build

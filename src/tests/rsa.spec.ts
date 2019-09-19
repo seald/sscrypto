@@ -1,17 +1,15 @@
 /* eslint-env mocha */
 
-import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge'
-import { PrivateKey as PrivateKeyNode, PublicKey as PublicKeyNode } from '../node'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import crypto from 'crypto'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
-import { forge, node } from '../index'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }): void => {
+type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }
+
+export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer): void => {
   describe(`RSA ${name}`, () => {
     let privateKey: PrivateKey, privateKey2: PrivateKey
 
@@ -28,7 +26,7 @@ const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: P
 
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
-    const messageBinary = crypto.randomBytes(32)
+    const messageBinary = randomBytes(32)
 
     it('Fail to construct a PublicKey because of an invalid type of argument', () => {
       expect(
@@ -139,37 +137,28 @@ const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: P
     })
   })
 }
-testAsymKeyImplem('node', { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode })
-testAsymKeyImplem('forge', { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge })
 
-const testAsymKeyCompatibility = (keySize: AsymKeySize): void => {
-  describe(`RSA node/forge ${keySize}`, () => {
-    let privateKeyNode: PrivateKeyNode, privateKeyForge: PrivateKeyForge
+export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }: AsymKeyImplem, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 }: AsymKeyImplem): void => {
+  describe(`RSA compatibility ${name} ${keySize}`, () => {
+    let privateKey1: PrivateKey, privateKey2: PrivateKey
 
     before('generate keys', () =>
       Promise.all([
-        PrivateKeyNode.generate(keySize),
-        PrivateKeyForge.generate(keySize)
+        PrivateKey1.generate(keySize),
+        PrivateKey2.generate(keySize)
       ])
         .then(([_key1, _key2]) => {
-          privateKeyNode = _key1
-          privateKeyForge = _key2
+          privateKey1 = _key1
+          privateKey2 = _key2
         })
     )
 
     const message = Buffer.from('TESTtest', 'ascii')
 
-    it('packaging', () => {
-      assert.strictEqual(node.PublicKey, PublicKeyNode)
-      assert.strictEqual(node.PrivateKey, PrivateKeyNode)
-      assert.strictEqual(forge.PublicKey, PublicKeyForge)
-      assert.strictEqual(forge.PrivateKey, PrivateKeyForge)
-    })
-
     it('export node & import forge, hash, encrypt & sign', () => {
-      const privateKey = privateKeyNode
-      const privateKey_ = PrivateKeyForge.fromB64(privateKey.toB64())
-      const publicKey_ = PublicKeyForge.fromB64(privateKey.toB64({ publicOnly: true }))
+      const privateKey = privateKey1
+      const privateKey_ = PrivateKey2.fromB64(privateKey.toB64())
+      const publicKey_ = PublicKey2.fromB64(privateKey.toB64({ publicOnly: true }))
 
       // compatibility
       const cipherText1 = privateKey.encrypt(message)
@@ -197,9 +186,9 @@ const testAsymKeyCompatibility = (keySize: AsymKeySize): void => {
     })
 
     it('export forge & import node, hash encrypt & sign', () => {
-      const privateKey = privateKeyForge
-      const privateKey_ = PrivateKeyNode.fromB64(privateKey.toB64())
-      const publicKey_ = PublicKeyNode.fromB64(privateKey.toB64({ publicOnly: true }))
+      const privateKey = privateKey2
+      const privateKey_ = PrivateKey1.fromB64(privateKey.toB64())
+      const publicKey_ = PublicKey1.fromB64(privateKey.toB64({ publicOnly: true }))
 
       // compatibility
       const cipherText1 = privateKey.encrypt(message)
@@ -227,7 +216,3 @@ const testAsymKeyCompatibility = (keySize: AsymKeySize): void => {
     })
   })
 }
-
-testAsymKeyCompatibility(1024)
-testAsymKeyCompatibility(2048)
-testAsymKeyCompatibility(4096)

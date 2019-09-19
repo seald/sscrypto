@@ -1,18 +1,14 @@
 /* eslint-env mocha */
 
-import { SymKey as SymKeyForge } from '../forge'
-import { SymKey as SymKeyNode } from '../node'
-import { forge, node } from '../'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import crypto from 'crypto'
 import { _streamHelper, splitLength } from './specUtils.spec'
 import { SymKeyConstructor } from '../utils/aes'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void => {
+export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
   describe(`AES ${name}`, () => {
     const key128 = new SymKeyClass(128)
     const key192 = new SymKeyClass(192)
@@ -21,7 +17,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
 
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
-    const messageBinary = crypto.randomBytes(100)
+    const messageBinary = randomBytes(100)
 
     it('Try creating a key with an invalid type in constructor', () => {
       // @ts-ignore: voluntary test of what happens with bad type
@@ -101,7 +97,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
     })
 
     it('cipher stream & decipher', () => {
-      const input = crypto.randomBytes(100)
+      const input = randomBytes(100)
       const chunks = splitLength(input, 20)
 
       const cipher = key256.encryptStream()
@@ -112,7 +108,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
     })
 
     it('cipher & decipher stream', () => {
-      const clearText = crypto.randomBytes(1000)
+      const clearText = randomBytes(1000)
       const cipherText = key256.encrypt(clearText)
       const cipherChunks = splitLength(cipherText, 15)
       const decipher = key256.decryptStream()
@@ -123,7 +119,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
     })
 
     it('cipher stream & decipher stream', () => {
-      const input = crypto.randomBytes(100)
+      const input = randomBytes(100)
       const chunks = splitLength(input, 20)
 
       const cipher = key256.encryptStream()
@@ -147,7 +143,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
 
     it('Test encryptStream cancel and progress', async () => {
       const size = 200
-      const input = crypto.randomBytes(size)
+      const input = randomBytes(size)
       const chunks = splitLength(input, 20)
 
       let progress: number
@@ -170,7 +166,7 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
 
     it('Test decryptStream cancel and progress', async () => {
       const size = 200
-      const input = crypto.randomBytes(size)
+      const input = randomBytes(size)
       const chunks = splitLength(input, 20)
 
       let progress: number
@@ -192,55 +188,50 @@ const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor): void =>
     })
   })
 }
-testSymKeyImplem('node', SymKeyNode)
-testSymKeyImplem('forge', SymKeyForge)
 
-describe('AES node/forge', () => {
-  const keyNode = new SymKeyNode(256)
-  const keyForge = SymKeyForge.fromString(keyNode.toString())
+export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstructor, SymKeyClass2: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
+  describe(`AES compatibility ${name}`, () => {
+    const key1 = new SymKeyClass1(256)
+    const key2 = SymKeyClass2.fromString(key1.toString())
 
-  const message = Buffer.from('TESTtest', 'ascii')
+    const message = Buffer.from('TESTtest', 'ascii')
 
-  it('packaging', () => {
-    assert.strictEqual(node.SymKey, SymKeyNode)
-    assert.strictEqual(forge.SymKey, SymKeyForge)
+    it('cipher 1 & decipher 2', () => {
+      const cipheredMessage = key1.encrypt(message)
+      const decipheredMessage = key2.decrypt(cipheredMessage)
+      assert.isTrue(message.equals(decipheredMessage))
+    })
+
+    it('cipher 2 & decipher 1', () => {
+      const cipheredMessage = key2.encrypt(message)
+      const decipheredMessage = key1.decrypt(cipheredMessage)
+      assert.isTrue(message.equals(decipheredMessage))
+    })
+
+    it('cipher stream 1 & decipher stream 2', () => {
+      const input = randomBytes(100)
+      const chunks = splitLength(input, 20)
+
+      const cipher = key1.encryptStream()
+      const decipher = key2.decryptStream()
+
+      return _streamHelper(chunks, cipher, decipher)
+        .then(output => {
+          assert.isTrue(output.equals(input))
+        })
+    })
+
+    it('cipher stream 2 & decipher stream 1', () => {
+      const input = randomBytes(100)
+      const chunks = splitLength(input, 20)
+
+      const cipher = key2.encryptStream()
+      const decipher = key1.decryptStream()
+
+      return _streamHelper(chunks, cipher, decipher)
+        .then(output => {
+          assert.isTrue(output.equals(input))
+        })
+    })
   })
-
-  it('cipher node & decipher forge', () => {
-    const cipheredMessage = keyNode.encrypt(message)
-    const decipheredMessage = keyForge.decrypt(cipheredMessage)
-    assert.isTrue(message.equals(decipheredMessage))
-  })
-
-  it('cipher forge & decipher node', () => {
-    const cipheredMessage = keyForge.encrypt(message)
-    const decipheredMessage = keyNode.decrypt(cipheredMessage)
-    assert.isTrue(message.equals(decipheredMessage))
-  })
-
-  it('cipher stream node & decipher stream forge', () => {
-    const input = crypto.randomBytes(100)
-    const chunks = splitLength(input, 20)
-
-    const cipher = keyNode.encryptStream()
-    const decipher = keyForge.decryptStream()
-
-    return _streamHelper(chunks, cipher, decipher)
-      .then(output => {
-        assert.isTrue(output.equals(input))
-      })
-  })
-
-  it('cipher stream forge & decipher stream node', () => {
-    const input = crypto.randomBytes(100)
-    const chunks = splitLength(input, 20)
-
-    const cipher = keyForge.encryptStream()
-    const decipher = keyNode.decryptStream()
-
-    return _streamHelper(chunks, cipher, decipher)
-      .then(output => {
-        assert.isTrue(output.equals(input))
-      })
-  })
-})
+}

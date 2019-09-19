@@ -1,7 +1,8 @@
-import { PassThrough, pipeline, Transform, Readable, Writable } from 'stream'
+import { PassThrough, Transform, Readable, Writable } from 'stream'
 import { promisify } from 'util'
+import pump from 'pump'
 
-const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pipeline)
+const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pump)
 
 /**
  * Helper function for the tests.
