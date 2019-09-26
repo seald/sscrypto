@@ -4,13 +4,20 @@ import {
   SymKey as SymKeyForge,
   utils as utilsForge
 } from '../forge'
-import { testSymKeyImplem } from './aes.spec'
+import { SymKey as SymKeyWebCrypto } from '../webcrypto'
+import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyImplem } from './rsa.spec'
 import { testUtilsImplem } from './utils.spec'
 import { randomBytes } from '../forge/utils'
 
 // SymKey
 testSymKeyImplem('forge', SymKeyForge, randomBytes)
+testSymKeyImplem('webcrypto', SymKeyWebCrypto, randomBytes)
+
+testSymKeyCompatibility('forge/webcrypto', SymKeyForge, SymKeyWebCrypto, randomBytes)
+
+testSymKeyPerf('forge', SymKeyForge, randomBytes)
+testSymKeyPerf('webcrypto', SymKeyWebCrypto, randomBytes)
 
 // AsymKey
 const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }

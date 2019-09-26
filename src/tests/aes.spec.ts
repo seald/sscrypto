@@ -159,7 +159,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
         stream.emit('cancel')
         for (const chunk of chunks) stream.write(chunk)
       })
-      if (!progress) throw new Error('Stream hasn\'t worked at all')
+      if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
       assert.include(error.message, 'STREAM_CANCELED')
     })
@@ -182,7 +182,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
         stream.emit('cancel')
         for (const chunk of chunks) stream.write(chunk)
       })
-      if (!progress) throw new Error('Stream hasn\'t worked at all')
+      if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
       assert.include(error.message, 'STREAM_CANCELED')
     })
@@ -232,6 +232,55 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
         .then(output => {
           assert.isTrue(output.equals(input))
         })
+    })
+  })
+}
+
+export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
+  describe(`AES perf ${name}`, function () {
+    this.timeout(30000)
+
+    it('Encrypt/Decrypt perf', () => {
+      const inputSize = 10000
+      const nInput = 500
+      const inputs = []
+      const keys = []
+      for (let i = 0; i < nInput; i++) {
+        keys.push(new SymKeyClass(256))
+        inputs.push(randomBytes(inputSize))
+      }
+      const start = Date.now()
+      for (let i = 0; i < nInput; i++) {
+        const cipherText = keys[i].encrypt(inputs[i])
+        const clearText = keys[i].decrypt(cipherText)
+        assert.isOk(clearText.equals(inputs[i]))
+      }
+      const end = Date.now()
+      const delta = (end - start) / 1000
+      console.log(`Finished in ${delta.toFixed(1)}s:\n${(nInput / delta).toFixed(1)} block/s\n${(nInput * inputSize / delta / 1000000).toFixed(1)} MB/s`)
+    })
+
+    it('Encrypt/Decrypt stream perf', async () => {
+      const totalSize = 10e6
+      const input = Buffer.alloc(totalSize).fill(randomBytes(1000))
+
+      const k = new SymKeyClass(256)
+
+      const chunksClear = splitLength(input, 256 * 1024)
+      const startEncrypt = Date.now()
+      const encrypted = await _streamHelper(chunksClear, k.encryptStream())
+      const endEncrypt = Date.now()
+      const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
+      console.log(`Finished encrypting in ${deltaEncrypt.toFixed(1)}s:\n${(totalSize / deltaEncrypt / 1000000).toFixed(1)} MB/s`)
+
+      const chunksEncrypted = splitLength(encrypted, 256 * 1024)
+      const startDecrypt = Date.now()
+      const decrypted = await _streamHelper(chunksEncrypted, k.decryptStream())
+      const endDecrypt = Date.now()
+      const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
+      console.log(`Finished decrypting in ${deltaDecrypt.toFixed(1)}s:\n${(totalSize / deltaDecrypt / 1000000).toFixed(1)} MB/s`)
+
+      assert.isOk(decrypted.equals(input))
     })
   })
 }

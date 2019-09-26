@@ -10,7 +10,7 @@ import {
   SymKey as SymKeyForge,
   utils as utilsForge
 } from '../forge'
-import { testSymKeyCompatibility, testSymKeyImplem } from './aes.spec'
+import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyCompatibility, testAsymKeyImplem } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from 'crypto'
@@ -20,6 +20,9 @@ testSymKeyImplem('node', SymKeyNode, randomBytes)
 testSymKeyImplem('forge', SymKeyForge, randomBytes)
 
 testSymKeyCompatibility('node/forge', SymKeyNode, SymKeyForge, randomBytes)
+
+testSymKeyPerf('node', SymKeyNode, randomBytes)
+testSymKeyPerf('forge', SymKeyForge, randomBytes)
 
 // AsymKey
 const AsymKeyNode = { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode }
