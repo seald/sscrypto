@@ -132,7 +132,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
     })
 
     it('Try deciphering a stream with a cipherText with invalid HMAC', () => {
-      const cipheredMessage = key256.encrypt(message).slice(0, -1)
+      const cipheredMessage = key256.encrypt(message)
+      cipheredMessage[cipheredMessage.length - 1]++
       const cipherChunks = splitLength(cipheredMessage, 15)
       const decipher = key256.decryptStream()
       return expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {

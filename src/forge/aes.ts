@@ -23,8 +23,8 @@ declare module 'node-forge' {
 @staticImplements<SymKeyConstructor>()
 class SymKeyForge implements SymKey {
   public readonly keySize: number
-  private readonly signingKey: string
-  private readonly encryptionKey: string
+  protected readonly signingKey: string
+  protected readonly encryptionKey: string
 
   /**
    * Constructor of SymKeyForge, if you want to construct an SymKeyForge with an existing key, use the static methods SymKeyForge.fromString or fromB64

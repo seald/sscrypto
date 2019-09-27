@@ -19,6 +19,10 @@ testSymKeyCompatibility('forge/webcrypto', SymKeyForge, SymKeyWebCrypto, randomB
 testSymKeyPerf('forge', SymKeyForge, randomBytes)
 testSymKeyPerf('webcrypto', SymKeyWebCrypto, randomBytes)
 
+// @ts-ignore
+window.SSCRYPTO_NO_WEBCRYPTO = true
+testSymKeyImplem('webcrypto fallback', SymKeyWebCrypto, randomBytes)
+
 // AsymKey
 const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }
 testAsymKeyImplem('forge', AsymKeyForge, randomBytes)

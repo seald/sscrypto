@@ -1,4 +1,4 @@
-import { PassThrough, Transform, Readable, Writable } from 'stream'
+import { PassThrough, Readable, Transform, Writable } from 'stream'
 import { promisify } from 'util'
 import pump from 'pump'
 
@@ -14,10 +14,10 @@ export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Trans
   const inputStream = new PassThrough()
   const outputStream = new PassThrough()
 
-  let outputBuffer = Buffer.alloc(0)
+  const output: Buffer[] = []
 
   outputStream.on('data', data => {
-    outputBuffer = Buffer.concat([outputBuffer, data])
+    output.push(data)
   })
 
   const finished = pipelineAsync(inputStream, ...transformStreams, outputStream)
@@ -26,7 +26,7 @@ export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Trans
   inputStream.end()
 
   await finished
-  return outputBuffer
+  return Buffer.concat(output)
 }
 
 /**
