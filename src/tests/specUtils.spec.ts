@@ -43,3 +43,5 @@ export const splitLength = (input: Buffer, length: number): Buffer[] => {
   }
   return chunks
 }
+
+export type TestHooks = { duringBefore?: () => void, duringAfter?: () => void }

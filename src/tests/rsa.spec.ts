@@ -3,18 +3,22 @@
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
+import { TestHooks } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
 type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }
 
-export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer): void => {
-  describe(`RSA ${name}`, () => {
+export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
+  describe(`RSA ${name}`, function () {
+    this.timeout(5000)
+
     let privateKey: PrivateKey, privateKey2: PrivateKey
 
-    before('generate keys', () =>
-      Promise.all([
+    before('generate keys', () => {
+      if (duringBefore) duringBefore()
+      return Promise.all([
         PrivateKey_.generate(1024),
         PrivateKey_.generate(1024)
       ])
@@ -22,7 +26,11 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
           privateKey = _key1
           privateKey2 = _key2
         })
-    )
+    })
+
+    after(() => {
+      if (duringAfter) duringAfter()
+    })
 
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
@@ -139,7 +147,9 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
 }
 
 export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }: AsymKeyImplem, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 }: AsymKeyImplem): void => {
-  describe(`RSA compatibility ${name} ${keySize}`, () => {
+  describe(`RSA compatibility ${name} ${keySize}`, function () {
+    this.timeout(5000)
+
     let privateKey1: PrivateKey, privateKey2: PrivateKey
 
     before('generate keys', () =>

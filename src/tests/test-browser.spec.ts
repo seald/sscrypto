@@ -4,11 +4,27 @@ import {
   SymKey as SymKeyForge,
   utils as utilsForge
 } from '../forge'
-import { SymKey as SymKeyWebCrypto } from '../webcrypto'
+import {
+  PrivateKey as PrivateKeyWebCrypto,
+  PublicKey as PublicKeyWebCrypto,
+  SymKey as SymKeyWebCrypto,
+  utils as utilsWebCrypto
+} from '../webcrypto'
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
-import { testAsymKeyImplem } from './rsa.spec'
-import { testUtilsImplem } from './utils.spec'
+import { testAsymKeyCompatibility, testAsymKeyImplem } from './rsa.spec'
+import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from '../forge/utils'
+
+const disableWebCrypto = {
+  duringBefore: () => {
+    // @ts-ignore
+    window.SSCRYPTO_NO_WEBCRYPTO = true
+  },
+  duringAfter: () => {
+    // @ts-ignore
+    window.SSCRYPTO_NO_WEBCRYPTO = false
+  }
+}
 
 // SymKey
 testSymKeyImplem('forge', SymKeyForge, randomBytes)
@@ -19,13 +35,24 @@ testSymKeyCompatibility('forge/webcrypto', SymKeyForge, SymKeyWebCrypto, randomB
 testSymKeyPerf('forge', SymKeyForge, randomBytes)
 testSymKeyPerf('webcrypto', SymKeyWebCrypto, randomBytes)
 
-// @ts-ignore
-window.SSCRYPTO_NO_WEBCRYPTO = true
-testSymKeyImplem('webcrypto fallback', SymKeyWebCrypto, randomBytes)
+testSymKeyImplem('webcrypto fallback', SymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // AsymKey
 const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }
+const AsymKeyWebCrypto = { PrivateKey: PrivateKeyWebCrypto, PublicKey: PublicKeyWebCrypto }
 testAsymKeyImplem('forge', AsymKeyForge, randomBytes)
+testAsymKeyImplem('webcrypto', AsymKeyWebCrypto, randomBytes)
+
+testAsymKeyCompatibility('forge/webcrypto', 1024, AsymKeyForge, AsymKeyWebCrypto)
+testAsymKeyCompatibility('forge/webcrypto', 2048, AsymKeyForge, AsymKeyWebCrypto)
+testAsymKeyCompatibility('forge/webcrypto', 4096, AsymKeyForge, AsymKeyWebCrypto)
+
+testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // Utils
 testUtilsImplem('forge', utilsForge)
+testUtilsImplem('webcrypto', utilsWebCrypto)
+
+testUtilsCompatibility('forge/webcrypto', utilsForge, utilsWebCrypto)
+
+testUtilsImplem('webcrypto fallback', utilsWebCrypto, disableWebCrypto)

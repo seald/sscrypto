@@ -2,13 +2,13 @@
 
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { _streamHelper, splitLength } from './specUtils.spec'
+import { _streamHelper, splitLength, TestHooks } from './specUtils.spec'
 import { SymKeyConstructor } from '../utils/aes'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
+export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`AES ${name}`, () => {
     const key128 = new SymKeyClass(128)
     const key192 = new SymKeyClass(192)
@@ -18,6 +18,14 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
     const messageBinary = randomBytes(100)
+
+    before(() => {
+      if (duringBefore) duringBefore()
+    })
+
+    after(() => {
+      if (duringAfter) duringAfter()
+    })
 
     it('Try creating a key with an invalid type in constructor', () => {
       // @ts-ignore: voluntary test of what happens with bad type

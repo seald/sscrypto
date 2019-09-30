@@ -2,6 +2,7 @@
 
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import { TestHooks } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert } = chai
@@ -17,8 +18,16 @@ type utils = {
   randomBytes: (length: number) => Buffer
 }
 
-export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }): void => {
+export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`Utils ${name}`, () => {
+    before(() => {
+      if (duringBefore) duringBefore()
+    })
+
+    after(() => {
+      if (duringAfter) duringAfter()
+    })
+
     it('sha256', () => {
       for (const val in knownHashes) {
         const hash = sha256(Buffer.from(val, 'binary')).toString('hex')

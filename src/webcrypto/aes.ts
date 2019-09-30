@@ -2,15 +2,31 @@ import forge from 'node-forge'
 import { getProgress } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import SymKeyForge from '../forge/aes'
+import { SymKey, SymKeySize } from '../utils/aes'
 
-class SymKeyWebCrypto extends SymKeyForge {
+class SymKeyWebCrypto extends SymKeyForge implements SymKey {
+  /**
+   * Constructor of SymKeyWebCrypto, if you want to construct an SymKeyWebCrypto with an existing key, use the static methods SymKeyWebCrypto.fromString or fromB64
+   * Defaults to a new 256 bits key.
+   * @constructs SymKeyWebCrypto
+   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKeyWebCrypto with.
+   */
+  constructor (arg: SymKeySize | Buffer = 256) {
+    // @ts-ignore
+    if (typeof arg === 'number' && window.crypto && window.crypto.getRandomValues && !window.SSCRYPTO_NO_WEBCRYPTO) {
+      super(Buffer.from(window.crypto.getRandomValues(new Uint8Array(arg / 4)))) // It's /4 because it corresponds to /8 to get size in bytes & *2 for both encryption & signing key
+    } else {
+      super(arg)
+    }
+  }
+
   /**
    * Creates a Transform stream that encrypts the data piped to it.
    * @returns {Transform}
    */
   encryptStream (): Transform {
     // @ts-ignore
-    if (!window.crypto || !window.crypto.subtle || window.SSCRYPTO_NO_WEBCRYPTO) return super.encryptStream()
+    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues || window.SSCRYPTO_NO_WEBCRYPTO) return super.encryptStream()
     let canceled = false
     const progress = getProgress()
     const encryptionKey = this.encryptionKey

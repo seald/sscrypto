@@ -11,8 +11,6 @@ declare module 'node-forge' {
     function publicKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PublicKey
 
     function privateKeyFromAsn1 (obj: forge.asn1.Asn1): forge.pki.rsa.PrivateKey
-
-    function privateKeyToAsn1 (key: forge.pki.rsa.PrivateKey): forge.asn1.Asn1
   }
 }
 

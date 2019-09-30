@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import forge from 'node-forge'
 
 /**
  * Returns a Buffer containing the hash of the given data
@@ -6,9 +6,9 @@ import crypto from 'crypto'
  * @return {Buffer}
  */
 export const sha256 = (data: Buffer): Buffer => {
-  const md = crypto.createHash('sha256')
-  md.update(data)
-  return md.digest()
+  const md = forge.md.sha256.create()
+  md.update(data.toString('binary'))
+  return Buffer.from(md.digest().data, 'binary')
 }
 
 /**
@@ -16,4 +16,11 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length = 10): Buffer => crypto.randomBytes(length)
+export const randomBytes = (length = 10): Buffer => {
+  // @ts-ignore
+  if (window.crypto && window.crypto.getRandomValues && !window.SSCRYPTO_NO_WEBCRYPTO) {
+    return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
+  } else {
+    return Buffer.from(forge.random.getBytesSync(length), 'binary')
+  }
+}
