@@ -3,28 +3,11 @@ import { getProgress, staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
 
-// Necessary stuff because node-forge typings are incomplete...
-declare module 'node-forge' {
-  namespace hmac { // eslint-disable-line @typescript-eslint/no-namespace
-    interface HMAC {
-      start (algorithm: string, singingKey: string): void
-
-      update (str: string): void
-
-      getMac (): forge.util.ByteStringBuffer
-
-      digest (): forge.util.ByteStringBuffer
-    }
-
-    function create (): HMAC
-  }
-}
-
 @staticImplements<SymKeyConstructor>()
 class SymKeyForge implements SymKey {
   public readonly keySize: number
-  private readonly signingKey: string
-  private readonly encryptionKey: string
+  protected readonly signingKey: string
+  protected readonly encryptionKey: string
 
   /**
    * Constructor of SymKeyForge, if you want to construct an SymKeyForge with an existing key, use the static methods SymKeyForge.fromString or fromB64

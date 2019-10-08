@@ -1,9 +1,8 @@
 /* eslint-env mocha */
 
-import { utils as utilsForge } from '../forge'
-import { utils as utilsNode } from '../node'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import { TestHooks } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert } = chai
@@ -14,8 +13,21 @@ const knownHashes: { [key: string]: string } = {
   testTEST: '3a16f0fd02b75b2607d5157a73dab35453dbeb02cdca2d50b73392503e56c6dc'
 }
 
-const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }): void => {
+type utils = {
+  sha256: (data: Buffer) => Buffer
+  randomBytes: (length: number) => Buffer
+}
+
+export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`Utils ${name}`, () => {
+    before(() => {
+      if (duringBefore) duringBefore()
+    })
+
+    after(() => {
+      if (duringAfter) duringAfter()
+    })
+
     it('sha256', () => {
       for (const val in knownHashes) {
         const hash = sha256(Buffer.from(val, 'binary')).toString('hex')
@@ -34,20 +46,20 @@ const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data:
     })
   })
 }
-testUtilsImplem('node', utilsNode)
-testUtilsImplem('forge', utilsForge)
 
-describe('Utils node/forge', () => {
-  it('sha256 & randomBytes', () => {
-    const rand1 = utilsNode.randomBytes(1000)
-    const rand2 = utilsForge.randomBytes(1000)
+export const testUtilsCompatibility = (name: string, utils1: utils, utils2: utils) => {
+  describe(`Utils compatibility ${name}`, () => {
+    it('sha256 & randomBytes', () => {
+      const rand1 = utils1.randomBytes(1000)
+      const rand2 = utils2.randomBytes(1000)
 
-    const shaForge1 = utilsForge.sha256(rand1)
-    const shaForge2 = utilsForge.sha256(rand2)
-    const shaNode1 = utilsNode.sha256(rand1)
-    const shaNode2 = utilsNode.sha256(rand2)
+      const sha11 = utils1.sha256(rand1)
+      const sha12 = utils1.sha256(rand2)
+      const sha21 = utils2.sha256(rand1)
+      const sha22 = utils2.sha256(rand2)
 
-    assert.isOk(shaForge1.equals(shaNode1))
-    assert.isOk(shaForge2.equals(shaNode2))
+      assert.isOk(sha21.equals(sha11))
+      assert.isOk(sha22.equals(sha12))
+    })
   })
-})
+}
