@@ -16,7 +16,8 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
 
     let privateKey: PrivateKey, privateKey2: PrivateKey
 
-    before('generate keys', () => {
+    before('generate keys', function () {
+      this.timeout(30000)
       if (duringBefore) duringBefore()
       return Promise.all([
         PrivateKey_.generate(1024),
@@ -152,8 +153,9 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
 
     let privateKey1: PrivateKey, privateKey2: PrivateKey
 
-    before('generate keys', () =>
-      Promise.all([
+    before('generate keys', function () {
+      this.timeout(30000)
+      return Promise.all([
         PrivateKey1.generate(keySize),
         PrivateKey2.generate(keySize)
       ])
@@ -161,7 +163,7 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
           privateKey1 = _key1
           privateKey2 = _key2
         })
-    )
+    })
 
     const message = Buffer.from('TESTtest', 'ascii')
 
