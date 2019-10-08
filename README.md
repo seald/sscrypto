@@ -3,7 +3,7 @@ SSCrypto
 
 [![npm version](https://img.shields.io/npm/v/sscrypto.svg)](https://www.npmjs.com/package/sscrypto)
 
-_Super-Simple Crypto_ is a wrapper around other cryptography libraries, intended to be simple to use, provide a consistent interface for multiple encryption backends (for now, forge and nodeJS crypto), and well-chosen parameters.
+_Super-Simple Crypto_ is a wrapper around other cryptography libraries, intended to be simple to use, provide a consistent interface for multiple encryption backends (for now, forge, nodeJS [`crypto`](https://nodejs.org/api/crypto.html), and [WebCrypto.subtle](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)), and well-chosen parameters.
 
 It was created by [Seald](https://www.seald.io/) to unify crypto accross its projects.
 
@@ -112,12 +112,39 @@ import SymKey from 'sscrypto/forge/aes'
 import { PrivateKey, PublicKey } from 'sscrypto/forge/rsa'
 
 // CommonJS syntax
-const { node } = require('sscrypto')
+const { forge } = require('sscrypto')
 // or
-const { SymKey, PrivateKey, PublicKey, utils } = require('sscrypto/node')
+const { SymKey, PrivateKey, PublicKey, utils } = require('sscrypto/forge')
 // or
-const SymKey = require('sscrypto/node/aes')
-const { PrivateKey, PublicKey } = require('sscrypto/node/rsa')
+const SymKey = require('sscrypto/forge/aes')
+const { PrivateKey, PublicKey } = require('sscrypto/forge/rsa')
+```
+
+### For use with the WebCrypto back-end:
+
+To use the WebCrypto back-end, you still need to install forge, because it falls back to forge for unimplemented features & when the browser is not compatible with WebCrypto.
+
+Of course, the WebCrypto back-end only works in browsers. You will have to use a build system to package everything, and provide the relevant NodeJS polyfills (such as Buffer). Using Webpack works well.
+
+```bash
+npm i -S sscrypto node-forge
+```
+```javascript
+// ES Module syntax
+import { webcrypto } from 'sscrypto'
+// or
+import { SymKey, PrivateKey, PublicKey, utils } from 'sscrypto/webcrypto'
+// or
+import SymKey from 'sscrypto/webcrypto/aes'
+import { PrivateKey, PublicKey } from 'sscrypto/webcrypto/rsa'
+
+// CommonJS syntax
+const { webcrypto } = require('sscrypto')
+// or
+const { SymKey, PrivateKey, PublicKey, utils } = require('sscrypto/webcrypto')
+// or
+const SymKey = require('sscrypto/webcrypto/aes')
+const { PrivateKey, PublicKey } = require('sscrypto/webcrypto/rsa')
 ```
 
 <a id="symkey"></a>
