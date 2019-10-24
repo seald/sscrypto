@@ -115,10 +115,54 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
       })
     })
 
+    it('cipher short stream (single chunk) & decipher', () => {
+      const input = randomBytes(10)
+      const chunks = splitLength(input, 100)
+
+      const cipher = key256.encryptStream()
+
+      return _streamHelper(chunks, cipher).then((output) => {
+        assert.isTrue(key256.decrypt(output).equals(input))
+      })
+    })
+
+    it('cipher stream with small blocks & decipher', () => {
+      const input = randomBytes(100)
+      const chunks = splitLength(input, 10)
+
+      const cipher = key256.encryptStream()
+
+      return _streamHelper(chunks, cipher).then((output) => {
+        assert.isTrue(key256.decrypt(output).equals(input))
+      })
+    })
+
     it('cipher & decipher stream', () => {
       const clearText = randomBytes(1000)
       const cipherText = key256.encrypt(clearText)
-      const cipherChunks = splitLength(cipherText, 15)
+      const cipherChunks = splitLength(cipherText, 20)
+      const decipher = key256.decryptStream()
+
+      return _streamHelper(cipherChunks, decipher).then((output) => {
+        assert.isTrue(output.equals(clearText))
+      })
+    })
+
+    it('cipher & decipher short stream (single chunk)', () => {
+      const clearText = randomBytes(10)
+      const cipherText = key256.encrypt(clearText)
+      const cipherChunks = splitLength(cipherText, 100)
+      const decipher = key256.decryptStream()
+
+      return _streamHelper(cipherChunks, decipher).then((output) => {
+        assert.isTrue(output.equals(clearText))
+      })
+    })
+
+    it('cipher & decipher stream with small blocks', () => {
+      const clearText = randomBytes(1000)
+      const cipherText = key256.encrypt(clearText)
+      const cipherChunks = splitLength(cipherText, 10)
       const decipher = key256.decryptStream()
 
       return _streamHelper(cipherChunks, decipher).then((output) => {

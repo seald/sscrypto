@@ -66,6 +66,7 @@ class SymKeyWebCrypto extends SymKeyForge implements SymKey {
             const toEncryptLength = buff.length - (buff.length % 16)
             const toEncrypt = buff.slice(0, toEncryptLength)
             remaining = buff.slice(toEncryptLength)
+            if (toEncryptLength === 0) return callback()
             const output = Buffer.from(
               await window.crypto.subtle.encrypt(
                 { name: 'AES-CBC', iv },
