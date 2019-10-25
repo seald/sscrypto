@@ -1,3 +1,8 @@
+## v0.4.1
+
+- Fix webcrypto encryptStream with small chunks
+
+
 ## v0.4.0
 
 - Implement initial sscrypto/webcrypto. For now, it uses actual webcrypto for generating randomness, for generating AsymKeys, and for SymKey's encryptStream & decryptStream. For everything else, or if webcrypto is unavailable, it falls back to forge.
