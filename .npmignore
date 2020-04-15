@@ -31,3 +31,10 @@
 # OS Stuff
 .DS_Store
 Thumbs.db
+
+# Tests
+karma.conf.local.js
+karma.conf.template.js
+
+# CI
+.npm

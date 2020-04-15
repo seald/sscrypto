@@ -34,5 +34,6 @@ export const getProgress: () => progressCallback = (): progressCallback => {
 }
 
 export function staticImplements<T> (): ((constructor: T) => void) {
-  return (constructor: T) => {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  return <U extends T>(constructor: U): void => {}
 }
