@@ -1,3 +1,9 @@
+## v0.4.2
+
+- Update dependencies
+- Remove useless test files in exported package
+
+
 ## v0.4.1
 
 - Fix webcrypto encryptStream with small chunks
