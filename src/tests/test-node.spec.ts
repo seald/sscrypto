@@ -11,7 +11,7 @@ import {
   utils as utilsForge
 } from '../forge'
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
-import { testAsymKeyCompatibility, testAsymKeyImplem } from './rsa.spec'
+import { testAsymKeyCompatibility, testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from 'crypto'
 
@@ -34,6 +34,13 @@ testAsymKeyImplem('forge', AsymKeyForge, randomBytes)
 testAsymKeyCompatibility('node/forge', 1024, AsymKeyNode, AsymKeyForge)
 testAsymKeyCompatibility('node/forge', 2048, AsymKeyNode, AsymKeyForge)
 testAsymKeyCompatibility('node/forge', 4096, AsymKeyNode, AsymKeyForge)
+
+testAsymKeyPerf('node', 1024, AsymKeyNode, randomBytes)
+testAsymKeyPerf('node', 2048, AsymKeyNode, randomBytes)
+// testAsymKeyPerf('node', 4096, AsymKeyNode, randomBytes) // this is a bit long, so we disable it by default
+testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytes)
+testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytes)
+// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes)
 
 // Utils
 testUtilsImplem('node', utilsNode)

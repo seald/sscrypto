@@ -228,3 +228,63 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
     })
   })
 }
+
+export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
+  describe(`RSA perf ${name}`, function () {
+    this.timeout(30000)
+
+    before(() => {
+      if (duringBefore) duringBefore()
+    })
+
+    after(() => {
+      if (duringAfter) duringAfter()
+    })
+
+    it('Private key generation', async () => {
+      const nKeys = 10
+
+      const privateKeys = []
+      const start = Date.now()
+      for (let i = 0; i < nKeys; i++) {
+        const k = await PrivateKey_.generate(keySize)
+        privateKeys.push(k)
+      }
+      const end = Date.now()
+      const delta = (end - start) / 1000
+      console.log(`Finished generating keys in ${delta.toFixed(1)}s:\n${(delta / nKeys).toFixed(2)} s / key`)
+    })
+
+    it('Encrypt / decrypt', async () => {
+      const nData = 10
+
+      const k = await PrivateKey_.generate(keySize)
+      const randomData: Array<Buffer> = []
+
+      for (let i = 0; i < nData; i++) {
+        randomData.push(randomBytes(32))
+      }
+
+      const encryptedData = []
+      const startEncrypt = Date.now()
+      for (const d of randomData) {
+        encryptedData.push(k.encrypt(d))
+      }
+      const endEncrypt = Date.now()
+      const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
+      console.log(`Finished encrypting in ${deltaEncrypt.toFixed(1)}s:\n${(nData / deltaEncrypt).toFixed(2)} block / s`)
+
+      const decryptedData = []
+      const startDecrypt = Date.now()
+      for (const d of encryptedData) {
+        decryptedData.push(k.decrypt(d))
+      }
+      const endDecrypt = Date.now()
+      const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
+      console.log(`Finished decrypting in ${deltaDecrypt.toFixed(1)}s:\n${(nData / deltaDecrypt).toFixed(2)} block / s`)
+
+      assert.strictEqual(decryptedData.length, nData)
+      assert.isTrue(decryptedData.every((d, i) => d.equals(randomData[i])))
+    })
+  })
+}

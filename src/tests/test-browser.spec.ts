@@ -11,7 +11,7 @@ import {
   utils as utilsWebCrypto
 } from '../webcrypto'
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
-import { testAsymKeyCompatibility, testAsymKeyImplem } from './rsa.spec'
+import { testAsymKeyCompatibility, testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from '../forge/utils'
 
@@ -48,6 +48,16 @@ testAsymKeyCompatibility('forge/webcrypto', 2048, AsymKeyForge, AsymKeyWebCrypto
 testAsymKeyCompatibility('forge/webcrypto', 4096, AsymKeyForge, AsymKeyWebCrypto)
 
 testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+
+testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytes)
+testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytes)
+// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes) // this is a bit long, so we disable it by default
+testAsymKeyPerf('webcrypto', 1024, AsymKeyWebCrypto, randomBytes)
+testAsymKeyPerf('webcrypto', 2048, AsymKeyWebCrypto, randomBytes)
+// testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytes)
+testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+// testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // Utils
 testUtilsImplem('forge', utilsForge)
