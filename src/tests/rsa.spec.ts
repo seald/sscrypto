@@ -230,7 +230,7 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
 }
 
 export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
-  describe(`RSA perf ${name}`, function () {
+  describe(`RSA perf ${name} - ${keySize}`, function () {
     this.timeout(30000)
 
     before(() => {

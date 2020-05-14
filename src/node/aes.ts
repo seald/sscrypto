@@ -10,26 +10,28 @@ class SymKeyNode implements SymKey {
   private readonly encryptionKey: Buffer
 
   /**
-   * Constructor of SymKeyNode, if you want to construct an SymKeyNode with an existing key, use the static methods SymKeyNode.fromString or fromB64
-   * Defaults to a new 256 bits key.
+   * Constructor of SymKeyNode
    * @constructs SymKeyNode
-   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKeyNode with.
+   * @param {Buffer} key The key to construct the SymKeyNode with.
    */
-  constructor (arg: SymKeySize | Buffer = 256) {
-    if (typeof arg === 'number') {
-      this.keySize = arg / 8
-      this.signingKey = crypto.randomBytes(this.keySize)
-      this.encryptionKey = crypto.randomBytes(this.keySize)
-    } else if (Buffer.isBuffer(arg)) {
-      this.keySize = arg.length / 2
-      this.signingKey = arg.slice(0, this.keySize)
-      this.encryptionKey = arg.slice(this.keySize)
-    } else {
-      throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
-    }
+  constructor (key: Buffer) {
+    this.keySize = key.length / 2
     if (![32, 24, 16].includes(this.keySize)) {
       throw new Error('INVALID_ARG : Key size is invalid')
     }
+    this.signingKey = key.slice(0, this.keySize)
+    this.encryptionKey = key.slice(this.keySize)
+  }
+
+  /**
+   * Static method to generate a new SymKeyNode of a given size
+   * @method
+   * @static
+   * @param {SymKeySize} [size=256]
+   * @returns {Promise<SymKeyNode>}
+   */
+  static async generate (size: SymKeySize = 256): Promise<SymKeyNode> {
+    return new this(crypto.randomBytes(size / 4))
   }
 
   /**
@@ -78,10 +80,32 @@ class SymKeyNode implements SymKey {
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
    */
-  calculateHMAC (textToAuthenticate: Buffer): Buffer {
+  calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
     const hmac = crypto.createHmac('sha256', this.signingKey)
     hmac.update(textToAuthenticate)
     return hmac.digest()
+  }
+
+  /**
+   * Calculates a SHA-256 HMAC with the SymKeyNode#signingKey on the textToAuthenticate
+   * @method
+   * @param {Buffer} textToAuthenticate
+   * @returns {Promise<Buffer>}
+   */
+  async calculateHMAC_ (textToAuthenticate: Buffer): Promise<Buffer> {
+    return this.calculateHMACSync_(textToAuthenticate)
+  }
+
+  /**
+   * Encrypts the clearText with SymKeyNode#encryptionKey using raw AES-CBC with given IV
+   * @method
+   * @param {Buffer} clearText
+   * @param {Buffer} iv
+   * @returns {Buffer}
+   */
+  rawEncryptSync_ (clearText: Buffer, iv: Buffer): Buffer {
+    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    return Buffer.concat([cipher.update(clearText), cipher.final()])
   }
 
   /**
@@ -92,14 +116,41 @@ class SymKeyNode implements SymKey {
    * @param {Buffer} clearText
    * @returns {Buffer}
    */
-  encrypt (clearText: Buffer): Buffer {
+  encryptSync (clearText: Buffer): Buffer {
     const iv = crypto.randomBytes(16)
 
-    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
-    const crypt = cipher.update(clearText)
-    const cipherText = Buffer.concat([iv, crypt, cipher.final()])
+    const crypt = this.rawEncryptSync_(clearText, iv)
+    const cipherText = Buffer.concat([iv, crypt])
 
-    return Buffer.concat([cipherText, this.calculateHMAC(cipherText)])
+    return Buffer.concat([cipherText, this.calculateHMACSync_(cipherText)])
+  }
+
+  /**
+   * Encrypts the clearText with SymKeyNode#encryptionKey using raw AES-CBC with given IV
+   * @method
+   * @param {Buffer} clearText
+   * @param {Buffer} iv
+   * @returns {Promise<Buffer>}
+   */
+  async rawEncrypt_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+    return this.rawEncryptSync_(clearText, iv)
+  }
+
+  /**
+   * Encrypts the clearText with SymKeyNode#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKeyNode#signingKey, returns it concatenated in the following order:
+   * InitializationVector CipherText HMAC
+   * @method
+   * @param {Buffer} clearText
+   * @returns {Promise<Buffer>}
+   */
+  async encrypt (clearText: Buffer): Promise<Buffer> {
+    const iv = crypto.randomBytes(16)
+
+    const crypt = await this.rawEncrypt_(clearText, iv)
+    const cipherText = Buffer.concat([iv, crypt])
+
+    return Buffer.concat([cipherText, await this.calculateHMAC_(cipherText)])
   }
 
   /**
@@ -117,7 +168,7 @@ class SymKeyNode implements SymKey {
     let firstBlock = true
     let canceled = false
     return new Transform({
-      transform (chunk, encoding, callback) {
+      transform (chunk, encoding, callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (firstBlock) {
@@ -134,7 +185,7 @@ class SymKeyNode implements SymKey {
           callback(e)
         }
       },
-      flush (callback) {
+      flush (callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           progress(0, this, 0)
@@ -154,19 +205,57 @@ class SymKeyNode implements SymKey {
   }
 
   /**
-   * Decrypts the cipherText using the same algorithms as SymKeyNode#encrypt
+   * Decrypts the cipherText using raw AES-CBC with the given IV
+   * @method
+   * @param {Buffer} cipherText
+   * @param {Buffer} iv
+   * @returns {Buffer}
+   */
+  rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {
+    const decipher = crypto.createDecipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    return Buffer.concat([decipher.update(cipherText), decipher.final()])
+  }
+
+  /**
+   * Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
    * @method
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
    */
-  decrypt (cipheredMessage: Buffer): Buffer {
+  decryptSync (cipheredMessage: Buffer): Buffer {
     const iv = cipheredMessage.slice(0, 16)
     const cipherText = cipheredMessage.slice(16, -32)
     const hmac = cipheredMessage.slice(-32)
 
-    if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
-      const decipher = crypto.createDecipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
-      return Buffer.concat([decipher.update(cipherText), decipher.final()])
+    if (this.calculateHMACSync_(Buffer.concat([iv, cipherText])).equals(hmac)) {
+      return this.rawDecryptSync_(cipherText, iv)
+    } else throw new Error('INVALID_HMAC')
+  }
+
+  /**
+   * Decrypts the cipherText using raw AES-CBC with the given IV
+   * @method
+   * @param {Buffer} cipherText
+   * @param {Buffer} iv
+   * @returns {Promise<Buffer>}
+   */
+  async rawDecrypt_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+    return this.rawDecryptSync_(cipherText, iv)
+  }
+
+  /**
+   * Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
+   * @method
+   * @param {Buffer} cipheredMessage
+   * @returns {Promise<Buffer>}
+   */
+  async decrypt (cipheredMessage: Buffer): Promise<Buffer> {
+    const iv = cipheredMessage.slice(0, 16)
+    const cipherText = cipheredMessage.slice(16, -32)
+    const hmac = cipheredMessage.slice(-32)
+
+    if ((await this.calculateHMAC_(Buffer.concat([iv, cipherText]))).equals(hmac)) {
+      return this.rawDecrypt_(cipherText, iv)
     } else throw new Error('INVALID_HMAC')
   }
 
@@ -187,7 +276,7 @@ class SymKeyNode implements SymKey {
 
     let canceled = false
     return new Transform({
-      transform (chunk, encoding, callback) {
+      transform (chunk, encoding, callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
@@ -214,7 +303,7 @@ class SymKeyNode implements SymKey {
           callback(e)
         }
       },
-      flush (callback) {
+      flush (callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')

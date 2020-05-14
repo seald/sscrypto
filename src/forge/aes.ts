@@ -10,26 +10,28 @@ class SymKeyForge implements SymKey {
   protected readonly encryptionKey: string
 
   /**
-   * Constructor of SymKeyForge, if you want to construct an SymKeyForge with an existing key, use the static methods SymKeyForge.fromString or fromB64
-   * Defaults to a new 256 bits key.
+   * Constructor of SymKeyForge
    * @constructs SymKeyForge
-   * @param {number|Buffer} [arg] Size of the key to generate, or the key to construct the SymKeyForge with.
+   * @param {Buffer} key The key to construct the SymKeyForge with.
    */
-  constructor (arg: SymKeySize | Buffer = 256) {
-    if (typeof arg === 'number') {
-      this.keySize = arg / 8
-      this.signingKey = forge.random.getBytesSync(this.keySize)
-      this.encryptionKey = forge.random.getBytesSync(this.keySize)
-    } else if (Buffer.isBuffer(arg)) {
-      this.keySize = arg.length / 2
-      this.signingKey = arg.slice(0, this.keySize).toString('binary')
-      this.encryptionKey = arg.slice(this.keySize).toString('binary')
-    } else {
-      throw new Error(`INVALID_ARG : Type of ${arg} is ${typeof arg}`)
-    }
+  constructor (key: Buffer) {
+    this.keySize = key.length / 2
     if (![32, 24, 16].includes(this.keySize)) {
       throw new Error('INVALID_ARG : Key size is invalid')
     }
+    this.signingKey = key.slice(0, this.keySize).toString('binary')
+    this.encryptionKey = key.slice(this.keySize).toString('binary')
+  }
+
+  /**
+   * Static method to generate a new SymKeyForge of a given size
+   * @method
+   * @static
+   * @param {SymKeySize} [size=256]
+   * @returns {Promise<SymKeyForge>}
+   */
+  static async generate (size: SymKeySize = 256): Promise<SymKeyForge> {
+    return new this(Buffer.from(forge.random.getBytesSync(size / 4), 'binary'))
   }
 
   /**
@@ -78,11 +80,37 @@ class SymKeyForge implements SymKey {
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
    */
-  calculateHMAC (textToAuthenticate: Buffer): Buffer {
+  calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
     const hmac = forge.hmac.create()
     hmac.start('sha256', this.signingKey)
     hmac.update(textToAuthenticate.toString('binary'))
     return Buffer.from(hmac.digest().data, 'binary')
+  }
+
+  /**
+   * Calculates a SHA-256 HMAC with the SymKeyForge#signingKey on the textToAuthenticate
+   * @method
+   * @param {Buffer} textToAuthenticate
+   * @returns {Promise<Buffer>}
+   */
+  async calculateHMAC_ (textToAuthenticate: Buffer): Promise<Buffer> {
+    return this.calculateHMACSync_(textToAuthenticate)
+  }
+
+  /**
+   * Encrypts the clearText with SymKeyForge#encryptionKey using raw AES-CBC with given IV
+   * @method
+   * @param {Buffer} clearText
+   * @param {Buffer} iv
+   * @returns {Buffer}
+   */
+  rawEncryptSync_ (clearText: Buffer, iv: Buffer): Buffer {
+    const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
+    cipher.start({ iv: iv.toString('binary') })
+    cipher.update(forge.util.createBuffer(clearText))
+    cipher.finish()
+
+    return Buffer.from(cipher.output.data, 'binary')
   }
 
   /**
@@ -93,17 +121,41 @@ class SymKeyForge implements SymKey {
    * @param {Buffer} clearText
    * @returns {Buffer}
    */
-  encrypt (clearText: Buffer): Buffer {
-    const iv = forge.random.getBytesSync(16)
+  encryptSync (clearText: Buffer): Buffer {
+    const iv = Buffer.from(forge.random.getBytesSync(16), 'binary')
 
-    const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
-    cipher.start({ iv: iv })
-    cipher.update(forge.util.createBuffer(clearText))
-    cipher.finish()
+    const crypt = this.rawEncryptSync_(clearText, iv)
+    const cipherText = Buffer.concat([iv, crypt])
 
-    const cipherText = Buffer.from(`${iv}${cipher.output.data}`, 'binary')
+    return Buffer.concat([cipherText, this.calculateHMACSync_(cipherText)])
+  }
 
-    return Buffer.concat([cipherText, this.calculateHMAC(cipherText)])
+  /**
+   * Encrypts the clearText with SymKeyForge#encryptionKey using raw AES-CBC with given IV
+   * @method
+   * @param {Buffer} clearText
+   * @param {Buffer} iv
+   * @returns {Promise<Buffer>}
+   */
+  async rawEncrypt_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+    return this.rawEncryptSync_(clearText, iv)
+  }
+
+  /**
+   * Encrypts the clearText with SymKeyForge#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKeyForge#signingKey, returns it concatenated in the following order:
+   * InitializationVector CipherText HMAC
+   * @method
+   * @param {Buffer} clearText
+   * @returns {Promise<Buffer>}
+   */
+  async encrypt (clearText: Buffer): Promise<Buffer> {
+    const iv = Buffer.from(forge.random.getBytesSync(16), 'binary')
+
+    const crypt = await this.rawEncrypt_(clearText, iv)
+    const cipherText = Buffer.concat([iv, crypt])
+
+    return Buffer.concat([cipherText, await this.calculateHMAC_(cipherText)])
   }
 
   /**
@@ -123,7 +175,7 @@ class SymKeyForge implements SymKey {
 
     let firstBlock = true
     return new Transform({
-      transform (chunk: Buffer, encoding, callback) {
+      transform (chunk: Buffer, encoding, callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (firstBlock) {
@@ -143,7 +195,7 @@ class SymKeyForge implements SymKey {
           callback(e)
         }
       },
-      flush (callback) {
+      flush (callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           progress(0, this, 0)
@@ -167,22 +219,60 @@ class SymKeyForge implements SymKey {
   }
 
   /**
-   * Decrypts the cipheredMessage using the same algorithms as SymKeyForge#encrypt
+   * Decrypts the cipherText using raw AES-CBC with the given IV
+   * @method
+   * @param {Buffer} cipherText
+   * @param {Buffer} iv
+   * @returns {Buffer}
+   */
+  rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {
+    const cipher: forge.cipher.BlockCipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
+    cipher.start({ iv: iv.toString('binary') })
+    cipher.update(forge.util.createBuffer(cipherText))
+    cipher.finish()
+    return Buffer.from(cipher.output.data, 'binary')
+  }
+
+  /**
+   * Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
    * @method
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
    */
-  decrypt (cipheredMessage: Buffer): Buffer {
+  decryptSync (cipheredMessage: Buffer): Buffer {
     const iv = cipheredMessage.slice(0, 16)
     const cipherText = cipheredMessage.slice(16, -32)
     const hmac = cipheredMessage.slice(-32)
 
-    if (this.calculateHMAC(Buffer.concat([iv, cipherText])).equals(hmac)) {
-      const cipher: forge.cipher.BlockCipher = forge.cipher.createDecipher('AES-CBC', this.encryptionKey)
-      cipher.start({ iv: iv.toString('binary') })
-      cipher.update(forge.util.createBuffer(cipherText))
-      cipher.finish()
-      return Buffer.from(cipher.output.data, 'binary')
+    if (this.calculateHMACSync_(Buffer.concat([iv, cipherText])).equals(hmac)) {
+      return this.rawDecryptSync_(cipherText, iv)
+    } else throw new Error('INVALID_HMAC')
+  }
+
+  /**
+   * Decrypts the cipherText using raw AES-CBC with the given IV
+   * @method
+   * @param {Buffer} cipherText
+   * @param {Buffer} iv
+   * @returns {Promise<Buffer>}
+   */
+  async rawDecrypt_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+    return this.rawDecryptSync_(cipherText, iv)
+  }
+
+  /**
+   * Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
+   * @method
+   * @param {Buffer} cipheredMessage
+   * @returns {Promise<Buffer>}
+   */
+  async decrypt (cipheredMessage: Buffer): Promise<Buffer> {
+    const iv = cipheredMessage.slice(0, 16)
+    const cipherText = cipheredMessage.slice(16, -32)
+    const hmac = cipheredMessage.slice(-32)
+
+    if ((await this.calculateHMAC_(Buffer.concat([iv, cipherText]))).equals(hmac)) {
+      return this.rawDecrypt_(cipherText, iv)
     } else throw new Error('INVALID_HMAC')
   }
 
@@ -204,7 +294,7 @@ class SymKeyForge implements SymKey {
     let gotIv = false
 
     return new Transform({
-      transform (chunk: Buffer, encoding, callback) {
+      transform (chunk: Buffer, encoding, callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
@@ -232,7 +322,7 @@ class SymKeyForge implements SymKey {
           callback(e)
         }
       },
-      flush (callback) {
+      flush (callback): void {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')

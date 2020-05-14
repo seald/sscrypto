@@ -51,12 +51,12 @@ testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytes, disableWe
 
 testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytes)
 testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytes)
-// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes) // this is a bit long, so we disable it by default
+testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes) // this is a bit long, so we disable it by default
 testAsymKeyPerf('webcrypto', 1024, AsymKeyWebCrypto, randomBytes)
 testAsymKeyPerf('webcrypto', 2048, AsymKeyWebCrypto, randomBytes)
-// testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytes)
-testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
-testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytes)
+// testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+// testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 // testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // Utils
