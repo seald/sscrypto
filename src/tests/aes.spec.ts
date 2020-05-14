@@ -8,7 +8,7 @@ import { SymKey, SymKeyConstructor } from '../utils/aes'
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
+export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`AES ${name}`, () => {
     let key128: SymKey
     let key192: SymKey
@@ -356,7 +356,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor, r
   })
 }
 
-export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstructor, SymKeyClass2: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
+export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstructor<SymKey>, SymKeyClass2: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer): void => {
   describe(`AES compatibility ${name}`, () => {
     let key1: SymKey
     let key2: SymKey
@@ -420,7 +420,7 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
   })
 }
 
-export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor, randomBytes: (size: number) => Buffer): void => {
+export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer): void => {
   describe(`AES perf ${name}`, function () {
     this.timeout(30000)
 

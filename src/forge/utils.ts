@@ -1,4 +1,13 @@
-import forge from 'node-forge'
+import forge, { Bytes } from 'node-forge'
+import { promisify } from 'util'
+
+// Necessary stuff because node-forge typings are incomplete...
+declare module 'node-forge' {
+  namespace random { // eslint-disable-line @typescript-eslint/no-namespace
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function getBytes(count: number, callback?: (err: Error, bytes: Bytes) => any): Bytes;
+  }
+}
 
 /**
  * Returns a Buffer containing the hash of the given data
@@ -16,4 +25,11 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')
+export const randomBytesSync = (length = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')
+
+/**
+ * Returns a Buffer of random bytes
+ * @param {number} [length=10]
+ * @return {Promise<Buffer>}
+ */
+export const randomBytes = async (length = 10): Promise<Buffer> => Buffer.from(await promisify(forge.random.getBytes)(length), 'binary')

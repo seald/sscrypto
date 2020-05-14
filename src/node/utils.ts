@@ -16,4 +16,11 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length = 10): Buffer => crypto.randomBytes(length)
+export const randomBytesSync = (length = 10): Buffer => crypto.randomBytes(length)
+
+/**
+ * Returns a Buffer of random bytes
+ * @param {number} [length=10]
+ * @return {Promise<Buffer>}
+ */
+export const randomBytes = async (length = 10): Promise<Buffer> => crypto.randomBytes(length)
