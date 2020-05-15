@@ -70,6 +70,38 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       })
     })
 
+    it('Try deciphering sync a short invalid cipherText', () => {
+      const cipheredMessage = randomBytes(10)
+      expect(() => key256.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_HMAC')
+        return true
+      })
+    })
+
+    it('Try deciphering a short invalid cipherText', async () => {
+      const cipheredMessage = randomBytes(10)
+      await expect(key256.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_HMAC')
+        return true
+      })
+    })
+
+    it('Try deciphering sync a long invalid cipherText', () => {
+      const cipheredMessage = randomBytes(100)
+      expect(() => key256.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_HMAC')
+        return true
+      })
+    })
+
+    it('Try deciphering a long invalid cipherText', async () => {
+      const cipheredMessage = randomBytes(100)
+      await expect(key256.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_HMAC')
+        return true
+      })
+    })
+
     it('cipher & decipher sync 128', () => {
       const cipheredMessage = key128.encryptSync(message)
       const decipheredMessage = key128.decryptSync(cipheredMessage)
@@ -166,7 +198,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       assert.isTrue(messageBinary.equals(decipheredMessage))
     })
 
-    it('rawEncrypt sync, async & stream', async () => {
+    it('rawEncrypt & rawDecrypt, sync, async & stream', async () => {
       const input = randomBytes(100)
       const iv = randomBytes(16)
       const cipherSync = key256.rawEncryptSync_(input, iv)
@@ -177,6 +209,27 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       )
       assert.isTrue(cipherSync.equals(cipherAsync))
       assert.isTrue(cipherSync.equals(cipherStream))
+
+      const decipherSync = key256.rawDecryptSync_(cipherSync, iv)
+      const decipherAsync = await key256.rawDecrypt_(cipherSync, iv)
+      const decipherStream = await _streamHelper(
+        splitLength(cipherSync, 20),
+        key256.rawDecryptStream_(iv)
+      )
+      assert.isTrue(input.equals(decipherSync))
+      assert.isTrue(input.equals(decipherAsync))
+      assert.isTrue(input.equals(decipherStream))
+    })
+
+    it('rawEncryptStream & rawDecryptStream piped', async () => {
+      const input = randomBytes(100)
+      const iv = randomBytes(16)
+      const output = await _streamHelper(
+        splitLength(input, 20),
+        key256.rawEncryptStream_(iv),
+        key256.rawDecryptStream_(iv)
+      )
+      assert.isTrue(input.equals(output))
     })
 
     it('HMAC sync, async & stream', async () => {
@@ -376,6 +429,26 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
       if (progress > size) throw new Error('Stream has\'t been canceled')
       assert.include(error.message, 'STREAM_CANCELED')
+    })
+
+    it('Test decryptStream error on bad data', async () => {
+      const input = randomBytes(100)
+      const chunks = splitLength(input, 20)
+      const decipher = key256.decryptStream()
+      await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
+        return true
+      })
+    })
+
+    it('Test decryptStream error on short stream', async () => {
+      const input = randomBytes(10)
+      const chunks = splitLength(input, 10)
+      const decipher = key256.decryptStream()
+      await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+        assert.include(error.message, 'INVALID_STREAM')
+        return true
+      })
     })
   })
 }

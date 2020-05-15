@@ -20,7 +20,9 @@ type utils = {
 }
 
 export const testUtilsImplem = (name: string, { sha256, randomBytesSync, randomBytes }: utils, { duringBefore, duringAfter }: TestHooks = {}): void => {
-  describe(`Utils ${name}`, () => {
+  describe(`Utils ${name}`, function () {
+    this.timeout(10000)
+
     before(() => {
       if (duringBefore) duringBefore()
     })

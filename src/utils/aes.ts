@@ -170,6 +170,8 @@ export abstract class SymKey {
 
   abstract HMACStream_ (): Transform
 
+  abstract rawDecryptStream_ (iv: Buffer): Transform
+
   /**
    * Creates a Transform stream that encrypts the data piped to it.
    * @returns {Transform}
@@ -275,5 +277,67 @@ export abstract class SymKey {
    * Creates a Transform stream that decrypts the encrypted data piped to it.
    * @returns {Transform}
    */
-  abstract decryptStream (): Transform
+  decryptStream (): Transform {
+    let canceled = false
+    const progress = getProgress()
+    let buffer = Buffer.alloc(0)
+    let decryptStream: Transform
+    const getDecryptStream = (iv: Buffer): void => { // this avoids having to save 'this'
+      decryptStream = this.rawDecryptStream_(iv)
+    }
+    const hmacStream = this.HMACStream_()
+    const hmacPromise = streamToData(hmacStream).catch(() => Buffer.alloc(0))
+    const transformStream = new Transform({
+      transform (chunk: Buffer, encoding, callback): void { // TODO: handle 'drain'
+        try {
+          if (!decryptStream) progress(0, transformStream, 0)
+          if (canceled) throw new Error('STREAM_CANCELED')
+          buffer = Buffer.concat([buffer, chunk])
+          if (!decryptStream) { // we have not gotten the IV yet, gotta wait for it
+            if (buffer.length >= 16) { // length of IV
+              const iv = buffer.slice(0, 16)
+              buffer = buffer.slice(16)
+              getDecryptStream(iv)
+              hmacStream.write(iv)
+            }
+          }
+          if (decryptStream) { // we have the IV, can decrypt
+            if (buffer.length > 32) { // we have to leave 32 bytes, they may be the HMAC
+              const cipherText = buffer.slice(0, -32)
+              buffer = buffer.slice(-32)
+              const output = decryptStream.read()
+              if (output && output.length) this.push(output)
+              decryptStream.write(cipherText)
+              hmacStream.write(cipherText)
+            }
+          }
+          progress(chunk.length, this)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
+      },
+      async flush (callback): Promise<void> {
+        try {
+          if (canceled) throw new Error('STREAM_CANCELED')
+          if (buffer.length !== 32) throw new Error('INVALID_STREAM')
+          const outputPromise = streamToData(decryptStream).catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
+          setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
+            decryptStream.end()
+            hmacStream.end()
+          })
+          const [hmac, output] = await Promise.all([hmacPromise, outputPromise]) // await both promises at the same time, to avoid having one being unhandled if the other fails
+          progress(32, this, 0)
+          if (!hmac.equals(buffer)) throw new Error('INVALID_HMAC')
+          callback(null, output)
+        } catch (e) {
+          callback(e)
+        }
+      }
+    })
+    transformStream.on('cancel', () => {
+      canceled = true
+    })
+    return transformStream
+  }
 }
