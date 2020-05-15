@@ -1,4 +1,4 @@
-import { Stream, Readable } from 'stream'
+import { Readable, Stream, Writable } from 'stream'
 
 /**
  * Converts the given number to a Buffer.
@@ -48,3 +48,8 @@ export const streamToData = (inputStream: Readable): Promise<Buffer> => new Prom
     .on('error', reject)
     .on('end', () => resolve(output))
 })
+
+export const writeInStream = async (stream: Writable, data: Buffer): Promise<void> => { // this should basically never be needed for crypto streams, but hey, better do things cleanly
+  const shouldWait = !stream.write(data)
+  if (shouldWait) await new Promise(resolve => stream.once('drain', resolve))
+}

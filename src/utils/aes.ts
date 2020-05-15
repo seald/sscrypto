@@ -1,6 +1,5 @@
 import { Transform } from 'stream'
-import { getProgress, streamToData } from './commonUtils'
-import Pumpify from 'pumpify'
+import { getProgress, streamToData, writeInStream } from './commonUtils'
 
 export type SymKeySize = 128 | 192 | 256
 
@@ -48,36 +47,36 @@ export abstract class SymKey {
    * @method
    * @static
    * @param {SymKeySize} [size=256]
-   * @returns {Promise<SymKeyForge>}
+   * @returns {Promise<SymKey>}
    */
   static async generate<T extends SymKey> (this: SymKeyConstructor<T>, size: SymKeySize = 256): Promise<T> {
     return new this(await this.randomBytes_(size / 4))
   }
 
   /**
-   * Static method to construct a new SymKeyNode from a binary string encoded messageKey
+   * Static method to construct a new SymKey from a binary string encoded messageKey
    * @method
    * @static
    * @param {string} messageKey binary encoded messageKey
-   * @returns {SymKeyNode}
+   * @returns {SymKey}
    */
   static fromString<T extends SymKey> (this: SymKeyConstructor<T>, messageKey: string): T {
     return new this(Buffer.from(messageKey, 'binary'))
   }
 
   /**
-   * Static method to construct a new SymKeyNode from a b64 encoded key
+   * Static method to construct a new SymKey from a b64 encoded key
    * @method
    * @static
    * @param {string} messageKey b64 encoded messageKey
-   * @returns {SymKeyNode}
+   * @returns {SymKey}
    */
   static fromB64<T extends SymKey> (this: SymKeyConstructor<T>, messageKey: string): T {
     return new this(Buffer.from(messageKey, 'base64'))
   }
 
   /**
-   * Returns both SymKeyNode#signingKey and SymKeyNode#encryptionKey concatenated encoded with b64
+   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated encoded with b64
    * @method
    * @returns {string}
    */
@@ -86,7 +85,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Returns both SymKeyNode#signingKey and SymKeyNode#encryptionKey concatenated as a binary string
+   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
    * @method
    * @returns {string}
    */
@@ -95,7 +94,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKeyNode#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Promise<Buffer>}
@@ -105,7 +104,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKeyNode#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
@@ -113,7 +112,7 @@ export abstract class SymKey {
   abstract calculateHMACSync_ (textToAuthenticate: Buffer): Buffer
 
   /**
-   * Encrypts the clearText with SymKeyNode#encryptionKey using raw AES-CBC with given IV
+   * Encrypts the clearText with SymKey#encryptionKey using raw AES-CBC with given IV
    * @method
    * @param {Buffer} clearText
    * @param {Buffer} iv
@@ -124,8 +123,8 @@ export abstract class SymKey {
   }
 
   /**
-   * Encrypts the clearText with SymKeyNode#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKeyNode#signingKey, returns it concatenated in the following order:
+   * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKey#signingKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
@@ -141,7 +140,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Encrypts the clearText with SymKeyNode#encryptionKey using raw AES-CBC with given IV
+   * Encrypts the clearText with SymKey#encryptionKey using raw AES-CBC with given IV
    * @method
    * @param {Buffer} clearText
    * @param {Buffer} iv
@@ -150,8 +149,8 @@ export abstract class SymKey {
   abstract rawEncryptSync_ (clearText: Buffer, iv: Buffer): Buffer
 
   /**
-   * Encrypts the clearText with SymKeyNode#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKeyNode#signingKey, returns it concatenated in the following order:
+   * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+   * SymKey#signingKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
@@ -177,46 +176,65 @@ export abstract class SymKey {
    * @returns {Transform}
    */
   encryptStream (): Transform {
-    const transformStream: Pumpify & Transform = new Pumpify() as Pumpify & Transform
     let canceled = false
+    const progress = getProgress()
+    const ivPromise = (this.constructor as SymKeyConstructor<SymKey>).randomBytes_(16)
+    let encryptStream: Transform
+    const getEncryptStream = (iv: Buffer): void => { // this avoids having to save 'this'
+      encryptStream = this.rawEncryptStream_(iv)
+    }
+    const hmacStream = this.HMACStream_()
+    const hmacPromise = streamToData(hmacStream).catch(() => Buffer.alloc(0))
+    const transformStream = new Transform({
+      async transform (chunk: Buffer, encoding, callback): Promise<void> {
+        try {
+          if (!encryptStream) progress(0, transformStream, 0)
+          if (canceled) throw new Error('STREAM_CANCELED')
+          if (!encryptStream) { // we have not gotten the IV yet, gotta wait for it
+            const iv = await ivPromise
+            getEncryptStream(iv)
+            await writeInStream(hmacStream, iv)
+            this.push(iv)
+          }
+          const output = encryptStream.read()
+          if (output && output.length) {
+            await writeInStream(hmacStream, output)
+            this.push(output)
+          }
+          await writeInStream(encryptStream, chunk)
+          progress(chunk.length, this)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
+      },
+      async flush (callback): Promise<void> {
+        try {
+          if (canceled) throw new Error('STREAM_CANCELED')
+          const outputPromise = streamToData(encryptStream)
+            .catch(() => { throw new Error('INVALID_STREAM') }) // This should never happen
+          setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
+            encryptStream.end()
+          })
+          const output = await outputPromise
+          if (output && output.length) {
+            await writeInStream(hmacStream, output)
+            this.push(output)
+          }
+          setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
+            hmacStream.end()
+          })
+          const hmac = await hmacPromise
+          progress(0, this, 0)
+          this.push(hmac)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
+      }
+    })
     transformStream.on('cancel', () => {
       canceled = true
-    })
-    setImmediate(async () => {
-      const progress = getProgress()
-      progress(0, transformStream, 0)
-      const iv = await (this.constructor as SymKeyConstructor<SymKey>).randomBytes_(16)
-      const cipherStream = this.rawEncryptStream_(iv)
-      const hmacStream = new Pumpify([cipherStream, this.HMACStream_()])
-      const hmacPromise = streamToData(hmacStream).catch(() => Buffer.alloc(0))
-      const appendHmacStream = new Pumpify([
-        cipherStream,
-        new Transform({ // stream that acts like a PassThrough, except it adds the HMAC at the end
-          transform (chunk, encoding, callback): void {
-            callback(null, chunk)
-          },
-          async flush (callback): Promise<void> {
-            const hmac = await hmacPromise
-            callback(null, hmac)
-          }
-        })
-      ])
-      cipherStream.unshift(iv) // iv must be injected before anything goes through transformStream, because it must be first in the output
-      transformStream.setPipeline([
-        new Transform({ // stream that acts like a PassThrough, except it triggers progress & cancel
-          transform (chunk, encoding, callback): void {
-            if (canceled) return callback(new Error('STREAM_CANCELED'))
-            progress(chunk.length, transformStream)
-            callback(null, chunk)
-          },
-          flush (callback): void {
-            if (canceled) return callback(new Error('STREAM_CANCELED'))
-            progress(0, transformStream, 0)
-            callback()
-          }
-        }),
-        appendHmacStream
-      ])
     })
     return transformStream
   }
@@ -288,7 +306,7 @@ export abstract class SymKey {
     const hmacStream = this.HMACStream_()
     const hmacPromise = streamToData(hmacStream).catch(() => Buffer.alloc(0))
     const transformStream = new Transform({
-      transform (chunk: Buffer, encoding, callback): void { // TODO: handle 'drain'
+      async transform (chunk: Buffer, encoding, callback): Promise<void> {
         try {
           if (!decryptStream) progress(0, transformStream, 0)
           if (canceled) throw new Error('STREAM_CANCELED')
@@ -298,7 +316,7 @@ export abstract class SymKey {
               const iv = buffer.slice(0, 16)
               buffer = buffer.slice(16)
               getDecryptStream(iv)
-              hmacStream.write(iv)
+              await writeInStream(hmacStream, iv)
             }
           }
           if (decryptStream) { // we have the IV, can decrypt
@@ -307,8 +325,8 @@ export abstract class SymKey {
               buffer = buffer.slice(-32)
               const output = decryptStream.read()
               if (output && output.length) this.push(output)
-              decryptStream.write(cipherText)
-              hmacStream.write(cipherText)
+              await writeInStream(decryptStream, cipherText)
+              await writeInStream(hmacStream, cipherText)
             }
           }
           progress(chunk.length, this)
@@ -321,15 +339,17 @@ export abstract class SymKey {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')
-          const outputPromise = streamToData(decryptStream).catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
+          const outputPromise = streamToData(decryptStream)
+            .catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
           setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
             decryptStream.end()
             hmacStream.end()
           })
           const [hmac, output] = await Promise.all([hmacPromise, outputPromise]) // await both promises at the same time, to avoid having one being unhandled if the other fails
+          if (output && output.length) this.push(output)
           progress(32, this, 0)
           if (!hmac.equals(buffer)) throw new Error('INVALID_HMAC')
-          callback(null, output)
+          callback()
         } catch (e) {
           callback(e)
         }
