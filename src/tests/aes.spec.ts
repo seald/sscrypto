@@ -166,6 +166,31 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       assert.isTrue(messageBinary.equals(decipheredMessage))
     })
 
+    it('rawEncrypt sync, async & stream', async () => {
+      const input = randomBytes(100)
+      const iv = randomBytes(16)
+      const cipherSync = key256.rawEncryptSync_(input, iv)
+      const cipherAsync = await key256.rawEncrypt_(input, iv)
+      const cipherStream = await _streamHelper(
+        splitLength(input, 20),
+        key256.rawEncryptStream_(iv)
+      )
+      assert.isTrue(cipherSync.equals(cipherAsync))
+      assert.isTrue(cipherSync.equals(cipherStream))
+    })
+
+    it('HMAC sync, async & stream', async () => {
+      const input = randomBytes(100)
+      const hmacSync = key256.calculateHMACSync_(input)
+      const hmacAsync = await key256.calculateHMAC_(input)
+      const hmacStream = await _streamHelper(
+        splitLength(input, 20),
+        key256.HMACStream_()
+      )
+      assert.isTrue(hmacSync.equals(hmacAsync))
+      assert.isTrue(hmacSync.equals(hmacStream))
+    })
+
     it('cipher stream & decipher sync', async () => {
       const input = randomBytes(100)
       const chunks = splitLength(input, 20)
@@ -314,7 +339,6 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       const chunks = splitLength(input, 20)
 
       let progress: number
-
       const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
         const stream = key256.encryptStream()
           .on('end', () => reject(new Error('stream succeeded')))

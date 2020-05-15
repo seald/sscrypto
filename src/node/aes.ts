@@ -29,51 +29,12 @@ class SymKeyNode extends SymKey {
     return Buffer.concat([cipher.update(clearText), cipher.final()])
   }
 
-  encryptStream (): Transform {
-    const progress = getProgress()
-    const iv = crypto.randomBytes(16)
+  rawEncryptStream_ (iv: Buffer): Transform {
+    return crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+  }
 
-    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
-
-    const hmac = crypto.createHmac('sha256', this.signingKey)
-
-    let firstBlock = true
-    let canceled = false
-    return new Transform({
-      transform (chunk, encoding, callback): void {
-        try {
-          if (canceled) throw new Error('STREAM_CANCELED')
-          if (firstBlock) {
-            hmac.update(iv)
-            this.push(iv)
-            firstBlock = false
-          }
-          const crypt = cipher.update(chunk)
-          hmac.update(crypt)
-          this.push(crypt)
-          progress(chunk.length, this)
-          callback()
-        } catch (e) {
-          callback(e)
-        }
-      },
-      flush (callback): void {
-        try {
-          if (canceled) throw new Error('STREAM_CANCELED')
-          progress(0, this, 0)
-          const crypt = cipher.final()
-          hmac.update(crypt)
-          this.push(crypt)
-          this.push(hmac.digest())
-          callback()
-        } catch (e) {
-          callback(e)
-        }
-      }
-    })
-      .on('cancel', () => {
-        canceled = true
-      })
+  HMACStream_ (): Transform {
+    return crypto.createHmac('sha256', this.signingKey)
   }
 
   rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {

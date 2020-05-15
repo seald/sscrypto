@@ -1,4 +1,6 @@
 import { Transform } from 'stream'
+import { getProgress, streamToData } from './commonUtils'
+import Pumpify from 'pumpify'
 
 export type SymKeySize = 128 | 192 | 256
 
@@ -164,11 +166,58 @@ export abstract class SymKey {
     return Buffer.concat([cipherText, this.calculateHMACSync_(cipherText)])
   }
 
+  abstract rawEncryptStream_ (iv: Buffer): Transform
+
+  abstract HMACStream_ (): Transform
+
   /**
    * Creates a Transform stream that encrypts the data piped to it.
    * @returns {Transform}
    */
-  abstract encryptStream (): Transform
+  encryptStream (): Transform {
+    const transformStream: Pumpify & Transform = new Pumpify() as Pumpify & Transform
+    let canceled = false
+    transformStream.on('cancel', () => {
+      canceled = true
+    })
+    setImmediate(async () => {
+      const progress = getProgress()
+      progress(0, transformStream, 0)
+      const iv = await (this.constructor as SymKeyConstructor<SymKey>).randomBytes_(16)
+      const cipherStream = this.rawEncryptStream_(iv)
+      const hmacStream = new Pumpify([cipherStream, this.HMACStream_()])
+      const hmacPromise = streamToData(hmacStream).catch(() => Buffer.alloc(0))
+      const appendHmacStream = new Pumpify([
+        cipherStream,
+        new Transform({ // stream that acts like a PassThrough, except it adds the HMAC at the end
+          transform (chunk, encoding, callback): void {
+            callback(null, chunk)
+          },
+          async flush (callback): Promise<void> {
+            const hmac = await hmacPromise
+            callback(null, hmac)
+          }
+        })
+      ])
+      cipherStream.unshift(iv) // iv must be injected before anything goes through transformStream, because it must be first in the output
+      transformStream.setPipeline([
+        new Transform({ // stream that acts like a PassThrough, except it triggers progress & cancel
+          transform (chunk, encoding, callback): void {
+            if (canceled) return callback(new Error('STREAM_CANCELED'))
+            progress(chunk.length, transformStream)
+            callback(null, chunk)
+          },
+          flush (callback): void {
+            if (canceled) return callback(new Error('STREAM_CANCELED'))
+            progress(0, transformStream, 0)
+            callback()
+          }
+        }),
+        appendHmacStream
+      ])
+    })
+    return transformStream
+  }
 
   /**
    * Decrypts the cipherText using raw AES-CBC with the given IV

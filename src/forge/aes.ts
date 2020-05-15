@@ -39,34 +39,38 @@ class SymKeyForge extends SymKey {
     return Buffer.from(cipher.output.data, 'binary')
   }
 
-  encryptStream (): Transform {
-    let canceled = false
-    const progress = getProgress()
-    const iv = forge.random.getBytesSync(16)
-
+  rawEncryptStream_ (iv: Buffer): Transform {
     const cipher: forge.cipher.BlockCipher = forge.cipher.createCipher('AES-CBC', this.encryptionKey)
-    cipher.start({ iv: iv })
-
-    const hmac = forge.hmac.create()
-    hmac.start('sha256', this.signingKey)
-
-    let firstBlock = true
+    cipher.start({ iv: iv.toString('binary') })
     return new Transform({
       transform (chunk: Buffer, encoding, callback): void {
         try {
-          if (canceled) throw new Error('STREAM_CANCELED')
-          if (firstBlock) {
-            const header = iv
-            hmac.update(header)
-            const buffer = Buffer.from(header, 'binary')
-            this.push(buffer)
-            firstBlock = false
-          }
-          const output = cipher.output.getBytes()
           cipher.update(forge.util.createBuffer(chunk))
-          hmac.update(output)
-          this.push(Buffer.from(output, 'binary'))
-          progress(chunk.length, this)
+          const output = cipher.output.getBytes()
+          callback(null, Buffer.from(output, 'binary'))
+        } catch (e) {
+          callback(e)
+        }
+      },
+      flush (callback): void {
+        try {
+          cipher.finish()
+          const output = cipher.output.getBytes()
+          callback(null, Buffer.from(output, 'binary'))
+        } catch (e) {
+          callback(e)
+        }
+      }
+    })
+  }
+
+  HMACStream_ (): Transform {
+    const hmac = forge.hmac.create()
+    hmac.start('sha256', this.signingKey)
+    return new Transform({
+      transform (chunk: Buffer, encoding, callback): void {
+        try {
+          hmac.update(chunk.toString('binary'))
           callback()
         } catch (e) {
           callback(e)
@@ -74,25 +78,12 @@ class SymKeyForge extends SymKey {
       },
       flush (callback): void {
         try {
-          if (canceled) throw new Error('STREAM_CANCELED')
-          progress(0, this, 0)
-          cipher.finish()
-          const output = cipher.output.getBytes()
-          hmac.update(output)
-          let buffer = Buffer.from(output, 'binary')
-          this.push(buffer)
-          const digest = hmac.digest()
-          buffer = Buffer.from(digest.getBytes(), 'binary')
-          this.push(buffer)
-          callback()
+          callback(null, Buffer.from(hmac.digest().getBytes(), 'binary'))
         } catch (e) {
           callback(e)
         }
       }
     })
-      .on('cancel', () => {
-        canceled = true
-      })
   }
 
   rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {

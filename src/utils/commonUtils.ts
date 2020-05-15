@@ -1,4 +1,4 @@
-import { Stream } from 'stream'
+import { Stream, Readable } from 'stream'
 
 /**
  * Converts the given number to a Buffer.
@@ -36,5 +36,15 @@ export const getProgress: () => progressCallback = (): progressCallback => {
 // https://github.com/microsoft/TypeScript/issues/33892
 export function staticImplements<T> (): ((constructor: T) => void) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  return <U extends T>(constructor: U): void => {}
+  return <U extends T> (constructor: U): void => {}
 }
+
+export const streamToData = (inputStream: Readable): Promise<Buffer> => new Promise((resolve, reject) => {
+  let output = Buffer.alloc(0)
+  inputStream
+    .on('data', chunk => {
+      output = Buffer.concat([output, chunk])
+    })
+    .on('error', reject)
+    .on('end', () => resolve(output))
+})
