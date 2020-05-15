@@ -10,20 +10,11 @@ const { assert, expect } = chai
 
 export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`AES ${name}`, () => {
-    let key128: SymKey
-    let key192: SymKey
-    let key256: SymKey
-    let badKey: SymKey
-
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
     const messageBinary = randomBytes(100)
 
     before(async () => {
-      key128 = await SymKeyClass.generate(128)
-      key192 = await SymKeyClass.generate(192)
-      key256 = await SymKeyClass.generate(256)
-      badKey = await SymKeyClass.generate(256)
       if (duringBefore) duringBefore()
     })
 
@@ -31,427 +22,417 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       if (duringAfter) duringAfter()
     })
 
-    it('Try creating a key with an invalid type in constructor', () => {
-      // @ts-ignore: voluntary test of what happens with bad type
-      expect(() => new SymKeyClass({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_ARG')
-        return true
+    describe(`AES ${name} - General`, () => {
+      it('Try creating a key with an invalid type in constructor', () => {
+        // @ts-ignore: voluntary test of what happens with bad type
+        expect(() => new SymKeyClass({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy((error: Error) => {
+          assert.include(error.message, 'INVALID_ARG')
+          return true
+        })
+      })
+
+      it('Try creating a key with an invalid size', () => {
+        // @ts-ignore: voluntary test of what happens with bad type
+        expect(() => new SymKeyClass(42)).to.throw(Error).and.satisfy((error: Error) => {
+          assert.include(error.message, 'INVALID_ARG')
+          return true
+        })
+      })
+
+      it('Try creating a key with an invalid size buffer', () => {
+        expect(() => new SymKeyClass(Buffer.from('zkejglzeigh', 'binary'))).to.throw(Error).and.satisfy((error: Error) => {
+          assert.include(error.message, 'INVALID_ARG')
+          return true
+        })
       })
     })
 
-    it('Try creating a key with an invalid size', () => {
-      // @ts-ignore: voluntary test of what happens with bad type
-      expect(() => new SymKeyClass(42)).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_ARG')
-        return true
-      })
-    })
+    for (const size of [128, 192, 256]) {
+      let key: SymKey
+      let badKey: SymKey
 
-    it('Try creating a key with an invalid size buffer', () => {
-      expect(() => new SymKeyClass(Buffer.from('zkejglzeigh', 'binary'))).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_ARG')
-        return true
-      })
-    })
+      describe(`AES ${name} - AES-${size}`, () => {
+        before(async () => {
+          key = await SymKeyClass.generate(256)
+          badKey = await SymKeyClass.generate(256)
+        })
 
-    it('Try deciphering sync a cipherText with invalid HMAC', () => {
-      const cipheredMessage = key256.encryptSync(message)
-      expect(() => key256.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Try deciphering a cipherText with invalid HMAC', async () => {
-      const cipheredMessage = await key256.encrypt(message)
-      await expect(key256.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Try deciphering sync a short invalid cipherText', () => {
-      const cipheredMessage = randomBytes(10)
-      expect(() => key256.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Try deciphering a short invalid cipherText', async () => {
-      const cipheredMessage = randomBytes(10)
-      await expect(key256.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Try deciphering sync a long invalid cipherText', () => {
-      const cipheredMessage = randomBytes(100)
-      expect(() => key256.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Try deciphering a long invalid cipherText', async () => {
-      const cipheredMessage = randomBytes(100)
-      await expect(key256.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('cipher & decipher sync 128', () => {
-      const cipheredMessage = key128.encryptSync(message)
-      const decipheredMessage = key128.decryptSync(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher 128', async () => {
-      const cipheredMessage = await key128.encrypt(message)
-      const decipheredMessage = await key128.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher sync 192', () => {
-      const cipheredMessage = key192.encryptSync(message)
-      const decipheredMessage = key192.decryptSync(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher 192', async () => {
-      const cipheredMessage = await key192.encrypt(message)
-      const decipheredMessage = await key192.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher sync 256', () => {
-      const cipheredMessage = key256.encryptSync(message)
-      const decipheredMessage = key256.decryptSync(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher 256', async () => {
-      const cipheredMessage = await key256.encrypt(message)
-      const decipheredMessage = await key256.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher sync UTF8', () => {
-      const cipheredMessage = key256.encryptSync(Buffer.from(messageUtf8, 'utf8'))
-      const decipheredMessage = key256.decryptSync(cipheredMessage).toString('utf8')
-      assert.strictEqual(messageUtf8, decipheredMessage)
-    })
-
-    it('cipher & decipher UTF8', async () => {
-      const cipheredMessage = await key256.encrypt(Buffer.from(messageUtf8, 'utf8'))
-      const decipheredMessage = (await key256.decrypt(cipheredMessage)).toString('utf8')
-      assert.strictEqual(messageUtf8, decipheredMessage)
-    })
-
-    it('cipher & decipher sync Binary', () => {
-      const cipheredMessage = key256.encryptSync(messageBinary)
-      const decipheredMessage = key256.decryptSync(cipheredMessage)
-      assert.isTrue(messageBinary.equals(decipheredMessage))
-    })
-
-    it('cipher & decipher Binary', async () => {
-      const cipheredMessage = await key256.encrypt(messageBinary)
-      const decipheredMessage = await key256.decrypt(cipheredMessage)
-      assert.isTrue(messageBinary.equals(decipheredMessage))
-    })
-
-    it('fail with bad key sync', () => {
-      const cipheredMessage = key256.encryptSync(message)
-      expect(() => badKey.decryptSync(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('fail with bad key', async () => {
-      const cipheredMessage = await key256.encrypt(message)
-      await expect(badKey.decrypt(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('serialize and import key', async () => {
-      const cipheredMessage = await key256.encrypt(message)
-      const exportedKey = key256.toB64()
-      const importedKey = SymKeyClass.fromB64(exportedKey)
-      const decipheredMessage = await importedKey.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
-    })
-
-    it('cipher sync & decipher async', async () => {
-      const cipheredMessage = key256.encryptSync(messageBinary)
-      const decipheredMessage = await key256.decrypt(cipheredMessage)
-      assert.isTrue(messageBinary.equals(decipheredMessage))
-    })
-
-    it('cipher async & decipher sync', async () => {
-      const cipheredMessage = await key256.encrypt(messageBinary)
-      const decipheredMessage = key256.decryptSync(cipheredMessage)
-      assert.isTrue(messageBinary.equals(decipheredMessage))
-    })
-
-    it('rawEncrypt & rawDecrypt, sync, async & stream', async () => {
-      const input = randomBytes(100)
-      const iv = randomBytes(16)
-      const cipherSync = key256.rawEncryptSync_(input, iv)
-      const cipherAsync = await key256.rawEncrypt_(input, iv)
-      const cipherStream = await _streamHelper(
-        splitLength(input, 20),
-        key256.rawEncryptStream_(iv)
-      )
-      assert.isTrue(cipherSync.equals(cipherAsync))
-      assert.isTrue(cipherSync.equals(cipherStream))
-
-      const decipherSync = key256.rawDecryptSync_(cipherSync, iv)
-      const decipherAsync = await key256.rawDecrypt_(cipherSync, iv)
-      const decipherStream = await _streamHelper(
-        splitLength(cipherSync, 20),
-        key256.rawDecryptStream_(iv)
-      )
-      assert.isTrue(input.equals(decipherSync))
-      assert.isTrue(input.equals(decipherAsync))
-      assert.isTrue(input.equals(decipherStream))
-    })
-
-    // TODO: test empty streams
-
-    it('rawEncryptStream & rawDecryptStream piped', async () => {
-      const input = randomBytes(100)
-      const iv = randomBytes(16)
-      const output = await _streamHelper(
-        splitLength(input, 20),
-        key256.rawEncryptStream_(iv),
-        key256.rawDecryptStream_(iv)
-      )
-      assert.isTrue(input.equals(output))
-    })
-
-    it('HMAC sync, async & stream', async () => {
-      const input = randomBytes(100)
-      const hmacSync = key256.calculateHMACSync_(input)
-      const hmacAsync = await key256.calculateHMAC_(input)
-      const hmacStream = await _streamHelper(
-        splitLength(input, 20),
-        key256.HMACStream_()
-      )
-      assert.isTrue(hmacSync.equals(hmacAsync))
-      assert.isTrue(hmacSync.equals(hmacStream))
-    })
-
-    it('cipher stream & decipher sync', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 20)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue(key256.decryptSync(output).equals(input))
-    })
-
-    it('cipher stream & decipher', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 20)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue((await key256.decrypt(output)).equals(input))
-    })
-
-    it('cipher short stream (single chunk) & decipher sync', async () => {
-      const input = randomBytes(10)
-      const chunks = splitLength(input, 100)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue(key256.decryptSync(output).equals(input))
-    })
-
-    it('cipher short stream (single chunk) & decipher', async () => {
-      const input = randomBytes(10)
-      const chunks = splitLength(input, 100)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue((await key256.decrypt(output)).equals(input))
-    })
-
-    it('cipher stream with small blocks & decipher sync', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 10)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue(key256.decryptSync(output).equals(input))
-    })
-
-    it('cipher stream with small blocks & decipher', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 10)
-
-      const cipher = key256.encryptStream()
-
-      const output = await _streamHelper(chunks, cipher)
-      assert.isTrue((await key256.decrypt(output)).equals(input))
-    })
-
-    it('cipher sync & decipher stream', async () => {
-      const clearText = randomBytes(1000)
-      const cipherText = key256.encryptSync(clearText)
-      const cipherChunks = splitLength(cipherText, 20)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher & decipher stream', async () => {
-      const clearText = randomBytes(1000)
-      const cipherText = await key256.encrypt(clearText)
-      const cipherChunks = splitLength(cipherText, 20)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher sync & decipher short stream (single chunk)', async () => {
-      const clearText = randomBytes(10)
-      const cipherText = key256.encryptSync(clearText)
-      const cipherChunks = splitLength(cipherText, 100)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher & decipher short stream (single chunk)', async () => {
-      const clearText = randomBytes(10)
-      const cipherText = await key256.encrypt(clearText)
-      const cipherChunks = splitLength(cipherText, 100)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher sync & decipher stream with small blocks', async () => {
-      const clearText = randomBytes(1000)
-      const cipherText = key256.encryptSync(clearText)
-      const cipherChunks = splitLength(cipherText, 10)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher & decipher stream with small blocks', async () => {
-      const clearText = randomBytes(1000)
-      const cipherText = await key256.encrypt(clearText)
-      const cipherChunks = splitLength(cipherText, 10)
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(cipherChunks, decipher)
-      assert.isTrue(output.equals(clearText))
-    })
-
-    it('cipher stream & decipher stream', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 20)
-
-      const cipher = key256.encryptStream()
-      const decipher = key256.decryptStream()
-
-      const output = await _streamHelper(chunks, cipher, decipher)
-      assert.isTrue(output.equals(input))
-    })
-
-    it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
-      const cipheredMessage = await key256.encrypt(message)
-      cipheredMessage[cipheredMessage.length - 1]++
-      const cipherChunks = splitLength(cipheredMessage, 15)
-      const decipher = key256.decryptStream()
-      await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_HMAC')
-        return true
-      })
-    })
-
-    it('Test encryptStream cancel and progress', async () => {
-      const size = 200
-      const input = randomBytes(size)
-      const chunks = splitLength(input, 20)
-
-      let progress: number
-      const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
-        const stream = key256.encryptStream()
-          .on('end', () => reject(new Error('stream succeeded')))
-          .on('error', resolve)
-          .on('progress', _progress => {
-            progress = _progress
+        it('Try deciphering sync a cipherText with invalid HMAC', () => {
+          const cipheredMessage = key.encryptSync(message)
+          expect(() => key.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
           })
-        for (const chunk of chunks) stream.write(chunk)
-        stream.emit('cancel')
-        for (const chunk of chunks) stream.write(chunk)
-      })
-      if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
-      if (progress > size) throw new Error('Stream has\'t been canceled')
-      assert.include(error.message, 'STREAM_CANCELED')
-    })
+        })
 
-    it('Test decryptStream cancel and progress', async () => {
-      const size = 200
-      const input = randomBytes(size)
-      const chunks = splitLength(input, 20)
-
-      let progress: number
-
-      const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
-        const stream = key256.decryptStream()
-          .on('end', () => reject(new Error('stream succeeded')))
-          .on('error', resolve)
-          .on('progress', _progress => {
-            progress = _progress
+        it('Try deciphering a cipherText with invalid HMAC', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          await expect(key.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
           })
-        for (const chunk of chunks) stream.write(chunk)
-        stream.emit('cancel')
-        for (const chunk of chunks) stream.write(chunk)
-      })
-      if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
-      if (progress > size) throw new Error('Stream has\'t been canceled')
-      assert.include(error.message, 'STREAM_CANCELED')
-    })
+        })
 
-    it('Test decryptStream error on bad data', async () => {
-      const input = randomBytes(100)
-      const chunks = splitLength(input, 20)
-      const decipher = key256.decryptStream()
-      await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
-        return true
-      })
-    })
+        it('Try deciphering sync a short invalid cipherText', () => {
+          const cipheredMessage = randomBytes(10)
+          expect(() => key.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
 
-    it('Test decryptStream error on short stream', async () => {
-      const input = randomBytes(10)
-      const chunks = splitLength(input, 10)
-      const decipher = key256.decryptStream()
-      await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-        assert.include(error.message, 'INVALID_STREAM')
-        return true
+        it('Try deciphering a short invalid cipherText', async () => {
+          const cipheredMessage = randomBytes(10)
+          await expect(key.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('Try deciphering sync a long invalid cipherText', () => {
+          const cipheredMessage = randomBytes(100)
+          expect(() => key.decryptSync(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('Try deciphering a long invalid cipherText', async () => {
+          const cipheredMessage = randomBytes(100)
+          await expect(key.decrypt(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('cipher & decipher sync', () => {
+          const cipheredMessage = key.encryptSync(message)
+          const decipheredMessage = key.decryptSync(cipheredMessage)
+          assert.isTrue(message.equals(decipheredMessage))
+        })
+
+        it('cipher & decipher', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          const decipheredMessage = await key.decrypt(cipheredMessage)
+          assert.isTrue(message.equals(decipheredMessage))
+        })
+
+        it('cipher & decipher sync UTF8', () => {
+          const cipheredMessage = key.encryptSync(Buffer.from(messageUtf8, 'utf8'))
+          const decipheredMessage = key.decryptSync(cipheredMessage).toString('utf8')
+          assert.strictEqual(messageUtf8, decipheredMessage)
+        })
+
+        it('cipher & decipher UTF8', async () => {
+          const cipheredMessage = await key.encrypt(Buffer.from(messageUtf8, 'utf8'))
+          const decipheredMessage = (await key.decrypt(cipheredMessage)).toString('utf8')
+          assert.strictEqual(messageUtf8, decipheredMessage)
+        })
+
+        it('cipher & decipher sync Binary', () => {
+          const cipheredMessage = key.encryptSync(messageBinary)
+          const decipheredMessage = key.decryptSync(cipheredMessage)
+          assert.isTrue(messageBinary.equals(decipheredMessage))
+        })
+
+        it('cipher & decipher Binary', async () => {
+          const cipheredMessage = await key.encrypt(messageBinary)
+          const decipheredMessage = await key.decrypt(cipheredMessage)
+          assert.isTrue(messageBinary.equals(decipheredMessage))
+        })
+
+        it('fail with bad key sync', () => {
+          const cipheredMessage = key.encryptSync(message)
+          expect(() => badKey.decryptSync(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('fail with bad key', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          await expect(badKey.decrypt(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('serialize and import key', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          const exportedKey = key.toB64()
+          const importedKey = SymKeyClass.fromB64(exportedKey)
+          const decipheredMessage = await importedKey.decrypt(cipheredMessage)
+          assert.isTrue(message.equals(decipheredMessage))
+        })
+
+        it('cipher sync & decipher async', async () => {
+          const cipheredMessage = key.encryptSync(messageBinary)
+          const decipheredMessage = await key.decrypt(cipheredMessage)
+          assert.isTrue(messageBinary.equals(decipheredMessage))
+        })
+
+        it('cipher async & decipher sync', async () => {
+          const cipheredMessage = await key.encrypt(messageBinary)
+          const decipheredMessage = key.decryptSync(cipheredMessage)
+          assert.isTrue(messageBinary.equals(decipheredMessage))
+        })
+
+        it('rawEncrypt & rawDecrypt, sync, async & stream', async () => {
+          const input = randomBytes(100)
+          const iv = randomBytes(16)
+          const cipherSync = key.rawEncryptSync_(input, iv)
+          const cipherAsync = await key.rawEncrypt_(input, iv)
+          const cipherStream = await _streamHelper(
+            splitLength(input, 20),
+            key.rawEncryptStream_(iv)
+          )
+          assert.isTrue(cipherSync.equals(cipherAsync))
+          assert.isTrue(cipherSync.equals(cipherStream))
+
+          const decipherSync = key.rawDecryptSync_(cipherSync, iv)
+          const decipherAsync = await key.rawDecrypt_(cipherSync, iv)
+          const decipherStream = await _streamHelper(
+            splitLength(cipherSync, 20),
+            key.rawDecryptStream_(iv)
+          )
+          assert.isTrue(input.equals(decipherSync))
+          assert.isTrue(input.equals(decipherAsync))
+          assert.isTrue(input.equals(decipherStream))
+        })
+
+        // TODO: test empty streams
+
+        it('rawEncryptStream & rawDecryptStream piped', async () => {
+          const input = randomBytes(100)
+          const iv = randomBytes(16)
+          const output = await _streamHelper(
+            splitLength(input, 20),
+            key.rawEncryptStream_(iv),
+            key.rawDecryptStream_(iv)
+          )
+          assert.isTrue(input.equals(output))
+        })
+
+        it('HMAC sync, async & stream', async () => {
+          const input = randomBytes(100)
+          const hmacSync = key.calculateHMACSync_(input)
+          const hmacAsync = await key.calculateHMAC_(input)
+          const hmacStream = await _streamHelper(
+            splitLength(input, 20),
+            key.HMACStream_()
+          )
+          assert.isTrue(hmacSync.equals(hmacAsync))
+          assert.isTrue(hmacSync.equals(hmacStream))
+        })
+
+        it('cipher stream & decipher sync', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 20)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue(key.decryptSync(output).equals(input))
+        })
+
+        it('cipher stream & decipher', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 20)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue((await key.decrypt(output)).equals(input))
+        })
+
+        it('cipher short stream (single chunk) & decipher sync', async () => {
+          const input = randomBytes(10)
+          const chunks = splitLength(input, 100)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue(key.decryptSync(output).equals(input))
+        })
+
+        it('cipher short stream (single chunk) & decipher', async () => {
+          const input = randomBytes(10)
+          const chunks = splitLength(input, 100)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue((await key.decrypt(output)).equals(input))
+        })
+
+        it('cipher stream with small blocks & decipher sync', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 10)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue(key.decryptSync(output).equals(input))
+        })
+
+        it('cipher stream with small blocks & decipher', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 10)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue((await key.decrypt(output)).equals(input))
+        })
+
+        it('cipher sync & decipher stream', async () => {
+          const clearText = randomBytes(1000)
+          const cipherText = key.encryptSync(clearText)
+          const cipherChunks = splitLength(cipherText, 20)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher & decipher stream', async () => {
+          const clearText = randomBytes(1000)
+          const cipherText = await key.encrypt(clearText)
+          const cipherChunks = splitLength(cipherText, 20)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher sync & decipher short stream (single chunk)', async () => {
+          const clearText = randomBytes(10)
+          const cipherText = key.encryptSync(clearText)
+          const cipherChunks = splitLength(cipherText, 100)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher & decipher short stream (single chunk)', async () => {
+          const clearText = randomBytes(10)
+          const cipherText = await key.encrypt(clearText)
+          const cipherChunks = splitLength(cipherText, 100)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher sync & decipher stream with small blocks', async () => {
+          const clearText = randomBytes(1000)
+          const cipherText = key.encryptSync(clearText)
+          const cipherChunks = splitLength(cipherText, 10)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher & decipher stream with small blocks', async () => {
+          const clearText = randomBytes(1000)
+          const cipherText = await key.encrypt(clearText)
+          const cipherChunks = splitLength(cipherText, 10)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher stream & decipher stream', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 20)
+
+          const cipher = key.encryptStream()
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(chunks, cipher, decipher)
+          assert.isTrue(output.equals(input))
+        })
+
+        it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          cipheredMessage[cipheredMessage.length - 1]++
+          const cipherChunks = splitLength(cipheredMessage, 15)
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('Test encryptStream cancel and progress', async () => {
+          const size = 200
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+
+          let progress: number
+          const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
+            const stream = key.encryptStream()
+              .on('end', () => reject(new Error('stream succeeded')))
+              .on('error', resolve)
+              .on('progress', _progress => {
+                progress = _progress
+              })
+            for (const chunk of chunks) stream.write(chunk)
+            stream.emit('cancel')
+            for (const chunk of chunks) stream.write(chunk)
+          })
+          if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
+          if (progress > size) throw new Error('Stream has\'t been canceled')
+          assert.include(error.message, 'STREAM_CANCELED')
+        })
+
+        it('Test decryptStream cancel and progress', async () => {
+          const size = 200
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+
+          let progress: number
+
+          const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
+            const stream = key.decryptStream()
+              .on('end', () => reject(new Error('stream succeeded')))
+              .on('error', resolve)
+              .on('progress', _progress => {
+                progress = _progress
+              })
+            for (const chunk of chunks) stream.write(chunk)
+            stream.emit('cancel')
+            for (const chunk of chunks) stream.write(chunk)
+          })
+          if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
+          if (progress > size) throw new Error('Stream has\'t been canceled')
+          assert.include(error.message, 'STREAM_CANCELED')
+        })
+
+        it('Test decryptStream error on bad data', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 20)
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
+            return true
+          })
+        })
+
+        it('Test decryptStream error on short stream', async () => {
+          const input = randomBytes(10)
+          const chunks = splitLength(input, 10)
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_STREAM')
+            return true
+          })
+        })
       })
-    })
+    }
   })
 }
 
