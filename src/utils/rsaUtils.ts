@@ -1,5 +1,7 @@
 // @ts-ignore: TODO: typings
 import asn from 'asn1.js'
+import crc32 from 'crc-32'
+import { intToBuffer } from './commonUtils'
 
 /**
  * Convert DER to PEM
@@ -75,6 +77,17 @@ const publicKeyWrapperModel = asn.define('publicKeyWrapperModel', function () {
   )
 })
 
+const privateKeyWrapperModel = asn.define('privateKeyWrapperModel', function () {
+  this.seq().obj(
+    this.key('zero').int(),
+    this.key('wrapper').seq().obj(
+      this.key('desc').objid({ '1.2.840.113549.1.1.1': 'RSA' }),
+      this.key('empty').null_()
+    ),
+    this.key('key').octstr()
+  )
+})
+
 /**
  * wrapPublicKey
  * @param {Buffer} buff
@@ -87,6 +100,13 @@ export const wrapPublicKey = (buff: Buffer): Buffer => {
   })
 }
 
+export const wrapPrivateKey = (buff: Buffer): Buffer => {
+  return privateKeyWrapperModel.encode({
+    zero: 0,
+    wrapper: { desc: 'RSA', empty: null },
+    key: buff
+  })
+}
 /**
  * unwrapPublicKey
  * @param {Buffer} buff
@@ -96,6 +116,9 @@ export const unwrapPublicKey = (buff: Buffer): Buffer => {
   return publicKeyWrapperModel.decode(buff).key.data
 }
 
+export const unwrapPrivateKey = (buff: Buffer): Buffer => {
+  return privateKeyWrapperModel.decode(buff).key
+}
 /**
  * privateToPublic
  * @param {Buffer} buff
@@ -104,4 +127,19 @@ export const unwrapPublicKey = (buff: Buffer): Buffer => {
 export const privateToPublic = (buff: Buffer): Buffer => {
   const privateKey = privateKeyModel.decode(buff, 'der')
   return wrapPublicKey(publicKeyModel.encode({ n: privateKey.n, e: privateKey.e }, 'der'))
+}
+
+export const prefixCRC = (clearText: Buffer): Buffer => Buffer.concat([
+  intToBuffer(crc32.buf(clearText)),
+  clearText
+])
+export const splitAndVerifyCRC = (clearText: Buffer): Buffer => {
+  const crc = clearText.slice(0, 4)
+  const message = clearText.slice(4)
+  const calculatedCRC = intToBuffer(crc32.buf(message))
+  if (crc.equals(calculatedCRC)) {
+    return message
+  } else {
+    throw new Error('INVALID_CRC32')
+  }
 }

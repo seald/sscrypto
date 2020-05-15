@@ -1,16 +1,17 @@
 import crypto from 'crypto'
-import crc32 from 'crc-32'
-import { intToBuffer, staticImplements } from '../utils/commonUtils'
+import { staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
 import { sha256 } from './utils'
 import {
   convertDERToPEM,
   convertPEMToDER,
+  prefixCRC,
   privateToPublic,
   publicKeyModel,
+  splitAndVerifyCRC,
   unwrapPublicKey,
   wrapPublicKey
-} from './rsaUtils'
+} from '../utils/rsaUtils'
 
 /**
  * @class PublicKeyNode
@@ -59,27 +60,29 @@ class PublicKeyNode implements PublicKey {
     return wrapPublicKey(convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY')).toString('base64')
   }
 
-  /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKeyNode.
-   * @method
-   * @param {Buffer} clearText
-   * @param {boolean} doCRC
-   * @returns {Buffer}
-   */
-  encrypt (clearText: Buffer, doCRC = true): Buffer {
-    const textToEncrypt = doCRC
-      ? Buffer.concat([
-        intToBuffer(crc32.buf(clearText)),
-        clearText
-      ])
-      : clearText
+  protected _rawEncryptSync (clearText: Buffer): Buffer {
     return crypto.publicEncrypt(
       {
         key: this.publicKey,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
       },
-      textToEncrypt
+      clearText
     )
+  }
+
+  /**
+   * Encrypts a clearText for the Private Key corresponding to this PublicKeyNode.
+   * @method
+   * @param {Buffer} clearText
+   * @param {boolean} [doCRC]
+   * @returns {Buffer}
+   */
+  encryptSync (clearText: Buffer, doCRC = true): Buffer {
+    return doCRC ? this._rawEncryptSync(prefixCRC(clearText)) : this._rawEncryptSync(clearText)
+  }
+
+  async encrypt (clearText: Buffer, doCRC = true): Promise<Buffer> {
+    return this.encryptSync(clearText, doCRC)
   }
 
   /**
@@ -88,7 +91,7 @@ class PublicKeyNode implements PublicKey {
    * @param {Buffer} signature
    * @returns {boolean}
    */
-  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
+  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     const verify = crypto.createVerify('SHA256')
     verify.update(textToCheckAgainst)
     return verify.verify(
@@ -101,11 +104,19 @@ class PublicKeyNode implements PublicKey {
     )
   }
 
+  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+    return this.verifySync(textToCheckAgainst, signature)
+  }
+
   /**
    * @returns {string}
    */
-  getHash (): string {
+  getHashSync (): string {
     return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
+  }
+
+  async getHash (): Promise<string> {
+    return this.getHashSync()
   }
 }
 
@@ -185,16 +196,9 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
       : convertPEMToDER(this.privateKey, 'RSA PRIVATE KEY').toString('base64')
   }
 
-  /**
-   * Deciphers the given message.
-   * @param {Buffer} cipherText
-   * @param {boolean} [doCRC]
-   * @returns {Buffer}
-   */
-  decrypt (cipherText: Buffer, doCRC = true): Buffer {
-    let clearText
+  protected _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
-      clearText = crypto.privateDecrypt(
+      return crypto.privateDecrypt(
         {
           key: this.privateKey,
           padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
@@ -204,18 +208,21 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
     } catch (e) {
       throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
     }
-    if (!doCRC) {
-      return clearText
-    } else {
-      const crc = clearText.slice(0, 4)
-      const message = clearText.slice(4)
-      const calculatedCRC = intToBuffer(crc32.buf(message))
-      if (crc.equals(calculatedCRC)) {
-        return message
-      } else {
-        throw new Error('INVALID_CRC32')
-      }
-    }
+  }
+
+  /**
+   * Deciphers the given message.
+   * @param {Buffer} cipherText
+   * @param {boolean} [doCRC]
+   * @returns {Buffer}
+   */
+  decryptSync (cipherText: Buffer, doCRC = true): Buffer {
+    const clearText = this._rawDecryptSync(cipherText)
+    return doCRC ? splitAndVerifyCRC(clearText) : clearText
+  }
+
+  async decrypt (cipherText: Buffer, doCRC = true): Promise<Buffer> {
+    return this.decryptSync(cipherText, doCRC)
   }
 
   /**
@@ -223,7 +230,7 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
    * @param {Buffer} textToSign
    * @returns {Buffer}
    */
-  sign (textToSign: Buffer): Buffer {
+  signSync (textToSign: Buffer): Buffer {
     const sign = crypto.createSign('SHA256')
     sign.update(textToSign)
     return sign.sign({
@@ -231,6 +238,10 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
       padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
       saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
     })
+  }
+
+  async sign (textToSign: Buffer): Promise<Buffer> {
+    return this.signSync(textToSign)
   }
 }
 

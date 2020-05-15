@@ -1,9 +1,9 @@
 import forge from 'node-forge'
-import crc32 from 'crc-32'
-import { intToBuffer, staticImplements } from '../utils/commonUtils'
+import { staticImplements } from '../utils/commonUtils'
 import { BigInteger } from 'jsbn'
 import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
 import { sha256 } from './utils'
+import { prefixCRC, splitAndVerifyCRC } from '../utils/rsaUtils'
 
 // Necessary stuff because node-forge typings are incomplete...
 declare module 'node-forge' {
@@ -61,22 +61,9 @@ class PublicKeyForge implements PublicKey {
     return Buffer.from(forge.asn1.toDer(forge.pki.publicKeyToAsn1(this.publicKey)).getBytes(), 'binary').toString('base64')
   }
 
-  /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKeyForge.
-   * @method
-   * @param {Buffer} clearText
-   * @param {boolean} doCRC
-   * @returns {Buffer}
-   */
-  encrypt (clearText: Buffer, doCRC = true): Buffer {
-    const textToEncrypt = doCRC
-      ? Buffer.concat([
-        intToBuffer(crc32.buf(clearText)),
-        clearText
-      ])
-      : clearText
+  protected _rawEncryptSync (clearText: Buffer): Buffer {
     return Buffer.from(
-      this.publicKey.encrypt(textToEncrypt.toString('binary'), 'RSA-OAEP', {
+      this.publicKey.encrypt(clearText.toString('binary'), 'RSA-OAEP', {
         md: forge.md.sha1.create(),
         mgf1: {
           md: forge.md.sha1.create()
@@ -86,13 +73,21 @@ class PublicKeyForge implements PublicKey {
     )
   }
 
+  encryptSync (clearText: Buffer, doCRC = true): Buffer {
+    return doCRC ? this._rawEncryptSync(prefixCRC(clearText)) : this._rawEncryptSync(clearText)
+  }
+
+  async encrypt (clearText: Buffer, doCRC = true): Promise<Buffer> {
+    return this.encryptSync(clearText, doCRC)
+  }
+
   /**
    * Verify that the message has been signed with the Private Key corresponding to this PublicKeyForge.
    * @param {Buffer} textToCheckAgainst
    * @param {Buffer} signature
    * @returns {boolean}
    */
-  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
+  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     try {
       // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
       const saltLength = ((this.publicKey.n as BigInteger).bitLength() / 8) - 32 - 2
@@ -111,11 +106,16 @@ class PublicKeyForge implements PublicKey {
     }
   }
 
-  /**
-   * @returns {string}
-   */
-  getHash (): string {
+  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+    return this.verifySync(textToCheckAgainst, signature)
+  }
+
+  getHashSync (): string {
     return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
+  }
+
+  async getHash (): Promise<string> {
+    return this.getHashSync()
   }
 }
 
@@ -195,16 +195,9 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
     }
   }
 
-  /**
-   * Deciphers the given message.
-   * @param {Buffer} cipherText
-   * @param {boolean} [doCRC]
-   * @returns {Buffer}
-   */
-  decrypt (cipherText: Buffer, doCRC = true): Buffer {
-    let clearText
+  protected _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
-      clearText = Buffer.from(this.privateKey.decrypt(
+      return Buffer.from(this.privateKey.decrypt(
         cipherText.toString('binary'),
         'RSA-OAEP',
         {
@@ -217,18 +210,21 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
     } catch (e) {
       throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
     }
-    if (!doCRC) {
-      return clearText
-    } else {
-      const crc = clearText.slice(0, 4)
-      const message = clearText.slice(4)
-      const calculatedCRC = intToBuffer(crc32.buf(message))
-      if (crc.equals(calculatedCRC)) {
-        return message
-      } else {
-        throw new Error('INVALID_CRC32')
-      }
-    }
+  }
+
+  /**
+   * Deciphers the given message.
+   * @param {Buffer} cipherText
+   * @param {boolean} [doCRC]
+   * @returns {Buffer}
+   */
+  decryptSync (cipherText: Buffer, doCRC = true): Buffer {
+    const clearText = this._rawDecryptSync(cipherText)
+    return doCRC ? splitAndVerifyCRC(clearText) : clearText
+  }
+
+  async decrypt (cipherText: Buffer, doCRC = true): Promise<Buffer> {
+    return this.decryptSync(cipherText, doCRC)
   }
 
   /**
@@ -236,7 +232,7 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
    * @param {Buffer} textToSign
    * @returns {Buffer}
    */
-  sign (textToSign: Buffer): Buffer {
+  signSync (textToSign: Buffer): Buffer {
     const md = forge.md.sha256.create()
     md.update(textToSign.toString('binary'))
     // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
@@ -247,6 +243,10 @@ class PrivateKeyForge extends PublicKeyForge implements PrivateKey {
       saltLength: saltLength
     })
     return Buffer.from(this.privateKey.sign(md, pss), 'binary')
+  }
+
+  async sign (textToSign: Buffer): Promise<Buffer> {
+    return this.signSync(textToSign)
   }
 }
 

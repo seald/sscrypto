@@ -9,11 +9,17 @@ export interface PublicKeyConstructor {
 export interface PublicKey {
   toB64 (options?: {}): string
 
-  encrypt (clearText: Buffer, doCRC?: boolean): Buffer
+  encryptSync (clearText: Buffer, doCRC?: boolean): Buffer
 
-  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean
+  encrypt (clearText: Buffer, doCRC?: boolean): Promise<Buffer>
 
-  getHash (): string
+  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean
+
+  verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean>
+
+  getHashSync (): string
+
+  getHash (): Promise<string>
 }
 
 export interface PrivateKeyConstructor extends PublicKeyConstructor {
@@ -27,7 +33,11 @@ export interface PrivateKeyConstructor extends PublicKeyConstructor {
 export interface PrivateKey extends PublicKey {
   toB64 (options?: { publicOnly: boolean }): string
 
-  decrypt (cipherText: Buffer, doCRC?: boolean): Buffer
+  decryptSync (cipherText: Buffer, doCRC?: boolean): Buffer
 
-  sign (textToSign: Buffer): Buffer
+  decrypt (cipherText: Buffer, doCRC?: boolean): Promise<Buffer>
+
+  signSync (textToSign: Buffer): Buffer
+
+  sign (textToSign: Buffer): Promise<Buffer>
 }
