@@ -212,6 +212,12 @@ export abstract class SymKey {
       async flush (callback): Promise<void> {
         try {
           if (canceled) throw new Error('STREAM_CANCELED')
+          if (!encryptStream) { // no encryptStream means there was no transform called: stream is empty
+            const iv = await ivPromise
+            getEncryptStream(iv) // we still have to initialize the encryptStream to get valid padding
+            await writeInStream(hmacStream, iv)
+            this.push(iv)
+          }
           const outputPromise = streamToData(encryptStream)
             .catch(() => { throw new Error('INVALID_STREAM') }) // This should never happen
           setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited

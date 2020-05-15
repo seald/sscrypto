@@ -200,7 +200,28 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.isTrue(input.equals(decipherStream))
         })
 
-        // TODO: test empty streams
+        it('rawEncrypt & rawDecrypt, sync, async & stream empty', async () => {
+          const input = Buffer.alloc(0)
+          const iv = randomBytes(16)
+          const cipherSync = key.rawEncryptSync_(input, iv)
+          const cipherAsync = await key.rawEncrypt_(input, iv)
+          const cipherStream = await _streamHelper(
+            splitLength(input, 20),
+            key.rawEncryptStream_(iv)
+          )
+          assert.isTrue(cipherSync.equals(cipherAsync))
+          assert.isTrue(cipherSync.equals(cipherStream))
+
+          const decipherSync = key.rawDecryptSync_(cipherSync, iv)
+          const decipherAsync = await key.rawDecrypt_(cipherSync, iv)
+          const decipherStream = await _streamHelper(
+            splitLength(cipherSync, 20),
+            key.rawDecryptStream_(iv)
+          )
+          assert.isTrue(input.equals(decipherSync))
+          assert.isTrue(input.equals(decipherAsync))
+          assert.isTrue(input.equals(decipherStream))
+        })
 
         it('rawEncryptStream & rawDecryptStream piped', async () => {
           const input = randomBytes(100)
@@ -257,6 +278,26 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
 
         it('cipher short stream (single chunk) & decipher', async () => {
           const input = randomBytes(10)
+          const chunks = splitLength(input, 100)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue((await key.decrypt(output)).equals(input))
+        })
+
+        it('cipher empty stream & decipher sync', async () => {
+          const input = Buffer.alloc(0)
+          const chunks = splitLength(input, 100)
+
+          const cipher = key.encryptStream()
+
+          const output = await _streamHelper(chunks, cipher)
+          assert.isTrue(key.decryptSync(output).equals(input))
+        })
+
+        it('cipher empty stream & decipher', async () => {
+          const input = Buffer.alloc(0)
           const chunks = splitLength(input, 100)
 
           const cipher = key.encryptStream()
@@ -325,6 +366,26 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.isTrue(output.equals(clearText))
         })
 
+        it('cipher sync empty & decipher stream', async () => {
+          const clearText = Buffer.alloc(0)
+          const cipherText = key.encryptSync(clearText)
+          const cipherChunks = splitLength(cipherText, 100)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
+        it('cipher empty & decipher stream', async () => {
+          const clearText = Buffer.alloc(0)
+          const cipherText = await key.encrypt(clearText)
+          const cipherChunks = splitLength(cipherText, 100)
+          const decipher = key.decryptStream()
+
+          const output = await _streamHelper(cipherChunks, decipher)
+          assert.isTrue(output.equals(clearText))
+        })
+
         it('cipher sync & decipher stream with small blocks', async () => {
           const clearText = randomBytes(1000)
           const cipherText = key.encryptSync(clearText)
@@ -354,17 +415,6 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
 
           const output = await _streamHelper(chunks, cipher, decipher)
           assert.isTrue(output.equals(input))
-        })
-
-        it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
-          const cipheredMessage = await key.encrypt(message)
-          cipheredMessage[cipheredMessage.length - 1]++
-          const cipherChunks = splitLength(cipheredMessage, 15)
-          const decipher = key.decryptStream()
-          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
         })
 
         it('Test encryptStream cancel and progress', async () => {
@@ -422,12 +472,40 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           })
         })
 
+        it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
+          const cipheredMessage = await key.encrypt(message)
+          cipheredMessage[cipheredMessage.length - 1]++
+          const cipherChunks = splitLength(cipheredMessage, 15)
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_HMAC')
+            return true
+          })
+        })
+
+        it('Try deciphering empty stream ', async () => {
+          const cipherChunks = [Buffer.alloc(0)]
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.include(error.message, 'INVALID_STREAM')
+            return true
+          })
+        })
+
         it('Test decryptStream error on short stream', async () => {
-          const input = randomBytes(10)
-          const chunks = splitLength(input, 10)
+          const chunks = [randomBytes(10)]
           const decipher = key.decryptStream()
           await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
             assert.include(error.message, 'INVALID_STREAM')
+            return true
+          })
+        })
+
+        it('Test decryptStream error on stream of 48b', async () => {
+          const chunks = [randomBytes(48)]
+          const decipher = key.decryptStream()
+          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
             return true
           })
         })
