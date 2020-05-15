@@ -10,7 +10,8 @@ const forgeCipherToStream = (cipher: forge.cipher.BlockCipher): Transform => {
       try {
         const output = Buffer.from(cipher.output.getBytes(), 'binary') // getting output before updating to avoid getting weird padding at the end
         cipher.update(forge.util.createBuffer(chunk))
-        callback(null, output)
+        this.push(output)
+        callback(null)
       } catch (e) {
         callback(e)
       }
@@ -19,7 +20,8 @@ const forgeCipherToStream = (cipher: forge.cipher.BlockCipher): Transform => {
       try {
         cipher.finish()
         const output = Buffer.from(cipher.output.getBytes(), 'binary')
-        callback(null, output)
+        this.push(output)
+        callback(null)
       } catch (e) {
         callback(e)
       }
@@ -34,11 +36,11 @@ class SymKeyForge extends SymKey {
 
   constructor (key: Buffer) {
     super(key)
-    this.signingKey = key.slice(0, this.keySize).toString('binary')
-    this.encryptionKey = key.slice(this.keySize).toString('binary')
+    this.signingKey = key.slice(0, this.keySize / 8).toString('binary')
+    this.encryptionKey = key.slice(this.keySize / 8).toString('binary')
   }
 
-  static async randomBytes_ (size: number): Promise<Buffer> {
+  static randomBytes_ (size: number): Promise<Buffer> {
     return randomBytes(size)
   }
 

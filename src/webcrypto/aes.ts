@@ -1,215 +1,171 @@
-import forge from 'node-forge'
-import { getProgress } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import SymKeyForge from '../forge/aes'
-import { SymKey } from '../utils/aes'
+import { isWebCryptoAvailable, randomBytes, randomBytesSync } from './utils'
 
-class SymKeyWebCrypto extends SymKeyForge implements SymKey {
-  /**
-   * Creates a Transform stream that encrypts the data piped to it.
-   * @returns {Transform}
-   */
-  encryptStream (): Transform {
-    // @ts-ignore
-    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues || window.SSCRYPTO_NO_WEBCRYPTO) return super.encryptStream()
-    let canceled = false
-    const progress = getProgress()
-    const encryptionKey = this.encryptionKey
+class SymKeyWebCrypto extends SymKeyForge {
+  protected subtleSigningKey: Promise<CryptoKey>
+  protected subtleEncryptionKey: Promise<CryptoKey>
 
-    let iv = Buffer.from(window.crypto.getRandomValues(new Uint8Array(16)))
-    let remaining = Buffer.alloc(0)
-
-    let webcryptoKey: CryptoKey
-    let lock = Promise.resolve()
-
-    const hmac = forge.hmac.create()
-    hmac.start('sha256', this.signingKey)
-
-    let firstBlock = true
-
-    return new Transform({
-      transform (chunk: Buffer, encoding, callback): void {
-        lock = lock.then(async () => {
-          try {
-            if (firstBlock) progress(0, this, 0)
-            if (canceled) throw new Error('STREAM_CANCELED')
-            if (firstBlock) {
-              webcryptoKey = await window.crypto.subtle.importKey(
-                'raw',
-                Buffer.from(encryptionKey, 'binary').buffer,
-                'AES-CBC',
-                false,
-                ['encrypt']
-              )
-              if (canceled) throw new Error('STREAM_CANCELED')
-              const header = iv
-              hmac.update(header.toString('binary'))
-              this.push(header)
-              firstBlock = false
-            }
-            const buff = Buffer.concat([remaining, chunk])
-            const toEncryptLength = buff.length - (buff.length % 16)
-            const toEncrypt = buff.slice(0, toEncryptLength)
-            remaining = buff.slice(toEncryptLength)
-            if (toEncryptLength === 0) return callback()
-            const output = Buffer.from(
-              await window.crypto.subtle.encrypt(
-                { name: 'AES-CBC', iv },
-                webcryptoKey,
-                toEncrypt
-              )
-            ).slice(0, -16) // slice -16 to remove padding block (we encrypted a whole number of blocks, so the last block is pure padding)
-            if (canceled) throw new Error('STREAM_CANCELED')
-            iv = output.slice(-16) // last block of output will be IV for next block (this is how CBC works)
-            hmac.update(output.toString('binary'))
-            this.push(output)
-            progress(chunk.length, this)
-            callback()
-          } catch (e) {
-            callback(e)
-          }
-        })
-      },
-      flush (callback): void {
-        lock.then(async () => {
-          try {
-            if (canceled) throw new Error('STREAM_CANCELED')
-            progress(0, this, 0)
-            const output = Buffer.from(
-              await window.crypto.subtle.encrypt(
-                { name: 'AES-CBC', iv },
-                webcryptoKey,
-                remaining
-              )
-            )
-            if (canceled) throw new Error('STREAM_CANCELED')
-            hmac.update(output.toString('binary'))
-            this.push(output)
-            const digest = hmac.digest()
-            const buffer = Buffer.from(digest.getBytes(), 'binary')
-            this.push(buffer)
-            callback()
-          } catch (e) {
-            callback(e)
-          }
-        })
-      }
-    })
-      .on('cancel', () => {
-        canceled = true
-      })
+  constructor (key: Buffer) {
+    super(key)
+    this.subtleSigningKey = null
+    this.subtleEncryptionKey = null
   }
 
-  /**
-   * Creates a Transform stream that decrypts the encrypted data piped to it.
-   * @returns {Transform}
-   */
-  decryptStream (): Transform {
-    // @ts-ignore
-    if (!window.crypto || !window.crypto.subtle || window.SSCRYPTO_NO_WEBCRYPTO) return super.decryptStream()
-    let canceled = false
-    const progress = getProgress()
-    const encryptionKey = this.encryptionKey
+  protected getSubtleEncryptionKey_ (): Promise<CryptoKey> {
+    if (this.subtleEncryptionKey) return this.subtleEncryptionKey
+    this.subtleEncryptionKey = window.crypto.subtle.importKey(
+      'raw',
+      this.key.slice(this.keySize / 8),
+      'AES-CBC',
+      false,
+      ['encrypt', 'decrypt']
+    ) as Promise<CryptoKey> // somehow TypeScript typings of DOM think importKey returns a PromiseLike, not a Promise
+    return this.subtleEncryptionKey
+  }
 
-    let iv: Buffer
+  protected getSubtleSigningKey_ (): Promise<CryptoKey> {
+    if (this.subtleSigningKey) return this.subtleSigningKey
+    this.subtleSigningKey = window.crypto.subtle.importKey(
+      'raw',
+      this.key.slice(0, this.keySize / 8),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ) as Promise<CryptoKey> // somehow TypeScript typings of DOM think importKey returns a PromiseLike, not a Promise
+    return this.subtleSigningKey
+  }
+
+  static randomBytes_ (size: number): Promise<Buffer> {
+    return randomBytes(size)
+  }
+
+  static randomBytesSync_ (size: number): Buffer {
+    return randomBytesSync(size)
+  }
+
+  async calculateHMAC_ (textToAuthenticate: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super.calculateHMAC_(textToAuthenticate)
+    return Buffer.from(await window.crypto.subtle.sign(
+      'HMAC',
+      await this.getSubtleSigningKey_(),
+      textToAuthenticate
+    ))
+  }
+
+  async rawEncrypt_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawEncrypt_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+    return Buffer.from(await window.crypto.subtle.encrypt(
+      { name: 'AES-CBC', iv },
+      await this.getSubtleEncryptionKey_(),
+      clearText
+    ))
+  }
+
+  rawEncryptStream_ (iv: Buffer): Transform {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawEncryptStream_(iv)
+    const encryptionKeyPromise = this.getSubtleEncryptionKey_()
+    let encryptionKey: CryptoKey
     let remaining = Buffer.alloc(0)
-
-    let webcryptoKey: CryptoKey
-    let lock = Promise.resolve()
-
-    const hmac = forge.hmac.create()
-    hmac.start('sha256', this.signingKey)
-
-    let firstBlock = true
+    let nextIv: Buffer = iv
 
     return new Transform({
-      transform (chunk: Buffer, encoding, callback) {
-        lock = lock.then(async () => {
-          try {
-            if (firstBlock) {
-              progress(0, this, 0)
-              if (canceled) throw new Error('STREAM_CANCELED')
-              webcryptoKey = await window.crypto.subtle.importKey(
-                'raw',
-                Buffer.from(encryptionKey, 'binary').buffer,
-                'AES-CBC',
-                false,
-                ['encrypt', 'decrypt']
-              )
-              firstBlock = false
-            }
-            if (canceled) throw new Error('STREAM_CANCELED')
-            remaining = Buffer.concat([remaining, chunk])
-            if (!iv) { // we have not gotten the IV yet, gotta wait for it
-              if (remaining.length >= 16) { // length of IV
-                iv = remaining.slice(0, 16)
-                remaining = remaining.slice(16)
-                hmac.update(iv.toString('binary'))
-              }
-            }
-            if (iv) { // we have the IV, can decrypt
-              if (remaining.length >= 64) { // we have to leave 32 bytes for the HMAC, 16 for the last block, and need at least 16 to perform decryption
-                const toKeep = 48 + (remaining.length % 16)
-                const cipherText = remaining.slice(0, -toKeep)
-                remaining = remaining.slice(-toKeep)
-                hmac.update(cipherText.toString('binary'))
-                const nextIv = cipherText.slice(-16)
-                const padding = Buffer.from(
-                  await window.crypto.subtle.encrypt(
-                    { name: 'AES-CBC', iv: nextIv },
-                    webcryptoKey,
-                    Buffer.alloc(0)
-                  )
-                )
-                const clearText = Buffer.from(
-                  await window.crypto.subtle.decrypt(
-                    { name: 'AES-CBC', iv },
-                    webcryptoKey,
-                    Buffer.concat([cipherText, padding])
-                  )
-                )
-                if (canceled) throw new Error('STREAM_CANCELED')
-                iv = nextIv
-                this.push(clearText)
-              }
-            }
-            progress(chunk.length, this)
-            callback()
-          } catch (e) {
-            callback(e)
-          }
-        })
+      async transform (chunk: Buffer, encoding, callback): Promise<void> {
+        try {
+          if (!encryptionKey) encryptionKey = await encryptionKeyPromise
+          const buff = Buffer.concat([remaining, chunk])
+          const toEncryptLength = buff.length - (buff.length % 16)
+          const toEncrypt = buff.slice(0, toEncryptLength)
+          remaining = buff.slice(toEncryptLength)
+          if (toEncryptLength === 0) return callback()
+          const output = Buffer.from(await window.crypto.subtle.encrypt(
+            { name: 'AES-CBC', iv: nextIv },
+            encryptionKey,
+            toEncrypt
+          )).slice(0, -16) // slice -16 to remove padding block (we encrypted a whole number of blocks, so the last block is pure padding)
+          nextIv = output.slice(-16) // last block of output will be IV for next block (this is how CBC works)
+          this.push(output)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
       },
-      flush (callback) {
-        lock.then(async () => {
-          try {
-            if (canceled) throw new Error('STREAM_CANCELED')
-            if (remaining.length !== 48) throw new Error('INVALID_STREAM')
-            const cipherText = remaining.slice(0, 16)
-            const streamDigest = remaining.slice(16).toString('binary')
-            const clearText = Buffer.from(
-              await window.crypto.subtle.decrypt(
-                { name: 'AES-CBC', iv },
-                webcryptoKey,
-                cipherText
-              )
-            )
-            if (canceled) throw new Error('STREAM_CANCELED')
-            this.push(clearText)
-            progress(0, this, 0)
-            hmac.update(cipherText.toString('binary'))
-            const computedDigest = hmac.digest().getBytes()
-            if (streamDigest !== computedDigest) throw new Error('INVALID_HMAC')
-            callback()
-          } catch (e) {
-            callback(e)
-          }
-        })
+      async flush (callback): Promise<void> {
+        if (!encryptionKey) encryptionKey = await encryptionKeyPromise
+        try {
+          const output = Buffer.from(await window.crypto.subtle.encrypt(
+            { name: 'AES-CBC', iv: nextIv },
+            encryptionKey,
+            remaining
+          ))
+          this.push(output)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
       }
     })
-      .on('cancel', () => {
-        canceled = true
-      })
+  }
+
+  async rawDecrypt_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawDecrypt_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+    return Buffer.from(await window.crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv },
+      await this.getSubtleEncryptionKey_(),
+      cipherText
+    ))
+  }
+
+  rawDecryptStream_ (iv: Buffer): Transform {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawDecryptStream_(iv)
+    const encryptionKeyPromise = this.getSubtleEncryptionKey_()
+    let encryptionKey: CryptoKey
+    let remaining = Buffer.alloc(0)
+    let nextIv: Buffer = iv
+
+    return new Transform({
+      async transform (chunk: Buffer, encoding, callback): Promise<void> {
+        try {
+          if (!encryptionKey) encryptionKey = await encryptionKeyPromise
+          remaining = Buffer.concat([remaining, chunk])
+          if (remaining.length >= 32) { // we have to leave 16 for the last block, and need at least 16 to perform decryption
+            const toKeep = 16 + (remaining.length % 16)
+            const cipherText = remaining.slice(0, -toKeep)
+            remaining = remaining.slice(-toKeep)
+            const iv = nextIv
+            nextIv = cipherText.slice(-16)
+            const padding = Buffer.from(await window.crypto.subtle.encrypt(
+              { name: 'AES-CBC', iv: nextIv },
+              encryptionKey,
+              Buffer.alloc(0)
+            ))
+            const clearText = Buffer.from(await window.crypto.subtle.decrypt(
+              { name: 'AES-CBC', iv },
+              encryptionKey,
+              Buffer.concat([cipherText, padding])
+            ))
+            this.push(clearText)
+          }
+          callback()
+        } catch (e) {
+          callback(e)
+        }
+      },
+      async flush (callback): Promise<void> {
+        try {
+          if (remaining.length !== 16 || !encryptionKey) throw new Error('INVALID_STREAM')
+          const clearText = Buffer.from(await window.crypto.subtle.decrypt(
+            { name: 'AES-CBC', iv: nextIv },
+            encryptionKey,
+            remaining
+          ))
+          this.push(clearText)
+          callback()
+        } catch (e) {
+          callback(e)
+        }
+      }
+    })
   }
 }
 

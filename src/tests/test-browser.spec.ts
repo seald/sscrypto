@@ -17,11 +17,9 @@ import { randomBytesSync } from '../forge/utils'
 
 const disableWebCrypto = {
   duringBefore: () => {
-    // @ts-ignore
     window.SSCRYPTO_NO_WEBCRYPTO = true
   },
   duringAfter: () => {
-    // @ts-ignore
     window.SSCRYPTO_NO_WEBCRYPTO = false
   }
 }

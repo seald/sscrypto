@@ -10,8 +10,8 @@ class SymKeyNode extends SymKey {
 
   constructor (key: Buffer) {
     super(key)
-    this.signingKey = key.slice(0, this.keySize)
-    this.encryptionKey = key.slice(this.keySize)
+    this.signingKey = key.slice(0, this.keySize / 8)
+    this.encryptionKey = key.slice(this.keySize / 8)
   }
 
   static randomBytesSync_ (size: number): Buffer {
@@ -25,12 +25,12 @@ class SymKeyNode extends SymKey {
   }
 
   rawEncryptSync_ (clearText: Buffer, iv: Buffer): Buffer {
-    const cipher = crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    const cipher = crypto.createCipheriv(`aes-${this.keySize}-cbc`, this.encryptionKey, iv)
     return Buffer.concat([cipher.update(clearText), cipher.final()])
   }
 
   rawEncryptStream_ (iv: Buffer): Transform {
-    return crypto.createCipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    return crypto.createCipheriv(`aes-${this.keySize}-cbc`, this.encryptionKey, iv)
   }
 
   HMACStream_ (): Transform {
@@ -38,12 +38,12 @@ class SymKeyNode extends SymKey {
   }
 
   rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {
-    const decipher = crypto.createDecipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    const decipher = crypto.createDecipheriv(`aes-${this.keySize}-cbc`, this.encryptionKey, iv)
     return Buffer.concat([decipher.update(cipherText), decipher.final()])
   }
 
   rawDecryptStream_ (iv: Buffer): Transform {
-    return crypto.createDecipheriv(`aes-${this.keySize * 8}-cbc`, this.encryptionKey, iv)
+    return crypto.createDecipheriv(`aes-${this.keySize}-cbc`, this.encryptionKey, iv)
   }
 }
 

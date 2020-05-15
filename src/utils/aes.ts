@@ -18,7 +18,7 @@ export interface SymKeyConstructor<T extends SymKey> {
 }
 
 export abstract class SymKey {
-  readonly keySize: number
+  readonly keySize: SymKeySize
   readonly key: Buffer
 
   /**
@@ -27,11 +27,12 @@ export abstract class SymKey {
    * @param {Buffer} key The key to construct the SymKey with.
    */
   protected constructor (key: Buffer) {
-    this.keySize = key.length / 2
-    this.key = key
-    if (![32, 24, 16].includes(this.keySize)) {
+    const keySize = key.length / 2 * 8
+    if (keySize !== 128 && keySize !== 192 && keySize !== 256) {
       throw new Error('INVALID_ARG : Key size is invalid')
     }
+    this.keySize = keySize
+    this.key = key
   }
 
   static async randomBytes_ (size: number): Promise<Buffer> {

@@ -3,7 +3,7 @@ import { promisify } from 'util'
 
 declare global {
   interface Window {
-    SSCRYPTO_NO_WEBCRYPTO: boolean
+    SSCRYPTO_NO_WEBCRYPTO?: boolean
   }
 }
 
@@ -40,7 +40,6 @@ export const sha256Async = async (data: Buffer): Promise<Buffer> => {
  * @return {Buffer}
  */
 export const randomBytesSync = (length = 10): Buffer => {
-  // @ts-ignore
   if (isWebCryptoAvailable()) {
     return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
   } else {
@@ -54,7 +53,6 @@ export const randomBytesSync = (length = 10): Buffer => {
  * @return {Promise<Buffer>}
  */
 export const randomBytes = async (length = 10): Promise<Buffer> => {
-  // @ts-ignore
   if (isWebCryptoAvailable()) {
     return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
   } else {

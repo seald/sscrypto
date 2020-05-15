@@ -221,6 +221,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       assert.isTrue(input.equals(decipherStream))
     })
 
+    // TODO: test empty streams
+
     it('rawEncryptStream & rawDecryptStream piped', async () => {
       const input = randomBytes(100)
       const iv = randomBytes(16)
