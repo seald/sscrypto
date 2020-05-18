@@ -46,7 +46,7 @@ export const convertPEMToDER = (pem: string, label = 'RSA PUBLIC KEY'): Buffer =
   return Buffer.from(base64, 'base64')
 }
 
-const privateKeyModel = asn.define('privateKeyModel', function () {
+export const privateKeyModel = asn.define('privateKeyModel', function () {
   this.seq().obj(
     this.key('zero').int(),
     this.key('n').int(),
@@ -119,13 +119,26 @@ export const unwrapPublicKey = (buff: Buffer): Buffer => {
 export const unwrapPrivateKey = (buff: Buffer): Buffer => {
   return privateKeyWrapperModel.decode(buff).key
 }
+
+export const privateKeyHasHeader = (buffer: Buffer): boolean => {
+  if (!privateKeyModel.decode(buffer, 'der', { partial: true }).errors.length) return false
+  if (!privateKeyWrapperModel.decode(buffer, 'der', { partial: true }).errors.length) return true
+  throw new Error('INVALID_PRIVATE_KEY')
+}
+
+export const publicKeyHasHeader = (buffer: Buffer): boolean => {
+  if (!publicKeyModel.decode(buffer, 'der', { partial: true }).errors.length) return false
+  if (!publicKeyWrapperModel.decode(buffer, 'der', { partial: true }).errors.length) return true
+  throw new Error('INVALID_PUBLIC_KEY')
+}
+
 /**
  * privateToPublic
  * @param {Buffer} buff
  * @return {Buffer}
  */
 export const privateToPublic = (buff: Buffer): Buffer => {
-  const privateKey = privateKeyModel.decode(buff, 'der')
+  const privateKey = privateKeyHasHeader(buff) ? privateKeyModel.decode(unwrapPrivateKey(buff), 'der') : privateKeyModel.decode(buff, 'der')
   return wrapPublicKey(publicKeyModel.encode({ n: privateKey.n, e: privateKey.e }, 'der'))
 }
 

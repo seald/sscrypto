@@ -1,33 +1,38 @@
 import { staticImplements } from '../utils/commonUtils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
-import { prefixCRC, privateToPublic, splitAndVerifyCRC, unwrapPrivateKey, wrapPrivateKey } from '../utils/rsaUtils'
+import {
+  AsymKeySize,
+  makePrivateKeyBaseClass,
+  PrivateKeyInterface,
+  PublicKey,
+  PublicKeyConstructor
+} from '../utils/rsa'
 import { PublicKey as PublicKeyForge, PrivateKey as PrivateKeyForge } from '../forge/rsa'
-import { isWebCryptoAvailable, sha256Async } from './utils'
+import { isWebCryptoAvailable, sha256 } from './utils'
 
 /**
  * @class PublicKeyNode
  * @property publicKey
  */
-@staticImplements<PublicKeyConstructor>()
-class PublicKeyWebCrypto implements PublicKey {
-  protected encodedPublicKey: Buffer
-  protected publicKeys: Map<'verify' | 'encrypt', CryptoKey>
-  protected forgeKey: PublicKeyForge
+@staticImplements<PublicKeyConstructor<PublicKeyWebCrypto>>()
+class PublicKeyWebCrypto extends PublicKey {
+  readonly publicKeyBuffer: Buffer
 
-  protected async getPublicKey (keyUsage: 'verify' | 'encrypt'): Promise<CryptoKey> {
-    if (!this.publicKeys) this.publicKeys = new Map()
-    if (!this.publicKeys.has(keyUsage)) {
+  protected _publicKeys: Map<'verify' | 'encrypt', CryptoKey>
+  protected _forgeKey: PublicKeyForge
+
+  protected async _getPublicKey (keyUsage: 'verify' | 'encrypt'): Promise<CryptoKey> {
+    if (!this._publicKeys.has(keyUsage)) {
       let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' }
       if (keyUsage === 'verify') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' }
-      this.publicKeys.set(keyUsage, await window.crypto.subtle.importKey(
+      this._publicKeys.set(keyUsage, await window.crypto.subtle.importKey(
         'spki',
-        this.encodedPublicKey,
+        this.publicKeyBuffer,
         algorithm,
         true,
         [keyUsage]
       ))
     }
-    return this.publicKeys.get(keyUsage)
+    return this._publicKeys.get(keyUsage)
   }
 
   /**
@@ -36,61 +41,33 @@ class PublicKeyWebCrypto implements PublicKey {
    * @param {Buffer} key
    */
   constructor (key: Buffer) {
-    if (!Buffer.isBuffer(key)) throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
-    this.encodedPublicKey = key
-    this.forgeKey = new PublicKeyForge(key)
+    super(key)
+    try {
+      this._forgeKey = new PublicKeyForge(this.publicKeyBuffer)
+      this._publicKeys = new Map()
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
+    }
   }
 
-  /**
-   * Returns a PublicKeyNode from it's DER base64 serialization.
-   * @method
-   * @static
-   * @param {string} b64DERFormattedPublicKey - a b64 encoded public key formatted with DER
-   * @returns {PublicKeyNode}
-   */
-  static fromB64 (b64DERFormattedPublicKey: string): PublicKeyWebCrypto {
-    return new this(Buffer.from(b64DERFormattedPublicKey, 'base64'))
-  }
-
-  /**
-   * Serializes the key to DER format and encodes it in b64.
-   * @method
-   * @param {object} [options]
-   * @returns {string}
-   */
-  toB64 (options: object = null): string {
-    return this.encodedPublicKey.toString('base64')
+  protected _rawEncryptSync (clearText: Buffer): Buffer {
+    return this._forgeKey.encryptSync(clearText, false) // TODO: a bit dirty to define forge's encryptSync with no CRC32 as _rawEncryptSync
   }
 
   protected async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
-    return Buffer.from(await window.crypto.subtle.encrypt(
-      {
-        name: 'RSA-OAEP'
-      },
-      await this.getPublicKey('encrypt'), // from generateKey or importKey above
-      clearText // ArrayBuffer of the data
-    ))
-  }
-
-  encryptSync (clearText: Buffer, doCRC?: boolean): Buffer {
-    return this.forgeKey.encryptSync(clearText, doCRC)
-  }
-
-  /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKeyNode.
-   * @method
-   * @param {Buffer} clearText
-   * @param {boolean} doCRC
-   * @returns {Buffer}
-   */
-  async encrypt (clearText: Buffer, doCRC = true): Promise<Buffer> {
     return isWebCryptoAvailable()
-      ? doCRC ? this._rawEncrypt(prefixCRC(clearText)) : this._rawEncrypt(clearText)
-      : this.forgeKey.encrypt(clearText, doCRC)
+      ? Buffer.from(await window.crypto.subtle.encrypt(
+        {
+          name: 'RSA-OAEP'
+        },
+        await this._getPublicKey('encrypt'), // from generateKey or importKey above
+        clearText // ArrayBuffer of the data
+      ))
+      : this._rawEncryptSync(clearText)
   }
 
   verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
-    return this.forgeKey.verifySync(textToCheckAgainst, signature)
+    return this._forgeKey.verifySync(textToCheckAgainst, signature)
   }
 
   /**
@@ -101,67 +78,57 @@ class PublicKeyWebCrypto implements PublicKey {
    */
   async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
     if (isWebCryptoAvailable()) {
-      const privateKey = await this.getPublicKey('verify')
+      const privateKey = await this._getPublicKey('verify')
       return window.crypto.subtle.verify(
         {
           name: 'RSA-PSS',
           saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
         },
-        await this.getPublicKey('verify'), // from generateKey or importKey above
+        await this._getPublicKey('verify'), // from generateKey or importKey above
         signature,
         textToCheckAgainst
       )
-    } else return this.forgeKey.verify(textToCheckAgainst, signature)
+    } else return this.verifySync(textToCheckAgainst, signature)
   }
 
-  getHashSync (): string {
-    return this.forgeKey.getHashSync()
-  }
-
-  /**
-   * @returns {string}
-   */
-  async getHash (): Promise<string> {
-    return isWebCryptoAvailable()
-      ? (await sha256Async(Buffer.from(await this.toB64({ publicOnly: true }), 'base64'))).toString('base64')
-      : this.forgeKey.getHash()
+  getHash (): string {
+    return sha256(this.publicKeyBuffer).toString('base64')
   }
 }
 
 /**
- * @class PrivateKeyNode
+ * @class PrivateKeyWebCrypto
  */
-@staticImplements<PrivateKeyConstructor>()
-class PrivateKeyWebCrypto extends PublicKeyWebCrypto implements PrivateKey {
-  protected encodedPrivateKey: Buffer
-  protected privateKeys: Map<'sign' | 'decrypt', CryptoKey>
-  protected forgeKey: PrivateKeyForge
+// @staticImplements<PrivateKeyConstructor<PrivateKeyWebCrypto>>() TODO: no way to make it work
+class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) implements PrivateKeyInterface {
+  readonly privateKeyBuffer: Buffer
 
-  constructor (key: Buffer) {
-    try {
-      const publicKey = privateToPublic(key)
-      super(publicKey)
-    } catch (error) {
-      throw new Error(`INVALID_KEY:${error.message}`)
-    }
-    this.encodedPrivateKey = key
-    this.forgeKey = new PrivateKeyForge(key)
-    this.privateKeys = new Map()
-  }
+  protected _privateKeys: Map<'sign' | 'decrypt', CryptoKey>
+  protected _forgeKey: PrivateKeyForge
 
   protected async getPrivateKey (keyUsage: 'sign' | 'decrypt'): Promise<CryptoKey> {
-    if (!this.privateKeys.has(keyUsage)) {
+    if (!this._privateKeys.has(keyUsage)) {
       let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' }
       if (keyUsage === 'sign') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' }
-      this.privateKeys.set(keyUsage, await window.crypto.subtle.importKey(
+      this._privateKeys.set(keyUsage, await window.crypto.subtle.importKey(
         'pkcs8',
-        wrapPrivateKey(this.encodedPrivateKey),
+        this.privateKeyBuffer,
         algorithm,
         true,
         [keyUsage]
       ))
     }
-    return this.privateKeys.get(keyUsage)
+    return this._privateKeys.get(keyUsage)
+  }
+
+  constructor (key: Buffer) {
+    super(key)
+    try {
+      this._forgeKey = new PrivateKeyForge(this.privateKeyBuffer)
+      this._privateKeys = new Map()
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
+    }
   }
 
   /**
@@ -169,17 +136,6 @@ class PrivateKeyWebCrypto extends PublicKeyWebCrypto implements PrivateKey {
    * @constructs PublicKeyNode
    * @param {Buffer} key
    */
-
-  /**
-   * Returns a PrivateKeyNode from it's DER base64 serialization.
-   * @method
-   * @static
-   * @param {string} b64DERFormattedPrivateKey - a b64 encoded private key formatted with DER
-   * @returns {PrivateKeyNode}
-   */
-  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKeyWebCrypto {
-    return new this(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
-  }
 
   /**
    * Generates a PrivateKeyNode asynchronously
@@ -201,28 +157,16 @@ class PrivateKeyWebCrypto extends PublicKeyWebCrypto implements PrivateKey {
         ['encrypt', 'decrypt'] // arbitrary, because we are just going to export it anyway
       )
       const exported = Buffer.from(await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
-      return new this(unwrapPrivateKey(exported))
+      return new this(exported)
     } else return new this(Buffer.from((await PrivateKeyForge.generate(size)).toB64(), 'base64'))
   }
 
-  /**
-   * Serializes the key to DER format and encodes it in b64.
-   * @method
-   * @param {Object} options
-   * @param {boolean} [options.publicOnly]
-   * @returns {string}
-   */
-  toB64 ({ publicOnly = false } = {}): string {
-    return publicOnly
-      ? super.toB64()
-      : this.encodedPrivateKey.toString('base64')
-  }
-
-  decryptSync (cipherText: Buffer, doCRC?: boolean): Buffer {
-    return this.forgeKey.decryptSync(cipherText, doCRC)
+  protected _rawDecryptSync (cipherText: Buffer): Buffer {
+    return this._forgeKey.decryptSync(cipherText, false)
   }
 
   protected async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return this._rawDecryptSync(cipherText)
     try {
       return Buffer.from(await window.crypto.subtle.decrypt(
         { name: 'RSA-OAEP' },
@@ -234,20 +178,8 @@ class PrivateKeyWebCrypto extends PublicKeyWebCrypto implements PrivateKey {
     }
   }
 
-  /**
-   * Deciphers the given message.
-   * @param {Buffer} cipherText
-   * @param {boolean} [doCRC]
-   * @returns {Buffer}
-   */
-  async decrypt (cipherText: Buffer, doCRC = true): Promise<Buffer> {
-    return isWebCryptoAvailable()
-      ? doCRC ? splitAndVerifyCRC(await this._rawDecrypt(cipherText)) : this._rawDecrypt(cipherText)
-      : this.forgeKey.decrypt(cipherText, doCRC)
-  }
-
   signSync (textToSign: Buffer): Buffer {
-    return this.forgeKey.signSync(textToSign)
+    return this._forgeKey.signSync(textToSign)
   }
 
   /**
@@ -256,17 +188,16 @@ class PrivateKeyWebCrypto extends PublicKeyWebCrypto implements PrivateKey {
    * @returns {Buffer}
    */
   async sign (textToSign: Buffer): Promise<Buffer> {
-    if (isWebCryptoAvailable()) {
-      const privateKey = await this.getPrivateKey('sign')
-      return Buffer.from(await window.crypto.subtle.sign(
-        {
-          name: 'RSA-PSS',
-          saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
-        },
-        privateKey,
-        textToSign
-      ))
-    } else return this.forgeKey.sign(textToSign)
+    if (!isWebCryptoAvailable()) return this._forgeKey.sign(textToSign)
+    const privateKey = await this.getPrivateKey('sign')
+    return Buffer.from(await window.crypto.subtle.sign(
+      {
+        name: 'RSA-PSS',
+        saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
+      },
+      privateKey,
+      textToSign
+    ))
   }
 }
 

@@ -2,19 +2,19 @@
 
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
+import { AsymKeySize, PrivateKeyInterface, PrivateKeyConstructor, PublicKeyConstructor, PublicKey } from '../utils/rsa'
 import { TestHooks } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor, PublicKey: PublicKeyConstructor }
+type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor<PrivateKeyInterface>, PublicKey: PublicKeyConstructor<PublicKey> }
 
 export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`RSA ${name}`, function () {
     this.timeout(5000)
 
-    let privateKey: PrivateKey, privateKey2: PrivateKey
+    let privateKey: PrivateKeyInterface, privateKey2: PrivateKeyInterface
 
     before('generate keys', function () {
       this.timeout(30000)
@@ -151,7 +151,7 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
   describe(`RSA compatibility ${name} ${keySize}`, function () {
     this.timeout(5000)
 
-    let privateKey1: PrivateKey, privateKey2: PrivateKey
+    let privateKey1: PrivateKeyInterface, privateKey2: PrivateKeyInterface
 
     before('generate keys', function () {
       this.timeout(30000)
