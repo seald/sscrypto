@@ -35,6 +35,10 @@ testAsymKeyCompatibility('node/forge', 1024, AsymKeyNode, AsymKeyForge)
 testAsymKeyCompatibility('node/forge', 2048, AsymKeyNode, AsymKeyForge)
 testAsymKeyCompatibility('node/forge', 4096, AsymKeyNode, AsymKeyForge)
 
+testAsymKeyCompatibility('forge/node', 1024, AsymKeyForge, AsymKeyNode)
+testAsymKeyCompatibility('forge/node', 2048, AsymKeyForge, AsymKeyNode)
+testAsymKeyCompatibility('forge/node', 4096, AsymKeyForge, AsymKeyNode)
+
 testAsymKeyPerf('node', 1024, AsymKeyNode, randomBytes)
 testAsymKeyPerf('node', 2048, AsymKeyNode, randomBytes)
 // testAsymKeyPerf('node', 4096, AsymKeyNode, randomBytes) // this is a bit long, so we disable it by default
