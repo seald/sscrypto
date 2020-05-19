@@ -21,20 +21,6 @@ export const sha256 = (data: Buffer): Buffer => {
 }
 
 /**
- * Returns a Buffer containing the hash of the given data
- * @param {Buffer} data
- * @return {Buffer}
- */
-export const sha256Async = async (data: Buffer): Promise<Buffer> => {
-  return Buffer.from(
-    await window.crypto.subtle.digest(
-      'SHA-256',
-      data
-    )
-  )
-}
-
-/**
  * Returns a Buffer of random bytes
  * @param {number} [length=10]
  * @return {Buffer}
