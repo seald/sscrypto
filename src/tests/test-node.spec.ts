@@ -1,20 +1,20 @@
 import {
   PrivateKey as PrivateKeyNode,
   PublicKey as PublicKeyNode,
-  // SymKey as SymKeyNode,
+  SymKey as SymKeyNode,
   utils as utilsNode
 } from '../node'
 import {
   PrivateKey as PrivateKeyForge,
   PublicKey as PublicKeyForge,
-  // SymKey as SymKeyForge,
+  SymKey as SymKeyForge,
   utils as utilsForge
 } from '../forge'
-// import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
+import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyCompatibility, testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from 'crypto'
-/*
+
 // SymKey
 testSymKeyImplem('node', SymKeyNode, randomBytes)
 testSymKeyImplem('forge', SymKeyForge, randomBytes)
@@ -23,7 +23,7 @@ testSymKeyCompatibility('node/forge', SymKeyNode, SymKeyForge, randomBytes)
 
 testSymKeyPerf('node', SymKeyNode, randomBytes)
 testSymKeyPerf('forge', SymKeyForge, randomBytes)
-*/
+
 // AsymKey
 const AsymKeyNode = { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode }
 const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }

@@ -20,17 +20,30 @@ declare module 'node-forge' {
 }
 
 /**
+ * Implementation of PublicKey using Forge (https://github.com/digitalbazaar/forge).
  * @class PublicKeyForge
- * @property publicKey
+ * @property {Buffer} publicKeyBuffer
  */
 @staticImplements<PublicKeyConstructor<PublicKeyForge>>()
 class PublicKeyForge extends PublicKey {
+  /**
+   * A Buffer that contains a representation of the instantiated RSA PublicKey using ASN.1 syntax with DER encoding
+   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
+   * @readonly
+   * @type {Buffer}
+   */
   readonly publicKeyBuffer: Buffer
 
+  /**
+   * Stores the forge public key representation of the public key.
+   * @type {PublicKeyForge}
+   * @protected
+   */
   protected _publicKey: forge.pki.rsa.PublicKey
 
   /**
-   * PublicKeyForge constructor. Should be given a Buffer containing a DER serialization of the key.
+   * PublicKeyForge constructor. Should be given a Buffer either encoded in an SPKI enveloppe or as a bare public
+   * key representation using ASN.1 syntax with DER encoding.
    * @constructs PublicKeyForge
    * @param {Buffer} key
    */
@@ -45,6 +58,13 @@ class PublicKeyForge extends PublicKey {
     }
   }
 
+  /**
+   * Encrypts synchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+   * function as per PKCS#1 v2.2 section 7.1.1.
+   * @param {Buffer} clearText
+   * @protected
+   * @returns {Buffer}
+   */
   protected _rawEncryptSync (clearText: Buffer): Buffer {
     return Buffer.from(
       this._publicKey.encrypt(clearText.toString('binary'), 'RSA-OAEP', {
@@ -57,12 +77,22 @@ class PublicKeyForge extends PublicKey {
     )
   }
 
+  /**
+   * Encrypts asynchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+   * function as per PKCS#1 v2.2 section 7.1.1.
+   * Shim for the synchronous method.
+   * @param {Buffer} clearText
+   * @protected
+   * @returns {Promise<Buffer>}
+   */
   protected async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
     return this._rawEncryptSync(clearText)
   }
 
   /**
-   * Verify that the message has been signed with the Private Key corresponding to this PublicKeyForge.
+   * Verifies synchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself uses EMSA-PSS
+   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2.
    * @param {Buffer} textToCheckAgainst
    * @param {Buffer} signature
    * @returns {boolean}
@@ -86,36 +116,55 @@ class PublicKeyForge extends PublicKey {
     }
   }
 
+  /**
+   * Verifies asynchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself uses EMSA-PSS
+   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2.
+   * Shim for the synchronous method.
+   * @param {Buffer} textToCheckAgainst
+   * @param {Buffer} signature
+   * @returns {Promise<boolean>}
+   */
   async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
     return this.verifySync(textToCheckAgainst, signature)
   }
 
+  /**
+   * Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
+   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
+   * @returns {string}
+   */
   getHash (): string {
     return sha256(this.publicKeyBuffer).toString('base64')
   }
 }
 
 /**
- * @class PrivateKeyForge
+ * Implementation of PrivateKey using Forge (https://github.com/digitalbazaar/forge).
+ * @class PrivateKeyWebCrypto
+ * @property {Buffer} privateKeyBuffer
  */
 // @staticImplements<PrivateKeyConstructor<PrivateKeyForge>>()
 class PrivateKeyForge extends makePrivateKeyBaseClass(PublicKeyForge) implements PrivateKeyInterface {
+  /**
+   * A Buffer that contains a representation of the instantiated RSA PrivateKey using ASN.1 syntax with DER encoding
+   * wrapped in a PKCS#8 enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
+   * @type {Buffer}
+   * @readonly
+   */
   readonly privateKeyBuffer: Buffer
 
+  /**
+   * Stores the forge private key representation of the private key.
+   * @type {PublicKeyForge}
+   * @protected
+   */
   protected _privateKey: forge.pki.rsa.PrivateKey
 
-  protected get privateKey (): forge.pki.rsa.PrivateKey {
-    if (!this._privateKey) {
-      this._privateKey = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(
-        forge.util.createBuffer(this.privateKeyBuffer)
-      ))
-    }
-    return this._privateKey
-  }
-
   /**
-   * Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
-   * @constructs PrivateKeyForge
+   * PrivateKeyForge constructor. Should be given a Buffer either encoded in a PKCS#8 enveloppe or as a bare private
+   * key representation using ASN.1 syntax with DER encoding.
+   * @constructs PrivateKeyWebCrypto
    * @param {Buffer} key
    */
   constructor (key: Buffer) {
@@ -130,9 +179,9 @@ class PrivateKeyForge extends makePrivateKeyBaseClass(PublicKeyForge) implements
   }
 
   /**
-   * Generates a PrivateKeyForge asynchronously
-   * @param {Number} [size = 4096] - key size in bits
-   * @returns {PrivateKeyForge}
+   * Generates asynchronously an RSA Private Key Key and instantiates it as a PrivateKeyForge.
+   * @param {AsymKeySize} [size = 4096] - key size in bits
+   * @returns {Promise<PrivateKeyForge>}
    */
   static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyForge> {
     if (![4096, 2048, 1024].includes(size)) {
@@ -148,9 +197,15 @@ class PrivateKeyForge extends makePrivateKeyBaseClass(PublicKeyForge) implements
     }
   }
 
+  /**
+   * Decrypts synchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2.
+   * @param {Buffer} cipherText
+   * @protected
+   * @returns {Buffer}
+   */
   protected _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
-      return Buffer.from(this.privateKey.decrypt(
+      return Buffer.from(this._privateKey.decrypt(
         cipherText.toString('binary'),
         'RSA-OAEP',
         {
@@ -165,12 +220,22 @@ class PrivateKeyForge extends makePrivateKeyBaseClass(PublicKeyForge) implements
     }
   }
 
+  /**
+   * Decrypts asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2.
+   * Shim for the synchronous method.
+   * @param {Buffer} cipherText
+   * @protected
+   * @returns {Promise<Buffer>}
+   */
   protected async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
     return this._rawDecryptSync(cipherText)
   }
 
   /**
-   * Signs the given message with this Private Key.
+   * Generates synchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
+   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
+   * 8.1.1.
    * @param {Buffer} textToSign
    * @returns {Buffer}
    */
@@ -184,9 +249,18 @@ class PrivateKeyForge extends makePrivateKeyBaseClass(PublicKeyForge) implements
       mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
       saltLength: saltLength
     })
-    return Buffer.from(this.privateKey.sign(md, pss), 'binary')
+    return Buffer.from(this._privateKey.sign(md, pss), 'binary')
   }
 
+  /**
+   * Generates asynchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
+   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
+   * 8.1.1.
+   * Shim for the synchronous method.
+   * @param {Buffer} textToSign
+   * @returns {Promise<Buffer>}
+   */
   async sign (textToSign: Buffer): Promise<Buffer> {
     return this.signSync(textToSign)
   }
