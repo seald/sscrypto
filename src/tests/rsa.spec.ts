@@ -40,7 +40,7 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
     it('Fail to construct a PublicKey because of an invalid type of argument', () =>
       expect(
         PrivateKey_
-        // @ts-ignore: voluntary test of what happens with bad type
+          // @ts-expect-error
           .generate('notAValidType')
       ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
@@ -51,7 +51,7 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
     it('fail to produce a new PrivateKey with a wrong size', () =>
       expect(
         PrivateKey_
-        // @ts-ignore: voluntary test of what happens with bad type
+          // @ts-expect-error
           .generate(588)
       ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_ARG')
@@ -68,7 +68,7 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
 
     it('fail to import PrivateKey because of an invalid type', () => {
       expect(
-        // @ts-ignore: voluntary test of what happens with bad type
+        // @ts-expect-error
         () => new PrivateKey_(2)
       ).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')

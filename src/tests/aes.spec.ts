@@ -24,7 +24,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
 
     describe(`AES ${name} - General`, () => {
       it('Try creating a key with an invalid type in constructor', () => {
-        // @ts-ignore: voluntary test of what happens with bad type
+        // @ts-expect-error
         expect(() => new SymKeyClass({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy((error: Error) => {
           assert.include(error.message, 'INVALID_ARG')
           return true
@@ -32,7 +32,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       })
 
       it('Try creating a key with an invalid size', () => {
-        // @ts-ignore: voluntary test of what happens with bad type
+        // @ts-expect-error
         expect(() => new SymKeyClass(42)).to.throw(Error).and.satisfy((error: Error) => {
           assert.include(error.message, 'INVALID_ARG')
           return true
