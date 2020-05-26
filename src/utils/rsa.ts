@@ -80,7 +80,7 @@ export abstract class PublicKey {
    * @param {options} [options=null] useless options argument in a PublicKey
    * @returns {string}
    */
-  toB64 (options: {} = null): string {
+  toB64 (options: { publicOnly?: boolean } = null): string {
     return this.publicKeyBuffer.toString('base64')
   }
 
@@ -183,7 +183,7 @@ export interface PrivateKeyConstructor<T extends PrivateKeyInterface> extends Pu
 export interface PrivateKeyInterface extends PublicKey {
   readonly privateKeyBuffer: Buffer
 
-  toB64 (options?: { publicOnly: boolean }): string
+  toB64 (options?: { publicOnly?: boolean }): string
 
   decryptSync (cipherText: Buffer, doCRC?: boolean): Buffer
 
