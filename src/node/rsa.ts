@@ -23,26 +23,12 @@ import {
 @staticImplements<PublicKeyConstructor<PublicKeyNode>>()
 class PublicKeyNode extends PublicKey {
   /**
-   * A Buffer that contains a representation of the instantiated RSA PublicKey using ASN.1 syntax with DER encoding
-   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
-   * @readonly
-   * @type {Buffer}
-   */
-  readonly publicKeyBuffer: Buffer;
-
-  /**
    * Stores the public key in a PEM serialization.
    * @type {string}
    * @protected
    */
   protected _publicKey: string
 
-  /**
-   * PublicKeyNode constructor. Should be given a Buffer either encoded in an SPKI enveloppe or as a bare public
-   * key representation using ASN.1 syntax with DER encoding.
-   * @constructs PublicKeyForge
-   * @param {Buffer} key
-   */
   constructor (key: Buffer) {
     super(key)
     try {
@@ -52,14 +38,7 @@ class PublicKeyNode extends PublicKey {
     }
   }
 
-  /**
-   * Encrypts synchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
-   * function as per PKCS#1 v2.2 section 7.1.1.
-   * @param {Buffer} clearText
-   * @protected
-   * @returns {Buffer}
-   */
-  protected _rawEncryptSync (clearText: Buffer): Buffer {
+  _rawEncryptSync (clearText: Buffer): Buffer {
     return crypto.publicEncrypt(
       {
         key: this._publicKey,
@@ -69,26 +48,6 @@ class PublicKeyNode extends PublicKey {
     )
   }
 
-  /**
-   * Encrypts asynchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
-   * function as per PKCS#1 v2.2 section 7.1.1.
-   * Shim for the synchronous method.
-   * @param {Buffer} clearText
-   * @protected
-   * @returns {Promise<Buffer>}
-   */
-  protected async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
-    return this._rawEncryptSync(clearText)
-  }
-
-  /**
-   * Verifies synchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which
-   * itself uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2.
-   * @param {Buffer} textToCheckAgainst
-   * @param {Buffer} signature
-   * @returns {boolean}
-   */
   verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     const verify = crypto.createVerify('SHA256')
     verify.update(textToCheckAgainst)
@@ -102,24 +61,6 @@ class PublicKeyNode extends PublicKey {
     )
   }
 
-  /**
-   * Verifies asynchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which
-   * itself uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2.
-   * Shim for the synchronous method.
-   * @param {Buffer} textToCheckAgainst
-   * @param {Buffer} signature
-   * @returns {Promise<boolean>}
-   */
-  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
-    return this.verifySync(textToCheckAgainst, signature)
-  }
-
-  /**
-   * Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
-   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
-   * @returns {string}
-   */
   getHash (): string {
     return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
   }

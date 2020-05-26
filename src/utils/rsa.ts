@@ -34,7 +34,7 @@ export interface PublicKeyConstructor<T extends PublicKey> {
  * @class PublicKey
  * @property {Buffer} publicKeyBuffer
  */
-export class PublicKey {
+export abstract class PublicKey {
   /**
    * A Buffer that contains a representation of the instantiated RSA PublicKey using ASN.1 syntax with DER encoding
    * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
@@ -51,7 +51,7 @@ export class PublicKey {
    * @constructs PublicKey
    * @protected
    */
-  protected constructor (key: Buffer) {
+  constructor (key: Buffer) {
     if (!Buffer.isBuffer(key)) throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
     let n
     try {
@@ -92,7 +92,7 @@ export class PublicKey {
    * @abstract
    * @returns {Buffer}
    */
-  protected _rawEncryptSync (clearText: Buffer): Buffer {
+  _rawEncryptSync (clearText: Buffer): Buffer { // TODO: abstract
     throw new Error('Must be subclassed')
   }
 
@@ -104,8 +104,8 @@ export class PublicKey {
    * @abstract
    * @returns {Promise<Buffer>}
    */
-  protected _rawEncrypt (clearText: Buffer): Promise<Buffer> {
-    throw new Error('Must be subclassed')
+  async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
+    return this._rawEncryptSync(clearText)
   }
 
   /**
@@ -117,7 +117,8 @@ export class PublicKey {
    * @returns {Buffer}
    */
   encryptSync (clearText: Buffer, doCRC = true): Buffer {
-    return doCRC ? this._rawEncryptSync(prefixCRC(clearText)) : this._rawEncryptSync(clearText)
+    if (doCRC) return this._rawEncryptSync(prefixCRC(clearText))
+    else return this._rawEncryptSync(clearText)
   }
 
   /**
@@ -129,7 +130,8 @@ export class PublicKey {
    * @returns {Promise<Buffer>}
    */
   encrypt (clearText: Buffer, doCRC = true): Promise<Buffer> {
-    return doCRC ? this._rawEncrypt(prefixCRC(clearText)) : this._rawEncrypt(clearText)
+    if (doCRC) return this._rawEncrypt(prefixCRC(clearText))
+    else return this._rawEncrypt(clearText)
   }
 
   /**
@@ -142,7 +144,7 @@ export class PublicKey {
    * @abstract
    * @returns {boolean}
    */
-  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
+  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean { // TODO: abstract
     throw new Error('Must be subclassed')
   }
 
@@ -156,8 +158,8 @@ export class PublicKey {
    * @abstract
    * @returns {Promise<boolean>}
    */
-  verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
-    throw new Error('Must be subclassed')
+  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+    return this.verifySync(textToCheckAgainst, signature)
   }
 
   /**
@@ -165,7 +167,7 @@ export class PublicKey {
    * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
    * @returns {string}
    */
-  getHash (): string {
+  getHash (): string { // TODO: abstract
     throw new Error('Must be subclassed')
   }
 }

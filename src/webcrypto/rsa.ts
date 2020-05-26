@@ -62,12 +62,6 @@ class PublicKeyWebCrypto extends PublicKey {
     return this._publicKeys.get(keyUsage)
   }
 
-  /**
-   * PublicKeyWebCrypto constructor. Should be given a Buffer either encoded in an SPKI enveloppe or as a bare public
-   * key representation using ASN.1 syntax with DER encoding.
-   * @constructs PublicKeyWebCrypto
-   * @param {Buffer} key
-   */
   constructor (key: Buffer) {
     super(key)
     try {
@@ -78,27 +72,13 @@ class PublicKeyWebCrypto extends PublicKey {
     }
   }
 
-  /**
-   * Encrypt synchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
-   * function as per PKCS#1 v2.2 section 7.1.1 using the forge fallback implementation, because Subtle Crypto is not
-   * available for synchronous operations.
-   * @param {Buffer} clearText
-   * @protected
-   * @returns {Buffer}
-   */
-  protected _rawEncryptSync (clearText: Buffer): Buffer {
-    return this._forgeKey.encryptSync(clearText, false) // TODO: a bit dirty to define forge's encryptSync with no CRC32 as _rawEncryptSync
+  // using the forge fallback implementation, because Subtle Crypto is not available for synchronous operations
+  _rawEncryptSync (clearText: Buffer): Buffer {
+    return this._forgeKey._rawEncryptSync(clearText)
   }
 
-  /**
-   * Encrypt asynchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
-   * function as per PKCS#1 v2.2 section 7.1.1 using the Subtle Crypto implementation if available, else falls back to
-   * forge.
-   * @param {Buffer} clearText
-   * @protected
-   * @returns {Promise<Buffer>}
-   */
-  protected async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
+  // using the Subtle Crypto implementation if available, else falls back to forge
+  async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
     return isWebCryptoAvailable()
       ? Buffer.from(await window.crypto.subtle.encrypt(
         {
@@ -110,28 +90,12 @@ class PublicKeyWebCrypto extends PublicKey {
       : this._rawEncryptSync(clearText)
   }
 
-  /**
-   * Verify synchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
-   * uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2 using the forge
-   * fallback implementation, because Subtle Crypto is not available for synchronous operations.
-   * @param {Buffer} textToCheckAgainst
-   * @param {Buffer} signature
-   * @returns {boolean}
-   */
+  // using the forge fallback implementation, because Subtle Crypto is not available for synchronous operations
   verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     return this._forgeKey.verifySync(textToCheckAgainst, signature)
   }
 
-  /**
-   * Verify asynchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
-   * uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2`  as per PKCS#1 v2.2 section 8.1.2 using the Subtle
-   * Crypto implementation if available, else falls back to forge.
-   * @param {Buffer} textToCheckAgainst
-   * @param {Buffer} signature
-   * @returns {Promise<boolean>}
-   */
+  // using the Subtle Crypto implementation if available, else falls back to forge
   async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
     if (isWebCryptoAvailable()) {
       const privateKey = await this._getPublicKey('verify')
@@ -147,13 +111,7 @@ class PublicKeyWebCrypto extends PublicKey {
     } else return this.verifySync(textToCheckAgainst, signature)
   }
 
-  /**
-   * Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
-   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
-   * It should be noted that forge's implementation for SHA256 is used because it is preferable to keep this method
-   * synchronous in all implementations.
-   * @returns {string}
-   */
+  // forge's implementation for SHA256 is used because it is preferable to keep this method synchronous in all implementations
   getHash (): string {
     return sha256(this.publicKeyBuffer).toString('base64')
   }
