@@ -53,3 +53,101 @@ export const writeInStream = async (stream: Writable, data: Buffer): Promise<voi
   const shouldWait = !stream.write(data)
   if (shouldWait) await new Promise(resolve => stream.once('drain', resolve))
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const mergeInto = (x: Record<string, any>, y: Record<string, any>): void => {
+  let y_ = y
+  while (y_ !== Object.prototype && y_ !== Function.prototype) {
+    for (const name of Object.getOwnPropertyNames(y_)) {
+      if (!(name in x)) {
+        Object.defineProperty(
+          x,
+          name,
+          Object.getOwnPropertyDescriptor(y_, name)
+        )
+      }
+    }
+    y_ = Object.getPrototypeOf(y_)
+  }
+}
+
+export const mixClasses = <T1 extends { new (): unknown }, T2 extends { new (): unknown }> (C1: T1, C2: T2): { new (): InstanceType<T1> & InstanceType<T2> } & Omit<T1, 'new'> & Omit<T2, 'new'> => {
+  // @ts-ignore : Yes, the type of C1 is unknown, that's the $*#§ing point!
+  class C extends C1 {}
+
+  mergeInto(C.prototype, C2.prototype)
+  mergeInto(C, C2)
+
+  return C as { new (): InstanceType<typeof C1> & InstanceType<typeof C2> } & typeof C1 & typeof C2
+}
+
+class Test0 {
+  protected secret2 = 'bar'
+
+  static staticT0 (): void {
+    console.log('staticT0')
+  }
+
+  t0 (): void {
+    console.log('t0 ' + this.secret2)
+  }
+}
+
+class Test1 {
+  private secret = 'foo'
+
+  static staticT1 (): boolean {
+    console.log('staticT1')
+    return true
+  }
+
+  t1 (): void {
+    console.log('t1 ' + this.secret)
+  }
+
+  tConflict (): void {
+    console.log('TConflict t1')
+  }
+}
+
+class Test2 extends Test0 {
+  static staticT2 (): void {
+    console.log('staticT2')
+  }
+
+  t2 (): void {
+    console.log('t2')
+  }
+
+  tConflict (): void {
+    console.log('TConflict t2')
+  }
+}
+
+console.log('start')
+
+class T extends mixClasses(Test1, Test2) {
+  protected secret2 = 'bar'
+
+  t0 () {
+    console.log('TMIXED T0')
+    super.t0()
+  }
+
+  t1 () {
+    console.log('TMIXED T1')
+    super.t1()
+  }
+}
+
+const t = new T()
+t.t1()
+t.t2()
+T.staticT1()
+T.staticT2()
+t.t0()
+T.staticT0()
+t.tConflict()
+console.log(t instanceof Test0)
+console.log(t instanceof Test1)
+console.log(t instanceof Test2)
