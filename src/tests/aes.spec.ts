@@ -48,13 +48,17 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
     })
 
     for (const size of [128, 192, 256]) {
-      let key: SymKey
-      let badKey: SymKey
+      let key: InstanceType<typeof SymKeyClass>
+      let badKey: InstanceType<typeof SymKeyClass>
 
       describe(`AES ${name} - AES-${size}`, () => {
-        before(async () => {
+        it('generation', async () => {
           key = await SymKeyClass.generate(256)
           badKey = await SymKeyClass.generate(256)
+          assert.instanceOf(key, SymKeyClass)
+          assert.instanceOf(badKey, SymKeyClass)
+          assert.instanceOf(key, SymKey)
+          assert.instanceOf(badKey, SymKey)
         })
 
         it('Try deciphering sync a cipherText with invalid HMAC', () => {

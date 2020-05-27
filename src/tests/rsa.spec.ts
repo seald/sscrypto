@@ -2,32 +2,19 @@
 
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { AsymKeySize, PrivateKeyInterface, PrivateKeyConstructor, PublicKeyConstructor, PublicKey } from '../utils/rsa'
+import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
 import { TestHooks } from './specUtils.spec'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
 
-type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor<PrivateKeyInterface>, PublicKey: PublicKeyConstructor<PublicKey> }
+type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor<PrivateKey>, PublicKey: PublicKeyConstructor<PublicKey> }
 
 export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`RSA ${name}`, function () {
     this.timeout(5000)
 
-    let privateKey: PrivateKeyInterface, privateKey2: PrivateKeyInterface
-
-    before('generate keys', function () {
-      this.timeout(30000)
-      if (duringBefore) duringBefore()
-      return Promise.all([
-        PrivateKey_.generate(1024),
-        PrivateKey_.generate(1024)
-      ])
-        .then(([_key1, _key2]) => {
-          privateKey = _key1
-          privateKey2 = _key2
-        })
-    })
+    let privateKey: InstanceType<typeof PrivateKey_>, privateKey2: InstanceType<typeof PrivateKey_>
 
     after(() => {
       if (duringAfter) duringAfter()
@@ -36,6 +23,25 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
     const message = Buffer.from('TESTtest', 'ascii')
     const messageUtf8 = 'Iñtërnâtiônàlizætiøn\u2603\uD83D\uDCA9'
     const messageBinary = randomBytes(32)
+
+    it('generate keys', async function () {
+      this.timeout(30000)
+      if (duringBefore) duringBefore()
+      const [_key1, _key2] = await Promise.all([
+        PrivateKey_.generate(1024),
+        PrivateKey_.generate(1024)
+      ])
+      assert.instanceOf(_key1, PrivateKey_)
+      assert.instanceOf(_key2, PrivateKey_)
+      assert.instanceOf(_key1, PrivateKey)
+      assert.instanceOf(_key2, PrivateKey)
+      assert.instanceOf(_key1, PublicKey_)
+      assert.instanceOf(_key2, PublicKey_)
+      assert.instanceOf(_key1, PublicKey)
+      assert.instanceOf(_key2, PublicKey)
+      privateKey = _key1
+      privateKey2 = _key2
+    })
 
     it('Fail to construct a PublicKey because of an invalid type of argument', () =>
       expect(
@@ -193,7 +199,7 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
   describe(`RSA compatibility ${name} ${keySize}`, function () {
     this.timeout(5000)
 
-    let privateKey1: PrivateKeyInterface
+    let privateKey1: PrivateKey
 
     before('generate keys', function () {
       this.timeout(30000)

@@ -1,13 +1,8 @@
-import { staticImplements } from '../utils/commonUtils'
-import {
-  AsymKeySize,
-  makePrivateKeyBaseClass,
-  PrivateKeyInterface,
-  PublicKey,
-  PublicKeyConstructor
-} from '../utils/rsa'
-import { PublicKey as PublicKeyForge, PrivateKey as PrivateKeyForge } from '../forge/rsa'
-import { isWebCryptoAvailable, sha256 } from './utils'
+import { mixClasses, staticImplements } from '../utils/commonUtils'
+import { AsymKeySize, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
+import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge/rsa'
+import { isWebCryptoAvailable } from './utils'
+import forge from 'node-forge'
 
 /**
  * Implementation of PublicKey using Subtle Crypto (https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) if
@@ -16,42 +11,27 @@ import { isWebCryptoAvailable, sha256 } from './utils'
  * @property {Buffer} publicKeyBuffer
  */
 @staticImplements<PublicKeyConstructor<PublicKeyWebCrypto>>()
-class PublicKeyWebCrypto extends PublicKey {
-  /**
-   * A Buffer that contains a representation of the instantiated RSA PublicKey using ASN.1 syntax with DER encoding
-   * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
-   * @readonly
-   * @type {Buffer}
-   */
-  readonly publicKeyBuffer: Buffer
-
+class PublicKeyWebCrypto extends PublicKeyForge {
   /**
    * Stores the CryptoKey representations of the PublicKeyWebCrypto for each usage.
    * @type {Map<'verify'|'encrypt', CryptoKey>}
    * @protected
    */
-  protected _publicKeys: Map<'verify' | 'encrypt', CryptoKey>
-
-  /**
-   * Stores the PublicKeyForge representation of the public key to be used as a fallback.
-   * @type {PublicKeyForge}
-   * @protected
-   */
-  protected _forgeKey: PublicKeyForge
+  protected _publicKeysWebCrypto: Map<'verify' | 'encrypt', CryptoKey>
 
   /**
    * Gets asynchronously the CryptoKey representation of the PublicKeyWebCrypto for given keyUsage, and stores them in
-   * in cache in _publicKeys protected property.
+   * in cache in _publicKeysWebCrypto protected property.
    * SSCrypto's interface is not designed to force a KeyPair to be used for a unique usage (encryption, signature,
    * authentication, etc.), it is up to the developer to make sure they don't use the same KeyPair for multiple usages.
    * @param {'verify'|'encrypt'} keyUsage
    * @protected
    */
   protected async _getPublicKey (keyUsage: 'verify' | 'encrypt'): Promise<CryptoKey> {
-    if (!this._publicKeys.has(keyUsage)) {
+    if (!this._publicKeysWebCrypto.has(keyUsage)) {
       let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' } // Encryption algorithm used by SSCrypto
       if (keyUsage === 'verify') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' } // Signature algorithm used by SSCrypto
-      this._publicKeys.set(keyUsage, await window.crypto.subtle.importKey(
+      this._publicKeysWebCrypto.set(keyUsage, await window.crypto.subtle.importKey(
         'spki',
         this.publicKeyBuffer,
         algorithm,
@@ -59,22 +39,12 @@ class PublicKeyWebCrypto extends PublicKey {
         [keyUsage]
       ))
     }
-    return this._publicKeys.get(keyUsage)
+    return this._publicKeysWebCrypto.get(keyUsage)
   }
 
   constructor (key: Buffer) {
     super(key)
-    try {
-      this._forgeKey = new PublicKeyForge(this.publicKeyBuffer)
-      this._publicKeys = new Map()
-    } catch (e) {
-      throw new Error(`INVALID_KEY : ${e.message}`)
-    }
-  }
-
-  // using the forge fallback implementation, because Subtle Crypto is not available for synchronous operations
-  _rawEncryptSync (clearText: Buffer): Buffer {
-    return this._forgeKey._rawEncryptSync(clearText)
+    this._publicKeysWebCrypto = new Map()
   }
 
   // using the Subtle Crypto implementation if available, else falls back to forge
@@ -88,11 +58,6 @@ class PublicKeyWebCrypto extends PublicKey {
         clearText // ArrayBuffer of the data
       ))
       : this._rawEncryptSync(clearText)
-  }
-
-  // using the forge fallback implementation, because Subtle Crypto is not available for synchronous operations
-  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
-    return this._forgeKey.verifySync(textToCheckAgainst, signature)
   }
 
   // using the Subtle Crypto implementation if available, else falls back to forge
@@ -110,11 +75,6 @@ class PublicKeyWebCrypto extends PublicKey {
       )
     } else return this.verifySync(textToCheckAgainst, signature)
   }
-
-  // forge's implementation for SHA256 is used because it is preferable to keep this method synchronous in all implementations
-  getHash (): string {
-    return sha256(this.publicKeyBuffer).toString('base64')
-  }
 }
 
 /**
@@ -123,14 +83,8 @@ class PublicKeyWebCrypto extends PublicKey {
  * @class PrivateKeyWebCrypto
  * @property {Buffer} privateKeyBuffer
  */
-// @staticImplements<PrivateKeyConstructor<PrivateKeyWebCrypto>>() TODO: no way to make it work
-class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) implements PrivateKeyInterface {
-  /**
-   * A Buffer that contains a representation of the instantiated RSA PrivateKey using ASN.1 syntax with DER encoding
-   * wrapped in a PKCS#8 enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
-   * @type {Buffer}
-   * @readonly
-   */
+@staticImplements<PrivateKeyConstructor<PrivateKeyWebCrypto>>()
+class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge) {
   readonly privateKeyBuffer: Buffer
 
   /**
@@ -138,29 +92,21 @@ class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) im
    * @type {Map<'sign'|'decrypt', CryptoKey>}
    * @protected
    */
-  protected _privateKeys: Map<'sign' | 'decrypt', CryptoKey>
-
-  /**
-   * Stores the PrivateKeyForge representation of the public key to be used as a fallback.
-   * Overrides the PublicKeyForge, but not a proble because PrivateKeyForge inherits from PublicKeyForge
-   * @type {PrivateKeyForge}
-   * @protected
-   */
-  protected _forgeKey: PrivateKeyForge
+  protected _privateKeysWebCrypto: Map<'sign' | 'decrypt', CryptoKey>
 
   /**
    * Gets asynchronously the CryptoKey representation of the PrivateKeyWebCrypto for given keyUsage, and stores them in
-   * in cache in _privateKeys protected property.
+   * in cache in _privateKeysWebCrypto protected property.
    * SSCrypto's interface is not designed to force a KeyPair to be used for a unique usage (encryption, signature,
    * authentication, etc.), it is up to the developer to make sure they don't use the same KeyPair for multiple usages.
    * @param {'sign'|'decrypt'} keyUsage
    * @protected
    */
   protected async getPrivateKey (keyUsage: 'sign' | 'decrypt'): Promise<CryptoKey> {
-    if (!this._privateKeys.has(keyUsage)) {
+    if (!this._privateKeysWebCrypto.has(keyUsage)) {
       let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' } // Encryption algorithm used by SSCrypto
       if (keyUsage === 'sign') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' } // Signature algorithm used by SSCrypto
-      this._privateKeys.set(keyUsage, await window.crypto.subtle.importKey(
+      this._privateKeysWebCrypto.set(keyUsage, await window.crypto.subtle.importKey(
         'pkcs8',
         this.privateKeyBuffer,
         algorithm,
@@ -168,31 +114,26 @@ class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) im
         [keyUsage]
       ))
     }
-    return this._privateKeys.get(keyUsage)
+    return this._privateKeysWebCrypto.get(keyUsage)
   }
 
-  /**
-   * PrivateKeyWebCrypto constructor. Should be given a Buffer either encoded in a PKCS#8 enveloppe or as a bare private
-   * key representation using ASN.1 syntax with DER encoding.
-   * @constructs PrivateKeyWebCrypto
-   * @param {Buffer} key
-   */
   constructor (key: Buffer) {
-    super(key)
+    // This has to basically re-write PrivateKeyForge's constructor because we inherit parasitically so the actual constructor does not run
+    const { publicKeyBuffer, privateKeyBuffer } = new.target.constructor_(key)
+    super(publicKeyBuffer)
+    this.privateKeyBuffer = privateKeyBuffer
     try {
-      this._forgeKey = new PrivateKeyForge(this.privateKeyBuffer)
-      this._privateKeys = new Map()
+      this._privateKeyForge = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(forge.util.createBuffer(this.privateKeyBuffer)))
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
     }
+    this._privateKeysWebCrypto = new Map()
   }
 
-  /**
-   * Generates asynchronously an RSA Private Key Key and instantiates it as a PrivateKeyWebCrypto.
-   * Falls back to forge key generation if Subtle crypto is not available.
-   * @param {AsymKeySize} [size = 4096] - key size in bits
-   * @returns {Promise<PrivateKeyWebCrypto>}
-   */
+  toB64 ({ publicOnly = false } = {}): string {
+    return this.toB64_({ publicOnly })
+  }
+
   static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyWebCrypto> {
     if (![4096, 2048, 1024].includes(size)) {
       throw new Error('INVALID_ARG')
@@ -209,29 +150,11 @@ class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) im
       )
       const exported = Buffer.from(await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
       return new this(exported)
-    } else return new this(Buffer.from((await PrivateKeyForge.generate(size)).toB64(), 'base64'))
+    } else return await super.generate(size) as PrivateKeyWebCrypto
   }
 
-  /**
-   * Decrypts synchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the Subtle Crypto
-   * implementation if available, else uses forge as fallback.
-   * @param {Buffer} cipherText
-   * @protected
-   * @returns {Buffer}
-   */
-  protected _rawDecryptSync (cipherText: Buffer): Buffer {
-    return this._forgeKey.decryptSync(cipherText, false)
-  }
-
-  /**
-   * Decrypts asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the Subtle Crypto
-   * implementation if available, else uses forge as fallback.
-   * @param {Buffer} cipherText
-   * @protected
-   * @returns {Promise<Buffer>}
-   */
-  protected async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return this._rawDecryptSync(cipherText)
+  async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super._rawDecrypt(cipherText)
     try {
       return Buffer.from(await window.crypto.subtle.decrypt(
         { name: 'RSA-OAEP' },
@@ -243,28 +166,8 @@ class PrivateKeyWebCrypto extends makePrivateKeyBaseClass(PublicKeyWebCrypto) im
     }
   }
 
-  /**
-   * Generates synchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
-   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.1 using forge fallback
-   * implementation, because Subtle Crypto is not available for synchronous operations.
-   * @param {Buffer} textToSign
-   * @returns {Buffer}
-   */
-  signSync (textToSign: Buffer): Buffer {
-    return this._forgeKey.signSync(textToSign)
-  }
-
-  /**
-   * Generates asynchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
-   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.1 using the Subtle Crypto
-   * implementation if available, else falls back to forge.
-   * @param {Buffer} textToSign
-   * @returns {Promise<Buffer>}
-   */
   async sign (textToSign: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return this._forgeKey.sign(textToSign)
+    if (!isWebCryptoAvailable()) return super.sign(textToSign)
     const privateKey = await this.getPrivateKey('sign')
     return Buffer.from(await window.crypto.subtle.sign(
       {

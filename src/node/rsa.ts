@@ -1,11 +1,11 @@
 import crypto from 'crypto'
-import { staticImplements } from '../utils/commonUtils'
+import { mixClasses, staticImplements } from '../utils/commonUtils'
 import {
   AsymKeySize,
-  makePrivateKeyBaseClass,
-  PrivateKeyInterface,
   PublicKey,
-  PublicKeyConstructor
+  PublicKeyConstructor,
+  PrivateKeyConstructor,
+  PrivateKey
 } from '../utils/rsa'
 import { sha256 } from './utils'
 import {
@@ -71,15 +71,9 @@ class PublicKeyNode extends PublicKey {
  * @class PrivateKeyWebCrypto
  * @property {Buffer} privateKeyBuffer
  */
-// @staticImplements<PrivateKeyConstructor<PrivateKeyNode>>()
-class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements PrivateKeyInterface {
-  /**
-   * A Buffer that contains a representation of the instantiated RSA PrivateKey using ASN.1 syntax with DER encoding
-   * wrapped in a PKCS#8 enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
-   * @type {Buffer}
-   * @readonly
-   */
-  readonly privateKeyBuffer: Buffer;
+@staticImplements<PrivateKeyConstructor<PrivateKeyNode>>()
+class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
+  readonly privateKeyBuffer: Buffer
 
   /**
    * Stores the private key in a PEM serialization.
@@ -88,14 +82,10 @@ class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements P
    */
   protected _privateKey: string
 
-  /**
-   * PrivateKeyNode constructor. Should be given a Buffer either encoded in a PKCS#8 enveloppe or as a bare private
-   * key representation using ASN.1 syntax with DER encoding.
-   * @constructs PrivateKeyWebCrypto
-   * @param {Buffer} key
-   */
   constructor (key: Buffer) {
-    super(key)
+    const { publicKeyBuffer, privateKeyBuffer } = new.target.constructor_(key)
+    super(publicKeyBuffer)
+    this.privateKeyBuffer = privateKeyBuffer
     try {
       this._privateKey = convertDERToPEM(unwrapPrivateKey(this.privateKeyBuffer), 'RSA PRIVATE KEY')
     } catch (e) {
@@ -103,11 +93,10 @@ class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements P
     }
   }
 
-  /**
-   * Generates asynchronously an RSA Private Key Key and instantiates it as a PrivateKeyNode.
-   * @param {AsymKeySize} [size = 4096] - key size in bits
-   * @returns {Promise<PrivateKeyNode>}
-   */
+  toB64 ({ publicOnly = false } = {}): string {
+    return this.toB64_({ publicOnly })
+  }
+
   static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyNode> {
     if (![4096, 2048, 1024].includes(size)) {
       throw new Error('INVALID_ARG')
@@ -130,13 +119,7 @@ class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements P
     }
   }
 
-  /**
-   * Decrypts synchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2.
-   * @param {Buffer} cipherText
-   * @protected
-   * @returns {Buffer}
-   */
-  protected _rawDecryptSync (cipherText: Buffer): Buffer {
+  _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
       return crypto.privateDecrypt(
         {
@@ -150,24 +133,6 @@ class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements P
     }
   }
 
-  /**
-   * Decrypts asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2.
-   * Shim for the synchronous method.
-   * @param {Buffer} cipherText
-   * @protected
-   * @returns {Promise<Buffer>}
-   */
-  protected async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
-    return this._rawDecryptSync(cipherText)
-  }
-
-  /**
-   * Generates synchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
-   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2`as per PKCS#1 v2.2 section 8.1.1.
-   * @param {Buffer} textToSign
-   * @returns {Buffer}
-   */
   signSync (textToSign: Buffer): Buffer {
     const sign = crypto.createSign('SHA256')
     sign.update(textToSign)
@@ -176,19 +141,6 @@ class PrivateKeyNode extends makePrivateKeyBaseClass(PublicKeyNode) implements P
       padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
       saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
     })
-  }
-
-  /**
-   * Generates asynchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
-   * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
-   * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
-   * 8.1.1.
-   * Shim for the synchronous method.
-   * @param {Buffer} textToSign
-   * @returns {Promise<Buffer>}
-   */
-  async sign (textToSign: Buffer): Promise<Buffer> {
-    return this.signSync(textToSign)
   }
 }
 
