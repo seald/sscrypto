@@ -104,87 +104,87 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
     })
 
     it('cipher & decipher sync', () => {
-      const cipheredMessage = privateKey.encryptSync(message)
-      assert.isTrue((privateKey.decryptSync(cipheredMessage)).equals(message), 'Message cannot be deciphered')
+      const cipheredMessage = privateKey.encrypt(message)
+      assert.isTrue((privateKey.decrypt(cipheredMessage)).equals(message), 'Message cannot be deciphered')
     })
 
     it('cipher & decipher async', async () => {
-      const cipheredMessage = await privateKey.encrypt(message)
-      assert.isTrue((await privateKey.decrypt(cipheredMessage)).equals(message), 'Message cannot be deciphered')
+      const cipheredMessage = await privateKey.encryptAsync(message)
+      assert.isTrue((await privateKey.decryptAsync(cipheredMessage)).equals(message), 'Message cannot be deciphered')
     })
 
     it('cipher & decipher without CRC sync', () => {
-      const cipheredMessage = privateKey.encryptSync(message, false)
-      assert.isTrue((privateKey.decryptSync(cipheredMessage, false)).equals(message), 'Message cannot be deciphered')
+      const cipheredMessage = privateKey.encrypt(message, false)
+      assert.isTrue((privateKey.decrypt(cipheredMessage, false)).equals(message), 'Message cannot be deciphered')
     })
 
     it('cipher & decipher without CRC async', async () => {
-      const cipheredMessage = await privateKey.encrypt(message, false)
-      assert.isTrue((await privateKey.decrypt(cipheredMessage, false)).equals(message), 'Message cannot be deciphered')
+      const cipheredMessage = await privateKey.encryptAsync(message, false)
+      assert.isTrue((await privateKey.decryptAsync(cipheredMessage, false)).equals(message), 'Message cannot be deciphered')
     })
 
     it('cipher & decipher with invalid CRC sync', () => {
-      const cipheredMessage = privateKey.encryptSync(message, false)
-      return expect(() => privateKey.decryptSync(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
+      const cipheredMessage = privateKey.encrypt(message, false)
+      return expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CRC32')
         return true
       })
     })
 
     it('cipher & decipher with invalid CRC async', async () => {
-      const cipheredMessage = await privateKey.encrypt(message, false)
-      return expect(privateKey.decrypt(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+      const cipheredMessage = await privateKey.encryptAsync(message, false)
+      return expect(privateKey.decryptAsync(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CRC32')
         return true
       })
     })
 
     it('cipher & decipher UTF8 sync', () => {
-      const cipheredMessage = privateKey.encryptSync(Buffer.from(messageUtf8, 'utf8'))
-      const decipheredMessage = privateKey.decryptSync(cipheredMessage).toString('utf8')
+      const cipheredMessage = privateKey.encrypt(Buffer.from(messageUtf8, 'utf8'))
+      const decipheredMessage = privateKey.decrypt(cipheredMessage).toString('utf8')
       assert.strictEqual(decipheredMessage, messageUtf8, 'Message cannot be deciphered')
     })
 
     it('cipher & decipher UTF8 async', async () => {
-      const cipheredMessage = await privateKey.encrypt(Buffer.from(messageUtf8, 'utf8'))
-      const decipheredMessage = (await privateKey.decrypt(cipheredMessage)).toString('utf8')
+      const cipheredMessage = await privateKey.encryptAsync(Buffer.from(messageUtf8, 'utf8'))
+      const decipheredMessage = (await privateKey.decryptAsync(cipheredMessage)).toString('utf8')
       assert.strictEqual(decipheredMessage, messageUtf8, 'Message cannot be deciphered')
     })
 
     it('cipher & decipher binary sync', () => {
-      const cipheredMessage = privateKey.encryptSync(messageBinary)
-      assert.isTrue(privateKey.decryptSync(cipheredMessage).equals(messageBinary), 'Message cannot be deciphered')
+      const cipheredMessage = privateKey.encrypt(messageBinary)
+      assert.isTrue(privateKey.decrypt(cipheredMessage).equals(messageBinary), 'Message cannot be deciphered')
     })
 
     it('cipher & decipher binary async', async () => {
-      const cipheredMessage = await privateKey.encrypt(messageBinary)
-      assert.isTrue((await privateKey.decrypt(cipheredMessage)).equals(messageBinary), 'Message cannot be deciphered')
+      const cipheredMessage = await privateKey.encryptAsync(messageBinary)
+      assert.isTrue((await privateKey.decryptAsync(cipheredMessage)).equals(messageBinary), 'Message cannot be deciphered')
     })
 
     it('fail with bad key sync', async () => {
-      const cipheredMessage = privateKey2.encryptSync(message)
-      return expect(() => privateKey.decryptSync(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
+      const cipheredMessage = privateKey2.encrypt(message)
+      return expect(() => privateKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CIPHER_TEXT')
         return true
       })
     })
 
     it('fail with bad key async', async () => {
-      const cipheredMessage = await privateKey2.encrypt(message)
-      return expect(privateKey.decrypt(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+      const cipheredMessage = await privateKey2.encryptAsync(message)
+      return expect(privateKey.decryptAsync(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_CIPHER_TEXT')
         return true
       })
     })
 
     it('sign & verify sync', () => {
-      const messageSignatureByPrivateKey = privateKey.signSync(message)
-      assert(privateKey.verifySync(message, messageSignatureByPrivateKey), 'Signature doesn\'t match')
+      const messageSignatureByPrivateKey = privateKey.sign(message)
+      assert(privateKey.verify(message, messageSignatureByPrivateKey), 'Signature doesn\'t match')
     })
 
     it('sign & verify async', async () => {
-      const messageSignatureByPrivateKey = await privateKey.sign(message)
-      assert(await privateKey.verify(message, messageSignatureByPrivateKey), 'Signature doesn\'t match')
+      const messageSignatureByPrivateKey = await privateKey.signAsync(message)
+      assert(await privateKey.verifyAsync(message, messageSignatureByPrivateKey), 'Signature doesn\'t match')
     })
 
     it('get hash', () => {
@@ -217,21 +217,21 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
       const publicKey_ = PublicKey2.fromB64(privateKey.toB64({ publicOnly: true }))
 
       // compatibility
-      const cipherText1 = privateKey.encryptSync(message)
-      const decipheredMessage1 = privateKey_.decryptSync(cipherText1)
+      const cipherText1 = privateKey.encrypt(message)
+      const decipheredMessage1 = privateKey_.decrypt(cipherText1)
       assert.isTrue(message.equals(decipheredMessage1))
 
-      const cipherText2 = privateKey_.encryptSync(message)
-      const decipheredMessage2 = privateKey.decryptSync(cipherText2)
+      const cipherText2 = privateKey_.encrypt(message)
+      const decipheredMessage2 = privateKey.decrypt(cipherText2)
       assert.isTrue(message.equals(decipheredMessage2))
 
-      const cipherText3 = publicKey_.encryptSync(message)
-      const decipheredMessage3 = privateKey.decryptSync(cipherText3)
+      const cipherText3 = publicKey_.encrypt(message)
+      const decipheredMessage3 = privateKey.decrypt(cipherText3)
       assert.isTrue(message.equals(decipheredMessage3))
 
-      const signature = privateKey.signSync(message)
-      assert.isTrue(privateKey_.verifySync(message, signature))
-      assert.isTrue(publicKey_.verifySync(message, signature))
+      const signature = privateKey.sign(message)
+      assert.isTrue(privateKey_.verify(message, signature))
+      assert.isTrue(publicKey_.verify(message, signature))
 
       // equality
       assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
@@ -247,21 +247,21 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
       const publicKey_ = PublicKey2.fromB64(privateKey.toB64({ publicOnly: true }))
 
       // compatibility
-      const cipherText1 = await privateKey.encrypt(message)
-      const decipheredMessage1 = await privateKey_.decrypt(cipherText1)
+      const cipherText1 = await privateKey.encryptAsync(message)
+      const decipheredMessage1 = await privateKey_.decryptAsync(cipherText1)
       assert.isTrue(message.equals(decipheredMessage1))
 
-      const cipherText2 = await privateKey_.encrypt(message)
-      const decipheredMessage2 = await privateKey.decrypt(cipherText2)
+      const cipherText2 = await privateKey_.encryptAsync(message)
+      const decipheredMessage2 = await privateKey.decryptAsync(cipherText2)
       assert.isTrue(message.equals(decipheredMessage2))
 
-      const cipherText3 = await publicKey_.encrypt(message)
-      const decipheredMessage3 = await privateKey.decrypt(cipherText3)
+      const cipherText3 = await publicKey_.encryptAsync(message)
+      const decipheredMessage3 = await privateKey.decryptAsync(cipherText3)
       assert.isTrue(message.equals(decipheredMessage3))
 
-      const signature = await privateKey.sign(message)
-      assert.isTrue(await privateKey_.verify(message, signature))
-      assert.isTrue(await publicKey_.verify(message, signature))
+      const signature = await privateKey.signAsync(message)
+      assert.isTrue(await privateKey_.verifyAsync(message, signature))
+      assert.isTrue(await publicKey_.verifyAsync(message, signature))
 
       // equality
       assert.strictEqual(privateKey.toB64(), privateKey_.toB64())
@@ -312,7 +312,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const encryptedData = []
       const startEncrypt = Date.now()
       for (const d of randomData) {
-        encryptedData.push(k.encryptSync(d))
+        encryptedData.push(k.encrypt(d))
       }
       const endEncrypt = Date.now()
       const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
@@ -321,7 +321,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const decryptedData = []
       const startDecrypt = Date.now()
       for (const d of encryptedData) {
-        decryptedData.push(k.decryptSync(d))
+        decryptedData.push(k.decrypt(d))
       }
       const endDecrypt = Date.now()
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
@@ -344,7 +344,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const encryptedData = []
       const startEncrypt = Date.now()
       for (const d of randomData) {
-        encryptedData.push(await k.encrypt(d))
+        encryptedData.push(await k.encryptAsync(d))
       }
       const endEncrypt = Date.now()
       const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
@@ -353,7 +353,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const decryptedData = []
       const startDecrypt = Date.now()
       for (const d of encryptedData) {
-        decryptedData.push(await k.decrypt(d))
+        decryptedData.push(await k.decryptAsync(d))
       }
       const endDecrypt = Date.now()
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
@@ -376,7 +376,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const signatures = []
       const startEncrypt = Date.now()
       for (const d of randomData) {
-        signatures.push([d, k.signSync(d)])
+        signatures.push([d, k.sign(d)])
       }
       const endEncrypt = Date.now()
       const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
@@ -385,7 +385,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const verifications = []
       const startDecrypt = Date.now()
       for (const [d, signature] of signatures) {
-        verifications.push(k.verifySync(d, signature))
+        verifications.push(k.verify(d, signature))
       }
       const endDecrypt = Date.now()
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
@@ -408,7 +408,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const signatures = []
       const startSign = Date.now()
       for (const d of randomData) {
-        signatures.push([d, await k.sign(d)])
+        signatures.push([d, await k.signAsync(d)])
       }
       const endSign = Date.now()
       const deltaSign = (endSign - startSign) / 1000
@@ -417,7 +417,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       const verifications = []
       const startVerify = Date.now()
       for (const [d, signature] of signatures) {
-        verifications.push(await k.verify(d, signature))
+        verifications.push(await k.verifyAsync(d, signature))
       }
       const endVerification = Date.now()
       const deltaVerification = (endVerification - startVerify) / 1000

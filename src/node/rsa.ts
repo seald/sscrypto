@@ -48,7 +48,7 @@ class PublicKeyNode extends PublicKey {
     )
   }
 
-  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
+  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     const verify = crypto.createVerify('SHA256')
     verify.update(textToCheckAgainst)
     return verify.verify(
@@ -133,7 +133,7 @@ class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
     }
   }
 
-  signSync (textToSign: Buffer): Buffer {
+  sign (textToSign: Buffer): Buffer {
     const sign = crypto.createSign('SHA256')
     sign.update(textToSign)
     return sign.sign({

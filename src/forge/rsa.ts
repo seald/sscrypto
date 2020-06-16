@@ -50,7 +50,7 @@ class PublicKeyForge extends PublicKey {
     )
   }
 
-  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean {
+  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     try {
       // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
       const saltLength = ((this._publicKey.n as BigInteger).bitLength() / 8) - 32 - 2
@@ -136,7 +136,7 @@ class PrivateKeyForge extends mixClasses(PublicKeyForge, PrivateKey) {
     }
   }
 
-  signSync (textToSign: Buffer): Buffer {
+  sign (textToSign: Buffer): Buffer {
     const md = forge.md.sha256.create()
     md.update(textToSign.toString('binary'))
     // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length

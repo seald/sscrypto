@@ -93,7 +93,7 @@ export abstract class PublicKey {
    * @abstract
    * @returns {Buffer}
    */
-  _rawEncryptSync (clearText: Buffer): Buffer {
+  _rawEncryptSync (clearText: Buffer): Buffer { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 
@@ -102,10 +102,9 @@ export abstract class PublicKey {
    * function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
    * @param {Buffer} clearText
    * @protected
-   * @abstract
    * @returns {Promise<Buffer>}
    */
-  async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
+  async _rawEncryptAsync (clearText: Buffer): Promise<Buffer> {
     return this._rawEncryptSync(clearText)
   }
 
@@ -117,7 +116,7 @@ export abstract class PublicKey {
    * @param {boolean} [doCRC=true]
    * @returns {Buffer}
    */
-  encryptSync (clearText: Buffer, doCRC = true): Buffer {
+  encrypt (clearText: Buffer, doCRC = true): Buffer {
     if (doCRC) return this._rawEncryptSync(prefixCRC(clearText))
     else return this._rawEncryptSync(clearText)
   }
@@ -130,9 +129,9 @@ export abstract class PublicKey {
    * @param {boolean} [doCRC=true]
    * @returns {Promise<Buffer>}
    */
-  encrypt (clearText: Buffer, doCRC = true): Promise<Buffer> {
-    if (doCRC) return this._rawEncrypt(prefixCRC(clearText))
-    else return this._rawEncrypt(clearText)
+  encryptAsync (clearText: Buffer, doCRC = true): Promise<Buffer> {
+    if (doCRC) return this._rawEncryptAsync(prefixCRC(clearText))
+    else return this._rawEncryptAsync(clearText)
   }
 
   /**
@@ -145,7 +144,7 @@ export abstract class PublicKey {
    * @abstract
    * @returns {boolean}
    */
-  verifySync (textToCheckAgainst: Buffer, signature: Buffer): boolean { // TODO: abstract
+  verify (textToCheckAgainst: Buffer, signature: Buffer): boolean { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 
@@ -156,19 +155,19 @@ export abstract class PublicKey {
    * PublicKey.
    * @param {Buffer} textToCheckAgainst
    * @param {Buffer} signature
-   * @abstract
    * @returns {Promise<boolean>}
    */
-  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
-    return this.verifySync(textToCheckAgainst, signature)
+  async verifyAsync (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+    return this.verify(textToCheckAgainst, signature)
   }
 
   /**
    * Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
    * wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
+   * @abstract
    * @returns {string}
    */
-  getHash (): string { // TODO: abstract
+  getHash (): string { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 }
@@ -247,7 +246,7 @@ export class PrivateKey extends PublicKey {
    * @param {AsymKeySize} size key size in bits
    * @returns {Promise<PrivateKey>}
    */
-  static generate (size: AsymKeySize = 4096): Promise<PrivateKey> {
+  static generate (size: AsymKeySize = 4096): Promise<PrivateKey> { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 
@@ -276,7 +275,7 @@ export class PrivateKey extends PublicKey {
    * @abstract
    * @returns {Buffer}
    */
-  _rawDecryptSync (cipherText: Buffer): Buffer {
+  _rawDecryptSync (cipherText: Buffer): Buffer { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 
@@ -284,10 +283,9 @@ export class PrivateKey extends PublicKey {
    * Decrypts asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the instantiated PrivateKey
    * @param {Buffer} cipherText
    * @protected
-   * @abstract
    * @returns {Promise<Buffer>}
    */
-  async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
+  async _rawDecryptAsync (cipherText: Buffer): Promise<Buffer> {
     return this._rawDecryptSync(cipherText)
   }
 
@@ -298,7 +296,7 @@ export class PrivateKey extends PublicKey {
    * @param {boolean} [doCRC=true]
    * @returns {Buffer}
    */
-  decryptSync (cipherText: Buffer, doCRC = true): Buffer {
+  decrypt (cipherText: Buffer, doCRC = true): Buffer {
     const clearText = this._rawDecryptSync(cipherText)
     return doCRC ? splitAndVerifyCRC(clearText) : clearText
   }
@@ -310,8 +308,8 @@ export class PrivateKey extends PublicKey {
    * @param {boolean} [doCRC=true]
    * @returns {Promise<Buffer>}
    */
-  async decrypt (cipherText: Buffer, doCRC = true): Promise<Buffer> {
-    const clearText = await this._rawDecrypt(cipherText)
+  async decryptAsync (cipherText: Buffer, doCRC = true): Promise<Buffer> {
+    const clearText = await this._rawDecryptAsync(cipherText)
     return doCRC ? splitAndVerifyCRC(clearText) : clearText
   }
 
@@ -320,10 +318,11 @@ export class PrivateKey extends PublicKey {
    * encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
    * `Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
    * 8.1.1 using instantiated PrivateKey.
+   * @abstract
    * @param {Buffer} textToSign
    * @returns {Buffer}
    */
-  signSync (textToSign: Buffer): Buffer {
+  sign (textToSign: Buffer): Buffer { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
   }
 
@@ -335,7 +334,7 @@ export class PrivateKey extends PublicKey {
    * @param {Buffer} textToSign
    * @returns {Promise<Buffer>}
    */
-  async sign (textToSign: Buffer): Promise<Buffer> {
-    return this.signSync(textToSign)
+  async signAsync (textToSign: Buffer): Promise<Buffer> {
+    return this.sign(textToSign)
   }
 }

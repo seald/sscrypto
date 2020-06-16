@@ -48,7 +48,7 @@ class PublicKeyWebCrypto extends PublicKeyForge {
   }
 
   // using the Subtle Crypto implementation if available, else falls back to forge
-  async _rawEncrypt (clearText: Buffer): Promise<Buffer> {
+  async _rawEncryptAsync (clearText: Buffer): Promise<Buffer> {
     return isWebCryptoAvailable()
       ? Buffer.from(await window.crypto.subtle.encrypt(
         {
@@ -61,7 +61,7 @@ class PublicKeyWebCrypto extends PublicKeyForge {
   }
 
   // using the Subtle Crypto implementation if available, else falls back to forge
-  async verify (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+  async verifyAsync (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
     if (isWebCryptoAvailable()) {
       const privateKey = await this._getPublicKey('verify')
       return window.crypto.subtle.verify(
@@ -73,7 +73,7 @@ class PublicKeyWebCrypto extends PublicKeyForge {
         signature,
         textToCheckAgainst
       )
-    } else return this.verifySync(textToCheckAgainst, signature)
+    } else return this.verify(textToCheckAgainst, signature)
   }
 }
 
@@ -153,8 +153,8 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
     } else return await super.generate(size) as PrivateKeyWebCrypto
   }
 
-  async _rawDecrypt (cipherText: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super._rawDecrypt(cipherText)
+  async _rawDecryptAsync (cipherText: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super._rawDecryptAsync(cipherText)
     try {
       return Buffer.from(await window.crypto.subtle.decrypt(
         { name: 'RSA-OAEP' },
@@ -166,8 +166,8 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
     }
   }
 
-  async sign (textToSign: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super.sign(textToSign)
+  async signAsync (textToSign: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super.signAsync(textToSign)
     const privateKey = await this.getPrivateKey('sign')
     return Buffer.from(await window.crypto.subtle.sign(
       {
