@@ -40,7 +40,7 @@ class SymKeyForge extends SymKey {
     this.encryptionKey = key.slice(this.keySize / 8).toString('binary')
   }
 
-  static randomBytes_ (size: number): Promise<Buffer> {
+  static randomBytesAsync_ (size: number): Promise<Buffer> {
     return randomBytes(size)
   }
 

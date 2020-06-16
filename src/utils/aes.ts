@@ -12,7 +12,7 @@ export interface SymKeyConstructor<T extends SymKey> {
 
   generate (size: SymKeySize): Promise<T>
 
-  randomBytes_ (size: number): Promise<Buffer>
+  randomBytesAsync_ (size: number): Promise<Buffer>
 
   randomBytesSync_ (size: number): Buffer
 }
@@ -35,11 +35,11 @@ export abstract class SymKey {
     this.key = key
   }
 
-  static async randomBytes_ (size: number): Promise<Buffer> {
+  static async randomBytesAsync_ (size: number): Promise<Buffer> {
     return this.randomBytesSync_(size)
   }
 
-  static randomBytesSync_ (size: number): Buffer {
+  static randomBytesSync_ (size: number): Buffer { // no abstract for static...
     throw new Error('Subclass needs to implement `randomBytesSync_`')
   }
 
@@ -51,7 +51,7 @@ export abstract class SymKey {
    * @returns {Promise<SymKey>}
    */
   static async generate<T extends SymKey> (this: SymKeyConstructor<T>, size: SymKeySize = 256): Promise<T> {
-    return new this(await this.randomBytes_(size / 4)) // `size / 4` is `(size / 8) * 2`
+    return new this(await this.randomBytesAsync_(size / 4)) // `size / 4` is `(size / 8) * 2`
   }
 
   /**
@@ -100,7 +100,7 @@ export abstract class SymKey {
    * @param {Buffer} textToAuthenticate
    * @returns {Promise<Buffer>}
    */
-  async calculateHMAC_ (textToAuthenticate: Buffer): Promise<Buffer> {
+  async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {
     return this.calculateHMACSync_(textToAuthenticate)
   }
 
@@ -119,7 +119,7 @@ export abstract class SymKey {
    * @param {Buffer} iv
    * @returns {Promise<Buffer>}
    */
-  async rawEncrypt_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+  async rawEncryptAsync_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
     return this.rawEncryptSync_(clearText, iv)
   }
 
@@ -131,13 +131,13 @@ export abstract class SymKey {
    * @param {Buffer} clearText
    * @returns {Promise<Buffer>}
    */
-  async encrypt (clearText: Buffer): Promise<Buffer> {
-    const iv = await (this.constructor as SymKeyConstructor<SymKey>).randomBytes_(16)
+  async encryptAsync (clearText: Buffer): Promise<Buffer> {
+    const iv = await (this.constructor as SymKeyConstructor<SymKey>).randomBytesAsync_(16)
 
-    const crypt = await this.rawEncrypt_(clearText, iv)
+    const crypt = await this.rawEncryptAsync_(clearText, iv)
     const cipherText = Buffer.concat([iv, crypt])
 
-    return Buffer.concat([cipherText, await this.calculateHMAC_(cipherText)])
+    return Buffer.concat([cipherText, await this.calculateHMACAsync_(cipherText)])
   }
 
   /**
@@ -157,7 +157,7 @@ export abstract class SymKey {
    * @param {Buffer} clearText
    * @returns {Buffer}
    */
-  encryptSync (clearText: Buffer): Buffer {
+  encrypt (clearText: Buffer): Buffer {
     const iv = (this.constructor as SymKeyConstructor<SymKey>).randomBytesSync_(16)
 
     const crypt = this.rawEncryptSync_(clearText, iv)
@@ -179,7 +179,7 @@ export abstract class SymKey {
   encryptStream (): Transform {
     let canceled = false
     const progress = getProgress()
-    const ivPromise = (this.constructor as SymKeyConstructor<SymKey>).randomBytes_(16)
+    const ivPromise = (this.constructor as SymKeyConstructor<SymKey>).randomBytesAsync_(16)
     let encryptStream: Transform
     const getEncryptStream = (iv: Buffer): void => { // this avoids having to save 'this'
       encryptStream = this.rawEncryptStream_(iv)
@@ -253,7 +253,7 @@ export abstract class SymKey {
    * @param {Buffer} iv
    * @returns {Promise<Buffer>}
    */
-  async rawDecrypt_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+  async rawDecryptAsync_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
     return this.rawDecryptSync_(cipherText, iv)
   }
 
@@ -263,13 +263,13 @@ export abstract class SymKey {
    * @param {Buffer} cipheredMessage
    * @returns {Promise<Buffer>}
    */
-  async decrypt (cipheredMessage: Buffer): Promise<Buffer> {
+  async decryptAsync (cipheredMessage: Buffer): Promise<Buffer> {
     const iv = cipheredMessage.slice(0, 16)
     const cipherText = cipheredMessage.slice(16, -32)
     const hmac = cipheredMessage.slice(-32)
 
-    if ((await this.calculateHMAC_(Buffer.concat([iv, cipherText]))).equals(hmac)) {
-      return this.rawDecrypt_(cipherText, iv)
+    if ((await this.calculateHMACAsync_(Buffer.concat([iv, cipherText]))).equals(hmac)) {
+      return this.rawDecryptAsync_(cipherText, iv)
     } else throw new Error('INVALID_HMAC')
   }
 
@@ -288,7 +288,7 @@ export abstract class SymKey {
    * @param {Buffer} cipheredMessage
    * @returns {Buffer}
    */
-  decryptSync (cipheredMessage: Buffer): Buffer {
+  decrypt (cipheredMessage: Buffer): Buffer {
     const iv = cipheredMessage.slice(0, 16)
     const cipherText = cipheredMessage.slice(16, -32)
     const hmac = cipheredMessage.slice(-32)

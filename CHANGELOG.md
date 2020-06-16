@@ -1,3 +1,9 @@
+## Unreleased
+- \[enhancement\] Massive rewrite.
+- \[BREAKING CHANGE\] Creating a new SymKey must be done through `SymKey.generate()`.
+- \[new feature\] There are now both sync and async versions of functions.
+
+
 ## v0.4.2
 
 - Update dependencies

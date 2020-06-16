@@ -36,7 +36,7 @@ class SymKeyWebCrypto extends SymKeyForge {
     return this.subtleAuthenticationKey
   }
 
-  static randomBytes_ (size: number): Promise<Buffer> {
+  static randomBytesAsync_ (size: number): Promise<Buffer> {
     return randomBytes(size)
   }
 
@@ -44,8 +44,8 @@ class SymKeyWebCrypto extends SymKeyForge {
     return randomBytesSync(size)
   }
 
-  async calculateHMAC_ (textToAuthenticate: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super.calculateHMAC_(textToAuthenticate)
+  async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super.calculateHMACAsync_(textToAuthenticate)
     return Buffer.from(await window.crypto.subtle.sign(
       'HMAC',
       await this.getSubtleAuthenticationKey_(),
@@ -53,8 +53,8 @@ class SymKeyWebCrypto extends SymKeyForge {
     ))
   }
 
-  async rawEncrypt_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawEncrypt_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+  async rawEncryptAsync_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawEncryptAsync_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
     return Buffer.from(await window.crypto.subtle.encrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),
@@ -107,8 +107,8 @@ class SymKeyWebCrypto extends SymKeyForge {
     })
   }
 
-  async rawDecrypt_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawDecrypt_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+  async rawDecryptAsync_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawDecryptAsync_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
     return Buffer.from(await window.crypto.subtle.decrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),
