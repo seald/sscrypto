@@ -5,12 +5,12 @@ import { SymKey, SymKeyConstructor } from '../utils/aes'
 
 @staticImplements<SymKeyConstructor<SymKeyNode>>()
 class SymKeyNode extends SymKey {
-  protected readonly signingKey: Buffer
+  protected readonly authenticationKey: Buffer
   protected readonly encryptionKey: Buffer
 
   constructor (key: Buffer) {
     super(key)
-    this.signingKey = key.slice(0, this.keySize / 8)
+    this.authenticationKey = key.slice(0, this.keySize / 8)
     this.encryptionKey = key.slice(this.keySize / 8)
   }
 
@@ -19,7 +19,7 @@ class SymKeyNode extends SymKey {
   }
 
   calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
-    const hmac = crypto.createHmac('sha256', this.signingKey)
+    const hmac = crypto.createHmac('sha256', this.authenticationKey)
     hmac.update(textToAuthenticate)
     return hmac.digest()
   }
@@ -34,7 +34,7 @@ class SymKeyNode extends SymKey {
   }
 
   HMACStream_ (): Transform {
-    return crypto.createHmac('sha256', this.signingKey)
+    return crypto.createHmac('sha256', this.authenticationKey)
   }
 
   rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {

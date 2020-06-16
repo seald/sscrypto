@@ -52,7 +52,7 @@ export abstract class PublicKey {
    * @constructs PublicKey
    * @protected
    */
-  constructor (key: Buffer) {
+  protected constructor (key: Buffer) {
     if (!Buffer.isBuffer(key)) throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
     let n
     try {
@@ -93,7 +93,7 @@ export abstract class PublicKey {
    * @abstract
    * @returns {Buffer}
    */
-  _rawEncryptSync (clearText: Buffer): Buffer { // TODO: abstract
+  _rawEncryptSync (clearText: Buffer): Buffer {
     throw new Error('Must be subclassed')
   }
 

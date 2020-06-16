@@ -3,12 +3,12 @@ import SymKeyForge from '../forge/aes'
 import { isWebCryptoAvailable, randomBytes, randomBytesSync } from './utils'
 
 class SymKeyWebCrypto extends SymKeyForge {
-  protected subtleSigningKey: Promise<CryptoKey>
+  protected subtleAuthenticationKey: Promise<CryptoKey>
   protected subtleEncryptionKey: Promise<CryptoKey>
 
   constructor (key: Buffer) {
     super(key)
-    this.subtleSigningKey = null
+    this.subtleAuthenticationKey = null
     this.subtleEncryptionKey = null
   }
 
@@ -24,16 +24,16 @@ class SymKeyWebCrypto extends SymKeyForge {
     return this.subtleEncryptionKey
   }
 
-  protected getSubtleSigningKey_ (): Promise<CryptoKey> {
-    if (this.subtleSigningKey) return this.subtleSigningKey
-    this.subtleSigningKey = window.crypto.subtle.importKey(
+  protected getSubtleAuthenticationKey_ (): Promise<CryptoKey> {
+    if (this.subtleAuthenticationKey) return this.subtleAuthenticationKey
+    this.subtleAuthenticationKey = window.crypto.subtle.importKey(
       'raw',
       this.key.slice(0, this.keySize / 8),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
     ) as Promise<CryptoKey> // somehow TypeScript typings of DOM think importKey returns a PromiseLike, not a Promise
-    return this.subtleSigningKey
+    return this.subtleAuthenticationKey
   }
 
   static randomBytes_ (size: number): Promise<Buffer> {
@@ -48,7 +48,7 @@ class SymKeyWebCrypto extends SymKeyForge {
     if (!isWebCryptoAvailable()) return super.calculateHMAC_(textToAuthenticate)
     return Buffer.from(await window.crypto.subtle.sign(
       'HMAC',
-      await this.getSubtleSigningKey_(),
+      await this.getSubtleAuthenticationKey_(),
       textToAuthenticate
     ))
   }

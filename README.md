@@ -19,7 +19,7 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * Properties
     * [encryptionKey](#symkey-encryptionkey)
     * [keySize](#symkey-keysize)
-    * [signingKey](#symkey-signingkey)
+    * [authenticationKey](#symkey-authenticationkey)
 
   * Methods
     * [calculateHMAC](#symkey-calculatehmac)
@@ -187,11 +187,11 @@ ___
 **● keySize**: *`number`*
 
 ___
-<a id="symkey-signingkey"></a>
+<a id="symkey-authenticationkey"></a>
 
-### `<Private>` signingKey
+### `<Private>` authenticationKey
 
-**● signingKey**: *`string`*
+**● authenticationKey**: *`string`*
 
 ___
 
@@ -203,7 +203,7 @@ ___
 
 ▸ **calculateHMAC**(textToAuthenticate: *`Buffer`*): `Buffer`
 
-Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
+Calculates a SHA-256 HMAC with the SymKey#authenticationKey on the textToAuthenticate
 
 **Parameters:**
 
@@ -248,7 +248,7 @@ ___
 
 ▸ **encrypt**(clearText: *`Buffer`*): `Buffer`
 
-Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with SymKey#signingKey, returns it concatenated in the following order: InitializationVector CipherText HMAC
+Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with SymKey#authenticationKey, returns it concatenated in the following order: InitializationVector CipherText HMAC
 
 **Parameters:**
 
@@ -276,7 +276,7 @@ ___
 
 ▸ **toB64**(): `string`
 
-Returns both SymKey#signingKey and SymKey#encryptionKey concatenated encoded with b64
+Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated encoded with b64
 
 **Returns:** `string`
 
@@ -287,7 +287,7 @@ ___
 
 ▸ **toString**(): `string`
 
-Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
+Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
 
 **Returns:** `string`
 

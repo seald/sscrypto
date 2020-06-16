@@ -51,7 +51,7 @@ export abstract class SymKey {
    * @returns {Promise<SymKey>}
    */
   static async generate<T extends SymKey> (this: SymKeyConstructor<T>, size: SymKeySize = 256): Promise<T> {
-    return new this(await this.randomBytes_(size / 4))
+    return new this(await this.randomBytes_(size / 4)) // `size / 4` is `(size / 8) * 2`
   }
 
   /**
@@ -77,7 +77,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated encoded with b64
+   * Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated encoded with b64
    * @method
    * @returns {string}
    */
@@ -86,7 +86,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Returns both SymKey#signingKey and SymKey#encryptionKey concatenated as a binary string
+   * Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
    * @method
    * @returns {string}
    */
@@ -95,7 +95,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKey#authenticationKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Promise<Buffer>}
@@ -105,7 +105,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Calculates a SHA-256 HMAC with the SymKey#signingKey on the textToAuthenticate
+   * Calculates a SHA-256 HMAC with the SymKey#authenticationKey on the textToAuthenticate
    * @method
    * @param {Buffer} textToAuthenticate
    * @returns {Buffer}
@@ -125,7 +125,7 @@ export abstract class SymKey {
 
   /**
    * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKey#signingKey, returns it concatenated in the following order:
+   * SymKey#authenticationKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText
@@ -151,7 +151,7 @@ export abstract class SymKey {
 
   /**
    * Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
-   * SymKey#signingKey, returns it concatenated in the following order:
+   * SymKey#authenticationKey, returns it concatenated in the following order:
    * InitializationVector CipherText HMAC
    * @method
    * @param {Buffer} clearText

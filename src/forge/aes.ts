@@ -31,12 +31,12 @@ const forgeCipherToStream = (cipher: forge.cipher.BlockCipher): Transform => {
 
 @staticImplements<SymKeyConstructor<SymKeyForge>>()
 class SymKeyForge extends SymKey {
-  protected readonly signingKey: string
+  protected readonly authenticationKey: string
   protected readonly encryptionKey: string
 
   constructor (key: Buffer) {
     super(key)
-    this.signingKey = key.slice(0, this.keySize / 8).toString('binary')
+    this.authenticationKey = key.slice(0, this.keySize / 8).toString('binary')
     this.encryptionKey = key.slice(this.keySize / 8).toString('binary')
   }
 
@@ -50,7 +50,7 @@ class SymKeyForge extends SymKey {
 
   calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
     const hmac = forge.hmac.create()
-    hmac.start('sha256', this.signingKey)
+    hmac.start('sha256', this.authenticationKey)
     hmac.update(textToAuthenticate.toString('binary'))
     return Buffer.from(hmac.digest().data, 'binary')
   }
@@ -72,7 +72,7 @@ class SymKeyForge extends SymKey {
 
   HMACStream_ (): Transform {
     const hmac = forge.hmac.create()
-    hmac.start('sha256', this.signingKey)
+    hmac.start('sha256', this.authenticationKey)
     return new Transform({
       transform (chunk: Buffer, encoding, callback): void {
         try {

@@ -1,5 +1,4 @@
 'use strict'
-/* eslint-disable @typescript-eslint/no-var-requires */
 
 module.exports = (config) => ({
   // Increase timeout in case connection in CI is slow
