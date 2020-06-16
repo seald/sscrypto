@@ -36,8 +36,8 @@ class SymKeyForge extends SymKey {
 
   constructor (key: Buffer) {
     super(key)
-    this.authenticationKey = key.slice(0, this.keySize / 8).toString('binary')
-    this.encryptionKey = key.slice(this.keySize / 8).toString('binary')
+    this.authenticationKey = this.key.slice(0, this.keySize / 8).toString('binary')
+    this.encryptionKey = this.key.slice(this.keySize / 8).toString('binary')
   }
 
   static randomBytesAsync_ (size: number): Promise<Buffer> {

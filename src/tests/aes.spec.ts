@@ -3,7 +3,7 @@
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { _streamHelper, splitLength, TestHooks } from './specUtils.spec'
-import { SymKey, SymKeyConstructor } from '../utils/aes'
+import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
 
 chai.use(chaiAsPromised)
 const { assert, expect } = chai
@@ -47,18 +47,20 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       })
     })
 
-    for (const size of [128, 192, 256]) {
+    for (const size of [128, 192, 256] as Array<SymKeySize>) {
       let key: InstanceType<typeof SymKeyClass>
       let badKey: InstanceType<typeof SymKeyClass>
 
       describe(`AES ${name} - AES-${size}`, () => {
         it('generation', async () => {
-          key = await SymKeyClass.generate(256)
-          badKey = await SymKeyClass.generate(256)
+          key = await SymKeyClass.generate(size)
+          badKey = new SymKeyClass(size) // deprecated usage, but we still have to test it
           assert.instanceOf(key, SymKeyClass)
           assert.instanceOf(badKey, SymKeyClass)
           assert.instanceOf(key, SymKey)
           assert.instanceOf(badKey, SymKey)
+          assert.strictEqual(key.keySize, size)
+          assert.strictEqual(badKey.keySize, size)
         })
 
         it('Try deciphering sync a cipherText with invalid HMAC', () => {

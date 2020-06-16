@@ -10,8 +10,8 @@ class SymKeyNode extends SymKey {
 
   constructor (key: Buffer) {
     super(key)
-    this.authenticationKey = key.slice(0, this.keySize / 8)
-    this.encryptionKey = key.slice(this.keySize / 8)
+    this.authenticationKey = this.key.slice(0, this.keySize / 8)
+    this.encryptionKey = this.key.slice(this.keySize / 8)
   }
 
   static randomBytesSync_ (size: number): Buffer {

@@ -4,7 +4,7 @@ import { getProgress, streamToData, writeInStream } from './commonUtils'
 export type SymKeySize = 128 | 192 | 256
 
 export interface SymKeyConstructor<T extends SymKey> {
-  new (key: Buffer): T
+  new (key?: Buffer | SymKeySize): T
 
   fromString (messageKey: string): T
 
@@ -23,10 +23,15 @@ export abstract class SymKey {
 
   /**
    * Constructor of SymKey
-   * @constructs SymKey
-   * @param {Buffer} key The key to construct the SymKey with.
+   * Using a number as argument is deprecated.
+   * Defaults to a new 256 bits key.
+   * @constructs SymKeyNode
+   * @param {Buffer|SymKeySize} [key = 256] The key to construct the SymKey with. Passing a keySize is deprecated. Use `SymKey.generate` instead.
    */
-  protected constructor (key: Buffer) {
+  protected constructor (key: Buffer | SymKeySize = 256) {
+    if (typeof key === 'number') { // deprecated
+      key = new.target.randomBytesSync_(key / 4) // `size / 4` is `(size / 8) * 2`
+    }
     const keySize = key.length / 2 * 8
     if (keySize !== 128 && keySize !== 192 && keySize !== 256) {
       throw new Error('INVALID_ARG : Key size is invalid')

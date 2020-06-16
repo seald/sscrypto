@@ -1,6 +1,6 @@
 ## Unreleased
 - \[enhancement\] Massive rewrite.
-- \[BREAKING CHANGE\] Creating a new SymKey must be done through `SymKey.generate()`.
+- \[new feature\] Creating a new SymKey should be done through `SymKey.generate(size)`. Using `new SymKey(size)` is deprecated.
 - \[new feature\] There are now both sync and async versions of functions.
 
 
