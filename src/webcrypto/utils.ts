@@ -1,4 +1,13 @@
 import forge from 'node-forge'
+import { promisify } from 'util'
+
+declare global {
+  interface Window {
+    SSCRYPTO_NO_WEBCRYPTO?: boolean
+  }
+}
+
+export const isWebCryptoAvailable = (): boolean => window.crypto && window.crypto.subtle && !window.SSCRYPTO_NO_WEBCRYPTO
 
 /**
  * Returns a Buffer containing the hash of the given data
@@ -16,11 +25,23 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length = 10): Buffer => {
-  // @ts-ignore
-  if (window.crypto && window.crypto.getRandomValues && !window.SSCRYPTO_NO_WEBCRYPTO) {
+export const randomBytesSync = (length = 10): Buffer => {
+  if (isWebCryptoAvailable()) {
     return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
   } else {
     return Buffer.from(forge.random.getBytesSync(length), 'binary')
+  }
+}
+
+/**
+ * Returns a Buffer of random bytes
+ * @param {number} [length=10]
+ * @return {Promise<Buffer>}
+ */
+export const randomBytes = async (length = 10): Promise<Buffer> => {
+  if (isWebCryptoAvailable()) {
+    return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
+  } else {
+    return Buffer.from(await promisify(forge.random.getBytes)(length), 'binary')
   }
 }

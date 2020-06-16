@@ -1,99 +1,59 @@
 import crypto from 'crypto'
-import crc32 from 'crc-32'
-import { intToBuffer, staticImplements } from '../utils/commonUtils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor, PublicKey, PublicKeyConstructor } from '../utils/rsa'
+import { mixClasses, staticImplements } from '../utils/commonUtils'
+import {
+  AsymKeySize,
+  PublicKey,
+  PublicKeyConstructor,
+  PrivateKeyConstructor,
+  PrivateKey
+} from '../utils/rsa'
 import { sha256 } from './utils'
 import {
   convertDERToPEM,
-  convertPEMToDER,
-  privateToPublic,
-  publicKeyModel,
-  unwrapPublicKey,
-  wrapPublicKey
-} from './rsaUtils'
+  unwrapPrivateKey,
+  unwrapPublicKey
+
+} from '../utils/rsaUtils'
 
 /**
+ * Implementation of PublicKey using Node.js crypto module (https://nodejs.org/dist/latest/docs/api/crypto.html).
  * @class PublicKeyNode
- * @property publicKey
+ * @property {Buffer} publicKeyBuffer
  */
-@staticImplements<PublicKeyConstructor>()
-class PublicKeyNode implements PublicKey {
-  protected publicKey: string
-
+@staticImplements<PublicKeyConstructor<PublicKeyNode>>()
+class PublicKeyNode extends PublicKey {
   /**
-   * PublicKeyNode constructor. Should be given a Buffer containing a DER serialization of the key.
-   * @constructs PublicKeyNode
-   * @param {Buffer} key
+   * Stores the public key in a PEM serialization.
+   * @type {string}
+   * @protected
    */
+  protected _publicKey: string
+
   constructor (key: Buffer) {
-    if (!Buffer.isBuffer(key)) {
-      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
-    }
+    super(key)
     try {
-      const unwrappedKey = unwrapPublicKey(key)
-      publicKeyModel.decode(unwrappedKey) // just to check that the key is valid
-      this.publicKey = convertDERToPEM(unwrappedKey, 'RSA PUBLIC KEY')
+      this._publicKey = convertDERToPEM(unwrapPublicKey(this.publicKeyBuffer), 'RSA PUBLIC KEY')
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
-  /**
-   * Returns a PublicKeyNode from it's DER base64 serialization.
-   * @method
-   * @static
-   * @param {string} b64DERFormattedPublicKey - a b64 encoded public key formatted with DER
-   * @returns {PublicKeyNode}
-   */
-  static fromB64 (b64DERFormattedPublicKey: string): PublicKeyNode {
-    return new this(Buffer.from(b64DERFormattedPublicKey, 'base64'))
-  }
-
-  /**
-   * Serializes the key to DER format and encodes it in b64.
-   * @method
-   * @param {object} [options]
-   * @returns {string}
-   */
-  toB64 (options: object = null): string {
-    return wrapPublicKey(convertPEMToDER(this.publicKey, 'RSA PUBLIC KEY')).toString('base64')
-  }
-
-  /**
-   * Encrypts a clearText for the Private Key corresponding to this PublicKeyNode.
-   * @method
-   * @param {Buffer} clearText
-   * @param {boolean} doCRC
-   * @returns {Buffer}
-   */
-  encrypt (clearText: Buffer, doCRC = true): Buffer {
-    const textToEncrypt = doCRC
-      ? Buffer.concat([
-        intToBuffer(crc32.buf(clearText)),
-        clearText
-      ])
-      : clearText
+  _rawEncryptSync (clearText: Buffer): Buffer {
     return crypto.publicEncrypt(
       {
-        key: this.publicKey,
+        key: this._publicKey,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
       },
-      textToEncrypt
+      clearText
     )
   }
 
-  /**
-   * Verify that the message has been signed with the Private Key corresponding to this PublicKeyNode.
-   * @param {Buffer} textToCheckAgainst
-   * @param {Buffer} signature
-   * @returns {boolean}
-   */
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     const verify = crypto.createVerify('SHA256')
     verify.update(textToCheckAgainst)
     return verify.verify(
       {
-        key: this.publicKey,
+        key: this._publicKey,
         padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
       },
@@ -101,61 +61,48 @@ class PublicKeyNode implements PublicKey {
     )
   }
 
-  /**
-   * @returns {string}
-   */
   getHash (): string {
     return sha256(Buffer.from(this.toB64({ publicOnly: true }), 'base64')).toString('base64')
   }
 }
 
 /**
- * @class PrivateKeyNode
+ * Implementation of PrivateKey using Node.js crypto module (https://nodejs.org/dist/latest/docs/api/crypto.html).
+ * @class PrivateKeyWebCrypto
+ * @property {Buffer} privateKeyBuffer
  */
-@staticImplements<PrivateKeyConstructor>()
-class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
-  protected privateKey: string
+@staticImplements<PrivateKeyConstructor<PrivateKeyNode>>()
+class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
+  readonly privateKeyBuffer: Buffer
 
   /**
-   * Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
-   * @constructs PrivateKeyNode
-   * @param {Buffer} key
+   * Stores the private key in a PEM serialization.
+   * @type {string}
+   * @protected
    */
+  protected _privateKey: string
+
   constructor (key: Buffer) {
-    if (!Buffer.isBuffer(key)) {
-      throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
-    }
+    const { publicKeyBuffer, privateKeyBuffer } = new.target.constructor_(key)
+    super(publicKeyBuffer)
+    this.privateKeyBuffer = privateKeyBuffer
     try {
-      super(privateToPublic(key))
-      this.privateKey = convertDERToPEM(key, 'RSA PRIVATE KEY')
+      this._privateKey = convertDERToPEM(unwrapPrivateKey(this.privateKeyBuffer), 'RSA PRIVATE KEY')
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
     }
   }
 
-  /**
-   * Returns a PrivateKeyNode from it's DER base64 serialization.
-   * @method
-   * @static
-   * @param {string} b64DERFormattedPrivateKey - a b64 encoded private key formatted with DER
-   * @returns {PrivateKeyNode}
-   */
-  static fromB64 (b64DERFormattedPrivateKey: string): PrivateKeyNode {
-    return new this(Buffer.from(b64DERFormattedPrivateKey, 'base64'))
+  toB64 ({ publicOnly = false } = {}): string {
+    return this.toB64_({ publicOnly })
   }
 
-  /**
-   * Generates a PrivateKeyNode asynchronously
-   * @param {Number} [size = 4096] - key size in bits
-   * @returns {PrivateKeyNode}
-   */
   static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyNode> {
     if (![4096, 2048, 1024].includes(size)) {
       throw new Error('INVALID_ARG')
     } else {
       const privateKey = await new Promise((resolve: (key: Buffer) => void, reject) => {
         crypto.generateKeyPair(
-          // @ts-ignore : node typing are not perfect...
           'rsa',
           {
             modulusLength: size,
@@ -172,31 +119,11 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
     }
   }
 
-  /**
-   * Serializes the key to DER format and encodes it in b64.
-   * @method
-   * @param {Object} options
-   * @param {boolean} [options.publicOnly]
-   * @returns {string}
-   */
-  toB64 ({ publicOnly = false } = {}): string {
-    return publicOnly
-      ? super.toB64()
-      : convertPEMToDER(this.privateKey, 'RSA PRIVATE KEY').toString('base64')
-  }
-
-  /**
-   * Deciphers the given message.
-   * @param {Buffer} cipherText
-   * @param {boolean} [doCRC]
-   * @returns {Buffer}
-   */
-  decrypt (cipherText: Buffer, doCRC = true): Buffer {
-    let clearText
+  _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
-      clearText = crypto.privateDecrypt(
+      return crypto.privateDecrypt(
         {
-          key: this.privateKey,
+          key: this._privateKey,
           padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
         },
         cipherText
@@ -204,30 +131,13 @@ class PrivateKeyNode extends PublicKeyNode implements PrivateKey {
     } catch (e) {
       throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
     }
-    if (!doCRC) {
-      return clearText
-    } else {
-      const crc = clearText.slice(0, 4)
-      const message = clearText.slice(4)
-      const calculatedCRC = intToBuffer(crc32.buf(message))
-      if (crc.equals(calculatedCRC)) {
-        return message
-      } else {
-        throw new Error('INVALID_CRC32')
-      }
-    }
   }
 
-  /**
-   * Signs the given message with this Private Key.
-   * @param {Buffer} textToSign
-   * @returns {Buffer}
-   */
   sign (textToSign: Buffer): Buffer {
     const sign = crypto.createSign('SHA256')
     sign.update(textToSign)
     return sign.sign({
-      key: this.privateKey,
+      key: this._privateKey,
       padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
       saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
     })

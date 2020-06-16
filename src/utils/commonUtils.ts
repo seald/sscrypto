@@ -1,4 +1,4 @@
-import { Stream } from 'stream'
+import { Readable, Stream, Writable } from 'stream'
 
 /**
  * Converts the given number to a Buffer.
@@ -36,5 +36,47 @@ export const getProgress: () => progressCallback = (): progressCallback => {
 // https://github.com/microsoft/TypeScript/issues/33892
 export function staticImplements<T> (): ((constructor: T) => void) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  return <U extends T>(constructor: U): void => {}
+  return <U extends T> (constructor: U): void => {}
+}
+
+export const streamToData = (inputStream: Readable): Promise<Buffer> => new Promise((resolve, reject) => {
+  let output = Buffer.alloc(0)
+  inputStream
+    .on('data', chunk => {
+      output = Buffer.concat([output, chunk])
+    })
+    .on('error', reject)
+    .on('end', () => resolve(output))
+})
+
+export const writeInStream = async (stream: Writable, data: Buffer): Promise<void> => { // this should basically never be needed for crypto streams, but hey, better do things cleanly
+  const shouldWait = !stream.write(data)
+  if (shouldWait) await new Promise(resolve => stream.once('drain', resolve))
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const mergeInto = (x: Record<string, any>, y: Record<string, any>): void => {
+  let y_ = y
+  while (y_ !== Object.prototype && y_ !== Function.prototype) {
+    for (const key of Object.getOwnPropertyNames(y_)) {
+      if (key in x) { continue }
+      if (key === 'constructor' || key === 'prototype' || key === 'name') { continue }
+      Object.defineProperty(
+        x,
+        key,
+        Object.getOwnPropertyDescriptor(y_, key)
+      )
+    }
+    y_ = Object.getPrototypeOf(y_)
+  }
+}
+
+export const mixClasses = <ARGS extends unknown[], T1 extends { new (...args: ARGS): InstanceType<T1> }, T2 extends { new (...args: ARGS): InstanceType<T2> }> (C1: T1, C2: T2): { new (...args: ARGS): InstanceType<T1> & InstanceType<T2> } & Omit<T1, 'new'> & Omit<T2, 'new'> => {
+  // @ts-ignore : Yes, the type of C1 is unknown, that's the $*#§ing point!
+  class C extends C1 {}
+
+  mergeInto(C.prototype, C2.prototype)
+  mergeInto(C, C2)
+
+  return C as { new (...args: ARGS): InstanceType<typeof C1> & InstanceType<typeof C2> } & typeof C1 & typeof C2
 }

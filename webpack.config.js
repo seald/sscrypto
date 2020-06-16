@@ -11,11 +11,18 @@ module.exports = (env, argv) => {
       test: path.join(__dirname, 'tests', 'test-browser.spec.js')
     },
     module: {
-      rules: []
+      rules: [
+        {
+          test: /\.js$/,
+          enforce: 'pre',
+          use: ['source-map-loader']
+        }
+      ]
     },
     output: {
       path: path.join(__dirname, 'tests'),
       filename: 'test-browser.built.spec.js'
-    }
+    },
+    devtool: 'source-map'
   }
 }

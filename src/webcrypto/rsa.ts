@@ -1,22 +1,143 @@
-import { staticImplements } from '../utils/commonUtils'
-import { AsymKeySize, PrivateKey, PrivateKeyConstructor } from '../utils/rsa'
+import { mixClasses, staticImplements } from '../utils/commonUtils'
+import { AsymKeySize, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge/rsa'
+import { isWebCryptoAvailable } from './utils'
+import forge from 'node-forge'
 
 /**
- * @class PrivateKeyForge
+ * Implementation of PublicKey using Subtle Crypto (https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) if
+ * available, else uses PublicKeyForge as a fallback.
+ * @class PublicKeyWebCrypto
+ * @property {Buffer} publicKeyBuffer
  */
-@staticImplements<PrivateKeyConstructor>()
-class PrivateKeyWebCrypto extends PrivateKeyForge implements PrivateKey {
+@staticImplements<PublicKeyConstructor<PublicKeyWebCrypto>>()
+class PublicKeyWebCrypto extends PublicKeyForge {
   /**
-   * Generates a PrivateKeyWebCrypto asynchronously
-   * @param {Number} [size = 4096] - key size in bits
-   * @returns {PrivateKeyWebCrypto}
+   * Stores the CryptoKey representations of the PublicKeyWebCrypto for each usage.
+   * @type {Map<'verify'|'encrypt', CryptoKey>}
+   * @protected
    */
-  static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyForge> {
+  protected _publicKeysWebCrypto: Map<'verify' | 'encrypt', CryptoKey>
+
+  /**
+   * Gets asynchronously the CryptoKey representation of the PublicKeyWebCrypto for given keyUsage, and stores them in
+   * in cache in _publicKeysWebCrypto protected property.
+   * SSCrypto's interface is not designed to force a KeyPair to be used for a unique usage (encryption, signature,
+   * authentication, etc.), it is up to the developer to make sure they don't use the same KeyPair for multiple usages.
+   * @param {'verify'|'encrypt'} keyUsage
+   * @protected
+   */
+  protected async _getPublicKey (keyUsage: 'verify' | 'encrypt'): Promise<CryptoKey> {
+    if (!this._publicKeysWebCrypto.has(keyUsage)) {
+      let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' } // Encryption algorithm used by SSCrypto
+      if (keyUsage === 'verify') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' } // Signature algorithm used by SSCrypto
+      this._publicKeysWebCrypto.set(keyUsage, await window.crypto.subtle.importKey(
+        'spki',
+        this.publicKeyBuffer,
+        algorithm,
+        true,
+        [keyUsage]
+      ))
+    }
+    return this._publicKeysWebCrypto.get(keyUsage)
+  }
+
+  constructor (key: Buffer) {
+    super(key)
+    this._publicKeysWebCrypto = new Map()
+  }
+
+  // using the Subtle Crypto implementation if available, else falls back to forge
+  async _rawEncryptAsync (clearText: Buffer): Promise<Buffer> {
+    return isWebCryptoAvailable()
+      ? Buffer.from(await window.crypto.subtle.encrypt(
+        {
+          name: 'RSA-OAEP'
+        },
+        await this._getPublicKey('encrypt'), // from generateKey or importKey above
+        clearText // ArrayBuffer of the data
+      ))
+      : this._rawEncryptSync(clearText)
+  }
+
+  // using the Subtle Crypto implementation if available, else falls back to forge
+  async verifyAsync (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
+    if (isWebCryptoAvailable()) {
+      const privateKey = await this._getPublicKey('verify')
+      return window.crypto.subtle.verify(
+        {
+          name: 'RSA-PSS',
+          saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
+        },
+        await this._getPublicKey('verify'), // from generateKey or importKey above
+        signature,
+        textToCheckAgainst
+      )
+    } else return this.verify(textToCheckAgainst, signature)
+  }
+}
+
+/**
+ * Implementation of PrivateKey using Subtle Crypto (https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) if
+ * available, else uses PrivateKeyForge as a fallback.
+ * @class PrivateKeyWebCrypto
+ * @property {Buffer} privateKeyBuffer
+ */
+@staticImplements<PrivateKeyConstructor<PrivateKeyWebCrypto>>()
+class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge) {
+  readonly privateKeyBuffer: Buffer
+
+  /**
+   * Stores the CryptoKey representations of the PrivateKeyWebCrypto for each usage.
+   * @type {Map<'sign'|'decrypt', CryptoKey>}
+   * @protected
+   */
+  protected _privateKeysWebCrypto: Map<'sign' | 'decrypt', CryptoKey>
+
+  /**
+   * Gets asynchronously the CryptoKey representation of the PrivateKeyWebCrypto for given keyUsage, and stores them in
+   * in cache in _privateKeysWebCrypto protected property.
+   * SSCrypto's interface is not designed to force a KeyPair to be used for a unique usage (encryption, signature,
+   * authentication, etc.), it is up to the developer to make sure they don't use the same KeyPair for multiple usages.
+   * @param {'sign'|'decrypt'} keyUsage
+   * @protected
+   */
+  protected async getPrivateKey (keyUsage: 'sign' | 'decrypt'): Promise<CryptoKey> {
+    if (!this._privateKeysWebCrypto.has(keyUsage)) {
+      let algorithm = { name: 'RSA-OAEP', hash: 'SHA-1' } // Encryption algorithm used by SSCrypto
+      if (keyUsage === 'sign') algorithm = { name: 'RSA-PSS', hash: 'SHA-256' } // Signature algorithm used by SSCrypto
+      this._privateKeysWebCrypto.set(keyUsage, await window.crypto.subtle.importKey(
+        'pkcs8',
+        this.privateKeyBuffer,
+        algorithm,
+        true,
+        [keyUsage]
+      ))
+    }
+    return this._privateKeysWebCrypto.get(keyUsage)
+  }
+
+  constructor (key: Buffer) {
+    // This has to basically re-write PrivateKeyForge's constructor because we inherit parasitically so the actual constructor does not run
+    const { publicKeyBuffer, privateKeyBuffer } = new.target.constructor_(key)
+    super(publicKeyBuffer)
+    this.privateKeyBuffer = privateKeyBuffer
+    try {
+      this._privateKeyForge = forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(forge.util.createBuffer(this.privateKeyBuffer)))
+    } catch (e) {
+      throw new Error(`INVALID_KEY : ${e.message}`)
+    }
+    this._privateKeysWebCrypto = new Map()
+  }
+
+  toB64 ({ publicOnly = false } = {}): string {
+    return this.toB64_({ publicOnly })
+  }
+
+  static async generate (size: AsymKeySize = 4096): Promise<PrivateKeyWebCrypto> {
     if (![4096, 2048, 1024].includes(size)) {
       throw new Error('INVALID_ARG')
-      // @ts-ignore
-    } else if (window.crypto && window.crypto.subtle && !window.SSCRYPTO_NO_WEBCRYPTO) {
+    } else if (isWebCryptoAvailable()) {
       const keyPair = await window.crypto.subtle.generateKey(
         {
           name: 'RSA-OAEP',
@@ -29,10 +150,34 @@ class PrivateKeyWebCrypto extends PrivateKeyForge implements PrivateKey {
       )
       const exported = Buffer.from(await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
       return new this(exported)
-    } else {
-      return super.generate(size)
+    } else return await super.generate(size) as PrivateKeyWebCrypto
+  }
+
+  async _rawDecryptAsync (cipherText: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super._rawDecryptAsync(cipherText)
+    try {
+      return Buffer.from(await window.crypto.subtle.decrypt(
+        { name: 'RSA-OAEP' },
+        await this.getPrivateKey('decrypt'),
+        cipherText
+      ))
+    } catch (e) {
+      throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
     }
+  }
+
+  async signAsync (textToSign: Buffer): Promise<Buffer> {
+    if (!isWebCryptoAvailable()) return super.signAsync(textToSign)
+    const privateKey = await this.getPrivateKey('sign')
+    return Buffer.from(await window.crypto.subtle.sign(
+      {
+        name: 'RSA-PSS',
+        saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
+      },
+      privateKey,
+      textToSign
+    ))
   }
 }
 
-export { PublicKeyForge as PublicKey, PrivateKeyWebCrypto as PrivateKey }
+export { PublicKeyWebCrypto as PublicKey, PrivateKeyWebCrypto as PrivateKey }

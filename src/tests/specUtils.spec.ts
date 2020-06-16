@@ -3,13 +3,9 @@ import { promisify } from 'util'
 import pump from 'pump'
 
 const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pump)
+// TODO: try node's pipeline thing
 
-/**
- * Helper function for the tests.
- * @param {Array<Buffer>} chunks - Array of chunks for the input stream
- * @param {Transform[]} transformStreams - stream.Transform instance
- * @returns {Promise<Buffer>} - Promise that resolves to the output of the transformStream
- */
+// Helper function for the tests.
 export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Transform[]): Promise<Buffer> => {
   const inputStream = new PassThrough()
   const outputStream = new PassThrough()
@@ -29,12 +25,7 @@ export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Trans
   return Buffer.concat(output)
 }
 
-/**
- * splits the given string or buffer into chunks of given length
- * @param {Buffer} input
- * @param {number} length
- * @return {Array<Buffer>}
- */
+// splits the given string or buffer into chunks of given length
 export const splitLength = (input: Buffer, length: number): Buffer[] => {
   const chunks = []
   while (input.length) {

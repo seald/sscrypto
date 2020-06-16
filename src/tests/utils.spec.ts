@@ -15,11 +15,14 @@ const knownHashes: { [key: string]: string } = {
 
 type utils = {
   sha256: (data: Buffer) => Buffer
-  randomBytes: (length: number) => Buffer
+  randomBytesSync: (length: number) => Buffer
+  randomBytes: (length: number) => Promise<Buffer>
 }
 
-export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256: (data: Buffer) => Buffer, randomBytes: (length: number) => Buffer }, { duringBefore, duringAfter }: TestHooks = {}): void => {
-  describe(`Utils ${name}`, () => {
+export const testUtilsImplem = (name: string, { sha256, randomBytesSync, randomBytes }: utils, { duringBefore, duringAfter }: TestHooks = {}): void => {
+  describe(`Utils ${name}`, function () {
+    this.timeout(10000)
+
     before(() => {
       if (duringBefore) duringBefore()
     })
@@ -35,10 +38,20 @@ export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256:
       }
     })
 
-    it('randomBytes', () => {
+    it('randomBytes sync', () => {
       for (let i = 0; i < 1000; i++) {
-        const rand = randomBytes(i)
-        const rand2 = randomBytes(i)
+        const rand = randomBytesSync(i)
+        const rand2 = randomBytesSync(i)
+        assert.notStrictEqual(rand, rand2)
+        assert.strictEqual(rand.length, i)
+        assert.strictEqual(rand2.length, i)
+      }
+    })
+
+    it('randomBytes', async () => {
+      for (let i = 0; i < 1000; i++) {
+        const rand = await randomBytes(i)
+        const rand2 = await randomBytes(i)
         assert.notStrictEqual(rand, rand2)
         assert.strictEqual(rand.length, i)
         assert.strictEqual(rand2.length, i)
@@ -50,8 +63,8 @@ export const testUtilsImplem = (name: string, { sha256, randomBytes }: { sha256:
 export const testUtilsCompatibility = (name: string, utils1: utils, utils2: utils) => {
   describe(`Utils compatibility ${name}`, () => {
     it('sha256 & randomBytes', () => {
-      const rand1 = utils1.randomBytes(1000)
-      const rand2 = utils2.randomBytes(1000)
+      const rand1 = utils1.randomBytesSync(1000)
+      const rand2 = utils2.randomBytesSync(1000)
 
       const sha11 = utils1.sha256(rand1)
       const sha12 = utils1.sha256(rand2)
