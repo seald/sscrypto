@@ -38,3 +38,6 @@ karma.conf.template.js
 
 # CI
 .npm
+
+/test-results/
+mochaReportConfig.json

@@ -25,7 +25,7 @@ export abstract class SymKey {
    * Constructor of SymKey
    * Using a number as argument is deprecated.
    * Defaults to a new 256 bits key.
-   * @constructs SymKeyNode
+   * @constructs SymKey
    * @param {Buffer|SymKeySize} [key = 256] The key to construct the SymKey with. Passing a keySize is deprecated. Use `SymKey.generate` instead.
    */
   protected constructor (key: Buffer | SymKeySize = 256) {

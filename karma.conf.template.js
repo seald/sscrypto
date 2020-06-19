@@ -3,8 +3,8 @@
 module.exports = (config) => ({
   // Increase timeout in case connection in CI is slow
   captureTimeout: 120000,
-  browserNoActivityTimeout: 30000,
-  browserDisconnectTimeout: 30000,
+  browserNoActivityTimeout: 300000,
+  browserDisconnectTimeout: 300000,
   browserDisconnectTolerance: 3,
 
   // frameworks to use

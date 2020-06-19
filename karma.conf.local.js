@@ -13,6 +13,13 @@ module.exports = function (config) {
 
   config.set(Object.assign({}, template(config), {
     customLaunchers: localBrowser,
-    browsers: Object.keys(localBrowser)
+    browsers: Object.keys(localBrowser),
+
+    junitReporter: {
+      outputDir: 'test-results', // results will be saved as $outputDir/$browserName.xml
+      useBrowserName: true // add browser name to report and classes names
+    },
+
+    reporters: ['progress', 'junit']
   }))
 }
