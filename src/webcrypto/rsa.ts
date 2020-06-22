@@ -52,7 +52,9 @@ class PublicKeyWebCrypto extends PublicKeyForge {
     return isWebCryptoAvailable()
       ? Buffer.from(await window.crypto.subtle.encrypt(
         {
-          name: 'RSA-OAEP'
+          name: 'RSA-OAEP',
+          // @ts-ignore : stupid Edge needs this, even if it's against spec
+          hash: 'SHA-1'
         },
         await this._getPublicKey('encrypt'), // from generateKey or importKey above
         clearText // ArrayBuffer of the data
@@ -157,7 +159,11 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
     if (!isWebCryptoAvailable()) return super._rawDecryptAsync(cipherText)
     try {
       return Buffer.from(await window.crypto.subtle.decrypt(
-        { name: 'RSA-OAEP' },
+        {
+          name: 'RSA-OAEP',
+          // @ts-ignore : stupid Edge needs this, even if it's against spec
+          hash: 'SHA-1'
+        },
         await this.getPrivateKey('decrypt'),
         cipherText
       ))
