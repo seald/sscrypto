@@ -7,6 +7,15 @@ declare global {
   }
 }
 
+let isOldEdgeCache_ : boolean = null
+
+export const isOldEdge = (): boolean => {
+  if (isOldEdgeCache_ !== null) return isOldEdgeCache_
+  const edge = /Edge\/1[0-9]/.test(window.navigator.userAgent)
+  isOldEdgeCache_ = edge
+  return edge
+}
+
 export const isWebCryptoAvailable = (): boolean => window.crypto && window.crypto.subtle && !window.SSCRYPTO_NO_WEBCRYPTO
 
 /**
