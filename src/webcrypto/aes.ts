@@ -12,6 +12,8 @@ class SymKeyWebCrypto extends SymKeyForge {
     this.subtleEncryptionKey = null
   }
 
+  // TODO: use generateKey for generate
+
   protected getSubtleEncryptionKey_ (): Promise<CryptoKey> {
     if (this.subtleEncryptionKey) return this.subtleEncryptionKey
     this.subtleEncryptionKey = window.crypto.subtle.importKey(

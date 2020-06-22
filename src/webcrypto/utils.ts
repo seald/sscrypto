@@ -26,7 +26,9 @@ export const sha256 = (data: Buffer): Buffer => {
  * @return {Buffer}
  */
 export const randomBytesSync = (length = 10): Buffer => {
-  if (isWebCryptoAvailable()) {
+  if (length === 0) {
+    return Buffer.alloc(0) // workaround for some dumb browsers that really don't like crypto.getRandomValues with length 0
+  } else if (isWebCryptoAvailable()) {
     return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
   } else {
     return Buffer.from(forge.random.getBytesSync(length), 'binary')
@@ -39,7 +41,9 @@ export const randomBytesSync = (length = 10): Buffer => {
  * @return {Promise<Buffer>}
  */
 export const randomBytes = async (length = 10): Promise<Buffer> => {
-  if (isWebCryptoAvailable()) {
+  if (length === 0) {
+    return Buffer.alloc(0) // workaround for some dumb browsers that really don't like crypto.getRandomValues with length 0
+  } else if (isWebCryptoAvailable()) {
     return Buffer.from(window.crypto.getRandomValues(new Uint8Array(length)))
   } else {
     return Buffer.from(await promisify(forge.random.getBytes)(length), 'binary')
