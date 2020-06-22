@@ -252,6 +252,18 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.isTrue(hmacSync.equals(hmacStream))
         })
 
+        it('HMAC sync, async & stream empty', async () => {
+          const input = Buffer.alloc(0)
+          const hmacSync = key.calculateHMACSync_(input)
+          const hmacAsync = await key.calculateHMACAsync_(input)
+          const hmacStream = await _streamHelper(
+            splitLength(input, 20),
+            key.HMACStream_()
+          )
+          assert.isTrue(hmacSync.equals(hmacAsync))
+          assert.isTrue(hmacSync.equals(hmacStream))
+        })
+
         it('cipher stream & decipher sync', async () => {
           const input = randomBytes(100)
           const chunks = splitLength(input, 20)
