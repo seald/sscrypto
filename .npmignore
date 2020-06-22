@@ -41,3 +41,5 @@ karma.conf.template.js
 
 /test-results/
 mochaReportConfig.json
+browsers.js
+run-karma-saucelabs.spec.js

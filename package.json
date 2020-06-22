@@ -11,7 +11,7 @@
     "pretest-browser": "npm run pretest && webpack --progress --hide-modules --display-error-details --mode development",
     "test-browser": "xvfb-maybe karma start karma.conf.local.js",
     "pretest-saucelabs": "npm run pretest-browser",
-    "test-saucelabs": "karma start karma.conf.saucelabs.js",
+    "test-saucelabs": "mocha --require source-map-support/register run-karma-saucelabs.spec.js",
     "prebuild": "rm -rf ./forge ./node ./utils ./tests index.js index.d.ts",
     "build": "tsc",
     "coverage": "nyc npm run test-report",
