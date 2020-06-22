@@ -47,16 +47,16 @@ class SymKeyWebCrypto extends SymKeyForge {
   }
 
   async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super.calculateHMACAsync_(textToAuthenticate)
+    if (!isWebCryptoAvailable()) return this.calculateHMACSync_(textToAuthenticate) // using `super` causes problems on old Edge
     return Buffer.from(await window.crypto.subtle.sign(
-      'HMAC',
+      { name: 'HMAC', hash: 'SHA-256' }, // stupid old Edge needs the hash here
       await this.getSubtleAuthenticationKey_(),
       textToAuthenticate
     ))
   }
 
   async rawEncryptAsync_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawEncryptAsync_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+    if (!isWebCryptoAvailable() || this.keySize === 192) return this.rawEncryptSync_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
     return Buffer.from(await window.crypto.subtle.encrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),
@@ -110,7 +110,7 @@ class SymKeyWebCrypto extends SymKeyForge {
   }
 
   async rawDecryptAsync_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable() || this.keySize === 192) return super.rawDecryptAsync_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
+    if (!isWebCryptoAvailable() || this.keySize === 192) return this.rawDecryptSync_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
     return Buffer.from(await window.crypto.subtle.decrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),
