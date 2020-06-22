@@ -115,8 +115,9 @@ module.exports = function (config) {
       // Somehow, forcing european saucelabs datacenter does not work at all
       // connectLocationForSERelay: 'ondemand.eu-central-1.saucelabs.com',
       tunnelIdentifier,
-      idleTimeout: 300 // tests are run with a single command, and it can take a while
+      idleTimeout: 300 /* s */ // tests are run with a single command, and it can take a while
     },
+    pingTimeout: 10000, /* ms */
 
     junitReporter: {
       outputDir: 'test-results', // results will be saved as $outputDir/$browserName.xml

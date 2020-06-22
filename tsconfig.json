@@ -1,13 +1,9 @@
 {
   "compilerOptions": {
     "outDir": "./",
-    "target": "es6",
+    "target": "ES2019",
     "module": "CommonJS",
     "esModuleInterop": true,
-    "lib": [
-      "es2017",
-      "dom"
-    ],
     "declaration": true,
     "experimentalDecorators": true,
     "noImplicitAny": true,

@@ -36,7 +36,7 @@ module.exports = (config) => ({
   logLevel: config.LOG_INFO,
 
   // enable / disable watching file and executing tests whenever any file changes
-  autoWatch: true,
+  autoWatch: false,
 
   // Concurrency level
   // how many browser should be started simultaneous
