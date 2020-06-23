@@ -1,7 +1,7 @@
 import { mixClasses, staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge/rsa'
-import { isOldEdge, isWebCryptoAvailable } from './utils'
+import { getEngine, isWebCryptoAvailable } from './utils'
 import forge from 'node-forge'
 
 /**
@@ -63,7 +63,8 @@ class PublicKeyWebCrypto extends PublicKeyForge {
 
   // using the Subtle Crypto implementation if available, else falls back to forge
   async verifyAsync (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
-    if (!isWebCryptoAvailable() || isOldEdge()) return this.verify(textToCheckAgainst, signature) // old Edge does not like RSA-PSS
+    if (!isWebCryptoAvailable()) return this.verify(textToCheckAgainst, signature)
+    if (getEngine() === 'EdgeHTML') return this.verify(textToCheckAgainst, signature) // old Edge does not like RSA-PSS
     const privateKey = await this._getPublicKey('verify')
     return window.crypto.subtle.verify(
       {
@@ -171,7 +172,9 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
   }
 
   async signAsync (textToSign: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable() || isOldEdge()) return this.sign(textToSign) // old Edge does not like RSA-PSS
+    if (!isWebCryptoAvailable()) return this.sign(textToSign)
+    if (getEngine() === 'EdgeHTML') return this.sign(textToSign) // old Edge does not like RSA-PSS
+    if (getEngine() === 'WebKit') return this.sign(textToSign) // Safari does not like a salt length this long *when signing*, apparently it's OK when verifying...
     const privateKey = await this.getPrivateKey('sign')
     return Buffer.from(await window.crypto.subtle.sign(
       {

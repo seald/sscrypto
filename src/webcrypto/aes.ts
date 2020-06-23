@@ -1,6 +1,6 @@
 import { Transform } from 'stream'
 import SymKeyForge from '../forge/aes'
-import { isOldEdge, isWebCryptoAvailable, randomBytes, randomBytesSync } from './utils'
+import { getEngine, isWebCryptoAvailable, randomBytes, randomBytesSync } from './utils'
 
 class SymKeyWebCrypto extends SymKeyForge {
   protected subtleAuthenticationKey: Promise<CryptoKey>
@@ -48,7 +48,7 @@ class SymKeyWebCrypto extends SymKeyForge {
 
   async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {
     if (!isWebCryptoAvailable()) return this.calculateHMACSync_(textToAuthenticate) // using `super` causes problems on old Edge
-    if (isOldEdge() && textToAuthenticate.length === 0) return this.calculateHMACSync_(textToAuthenticate) // empty buffers cause problems on old Edge
+    if (getEngine() === 'EdgeHTML' && textToAuthenticate.length === 0) return this.calculateHMACSync_(textToAuthenticate) // empty buffers cause problems on old Edge
     return Buffer.from(await window.crypto.subtle.sign(
       { name: 'HMAC', hash: 'SHA-256' }, // stupid old Edge needs the hash here
       await this.getSubtleAuthenticationKey_(),
@@ -58,7 +58,7 @@ class SymKeyWebCrypto extends SymKeyForge {
 
   async rawEncryptAsync_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
     if (!isWebCryptoAvailable() || this.keySize === 192) return this.rawEncryptSync_(clearText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
-    if (isOldEdge() && clearText.length === 0) return this.rawEncryptSync_(clearText, iv) // empty buffers cause problems on old Edge
+    if (getEngine() === 'EdgeHTML' && clearText.length === 0) return this.rawEncryptSync_(clearText, iv) // empty buffers cause problems on old Edge
     return Buffer.from(await window.crypto.subtle.encrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),
@@ -105,7 +105,7 @@ class SymKeyWebCrypto extends SymKeyForge {
 
   async rawDecryptAsync_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
     if (!isWebCryptoAvailable() || this.keySize === 192) return this.rawDecryptSync_(cipherText, iv) // 192-bit AES keys are not supported in SubtleCrypto, so use fallback
-    if (isOldEdge() && cipherText.length === 16) return this.rawDecryptSync_(cipherText, iv) // CipherText corresponding to empty buffer causes problems on old Edge. This way to check is a bit overzealous and will catch CipherTexts corresponding to everything <= 15bytes long, but I don't know how to check more precisely
+    if (getEngine() === 'EdgeHTML' && cipherText.length === 16) return this.rawDecryptSync_(cipherText, iv) // CipherText corresponding to empty buffer causes problems on old Edge. This way to check is a bit overzealous and will catch CipherTexts corresponding to everything <= 15bytes long, but I don't know how to check more precisely
     return Buffer.from(await window.crypto.subtle.decrypt(
       { name: 'AES-CBC', iv },
       await this.getSubtleEncryptionKey_(),

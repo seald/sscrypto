@@ -11,7 +11,7 @@ const browsers = require('./browsers.js')
 const run = (browser) => {
   const cp = childProcess.spawn(
     'npx',
-    ['karma', 'start', 'karma.conf.saucelabs.js', '--log-level', 'debug'],
+    ['karma', 'start', 'karma.conf.saucelabs.js'],
     { env: { SSCRYPTO_KARMA_BROWSER: browser, ...process.env } } // which browser to run
   )
   cp.stdout.pipe(process.stdout)

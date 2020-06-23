@@ -14,6 +14,8 @@ module.exports = function (config) {
   config.set(Object.assign({}, template(config), {
     customLaunchers: localBrowser,
     browsers: Object.keys(localBrowser),
+    // browsers: ['FirefoxHeadless'],
+    // browsers: ['Safari'],
 
     junitReporter: {
       outputDir: 'test-results', // results will be saved as $outputDir/$browserName.xml
