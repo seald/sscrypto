@@ -600,6 +600,18 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
   describe(`AES perf ${name}`, function () {
     this.timeout(30000)
 
+    it('Generate keys', async () => {
+      const nKeys = 500
+      const keys = []
+      const start = Date.now()
+      for (let i = 0; i < nKeys; i++) {
+        keys.push(await SymKeyClass.generate(256))
+      }
+      const end = Date.now()
+      const delta = (end - start) / 1000
+      console.log(`Finished generating AES keys for ${name} in ${delta.toFixed(1)}s:\n${(nKeys / delta).toFixed(1)} keys/s`)
+    })
+
     it('Encrypt/Decrypt sync perf', async () => {
       const inputSize = 10000
       const nInput = 500
