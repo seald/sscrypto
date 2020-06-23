@@ -24,9 +24,10 @@ if (!username || !accessKey || !browser || !tunnelIdentifier) {
   process.exit(1)
 }
 
-module.exports = function (config) {
+module.exports = config => {
+  const t = template(config)
   // Karma conf
-  config.set(Object.assign({}, template(config), {
+  config.set(Object.assign({}, t, {
 
     customLaunchers: browsers_,
     browsers: Object.keys(browsers_).filter(b => b === browser),
@@ -43,6 +44,6 @@ module.exports = function (config) {
     },
     pingTimeout: 10000, /* ms */
 
-    reporters: ['progress', 'saucelabs', 'junit', 'coverage']
+    reporters: [...t.reporters, 'saucelabs']
   }))
 }
