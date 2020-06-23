@@ -14,18 +14,15 @@ const browsers_ = Object.fromEntries( // convert format for selenium (so we can 
     }]))
 )
 
-const rand = Math.floor(Math.random() * 10e10)
-
-const browser = process.env.SSCRYPTO_KARMA_BROWSER || Object.keys(browsers)[0]
+const browser = process.env.SSCRYPTO_KARMA_BROWSER
+const tunnelIdentifier = process.env.SSCRYPTO_KARMA_SAUCE_TUNNEL
 const username = process.env.SAUCE_USERNAME
 const accessKey = process.env.SAUCE_ACCESS_KEY
 
-if (!username || !accessKey) {
-  console.error('Missing saucelabs credentials')
+if (!username || !accessKey || !browser || !tunnelIdentifier) {
+  console.error('Missing arguments')
   process.exit(1)
 }
-
-const tunnelIdentifier = `SSCRYPTO-${browser}-${rand}`
 
 module.exports = function (config) {
   // Karma conf
@@ -35,12 +32,13 @@ module.exports = function (config) {
     browsers: Object.keys(browsers_).filter(b => b === browser),
 
     sauceLabs: {
-      testName: `SSCrypto ${browser} - test ${rand}`,
+      testName: `${tunnelIdentifier} - ${browser}`,
       username,
       accessKey,
       // Somehow, forcing european saucelabs datacenter does not work at all
       // connectLocationForSERelay: 'ondemand.eu-central-1.saucelabs.com',
       tunnelIdentifier,
+      startConnect: false, // the tunnel is already connected
       idleTimeout: 300 /* s */ // tests are run with a single command, and it can take a while
     },
     pingTimeout: 10000, /* ms */
