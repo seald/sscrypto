@@ -1,6 +1,6 @@
 # Config files
 /.babelrc
-/.nycrc
+/nyc.config.js
 /.gitignore
 /.gitlab-ci.yml
 /tsconfig.json

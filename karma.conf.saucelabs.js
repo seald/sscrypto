@@ -43,11 +43,6 @@ module.exports = function (config) {
     },
     pingTimeout: 10000, /* ms */
 
-    junitReporter: {
-      outputDir: 'test-results', // results will be saved as $outputDir/$browserName.xml
-      useBrowserName: true // add browser name to report and classes names
-    },
-
-    reporters: ['progress', 'saucelabs', 'junit']
+    reporters: ['progress', 'saucelabs', 'junit', 'coverage']
   }))
 }
