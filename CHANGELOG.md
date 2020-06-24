@@ -1,4 +1,5 @@
 ## Unreleased
+
 - \[enhancement\] Massive rewrite.
 - \[new feature\] Creating a new SymKey should be done through `SymKey.generate(size)`. Using `new SymKey(size)` is deprecated.
 - \[new feature\] There are now both sync and async versions of functions.
