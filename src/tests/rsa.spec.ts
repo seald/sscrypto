@@ -10,8 +10,8 @@ const { assert, expect } = chai
 
 type AsymKeyImplem = { PrivateKey: PrivateKeyConstructor<PrivateKey>, PublicKey: PublicKeyConstructor<PublicKey> }
 
-export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
-  describe(`RSA ${name}`, function () {
+const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
+  describe(`RSA ${keySize} - ${name}`, function () {
     this.timeout(5000)
 
     let privateKey: InstanceType<typeof PrivateKey_>, privateKey2: InstanceType<typeof PrivateKey_>
@@ -28,8 +28,8 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
       this.timeout(30000)
       if (duringBefore) duringBefore()
       const [_key1, _key2] = await Promise.all([
-        PrivateKey_.generate(1024),
-        PrivateKey_.generate(1024)
+        PrivateKey_.generate(keySize),
+        PrivateKey_.generate(keySize)
       ])
       assert.instanceOf(_key1, PrivateKey_)
       assert.instanceOf(_key2, PrivateKey_)
@@ -84,7 +84,7 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
 
     it('fail to import bad PublicKey', () => {
       expect(
-        () => PublicKey_.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -2))
+        () => PublicKey_.fromB64(privateKey.toB64({ publicOnly: true }).slice(0, -4))
       ).to.throw(Error).and.satisfy((error: Error) => {
         assert.include(error.message, 'INVALID_KEY')
         return true
@@ -195,8 +195,14 @@ export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, Publi
   })
 }
 
-export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }: AsymKeyImplem, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 }: AsymKeyImplem): void => {
-  describe(`RSA compatibility ${name} ${keySize}`, function () {
+export const testAsymKeyImplem = (name: string, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
+  testAsymKeyImplemSize(name, 1024, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }, randomBytes, { duringBefore, duringAfter })
+  testAsymKeyImplemSize(name, 2048, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }, randomBytes, { duringBefore, duringAfter })
+  testAsymKeyImplemSize(name, 4096, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }, randomBytes, { duringBefore, duringAfter })
+}
+
+const testAsymKeyCompatibilitySize = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }: AsymKeyImplem, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 }: AsymKeyImplem): void => {
+  describe(`RSA ${keySize} compatibility - ${name}`, function () {
     this.timeout(5000)
 
     let privateKey1: PrivateKey
@@ -273,8 +279,14 @@ export const testAsymKeyCompatibility = (name: string, keySize: AsymKeySize, { P
   })
 }
 
+export const testAsymKeyCompatibility = (name: string, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }: AsymKeyImplem, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 }: AsymKeyImplem): void => {
+  testAsymKeyCompatibilitySize(name, 1024, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 })
+  testAsymKeyCompatibilitySize(name, 2048, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 })
+  testAsymKeyCompatibilitySize(name, 4096, { PrivateKey: PrivateKey1, PublicKey: PublicKey1 }, { PrivateKey: PrivateKey2, PublicKey: PublicKey2 })
+}
+
 export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey: PrivateKey_, PublicKey: PublicKey_ }: AsymKeyImplem, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
-  describe(`RSA perf ${name} - ${keySize}`, function () {
+  describe(`RSA ${keySize} perf - ${name}`, function () {
     this.timeout(30000)
 
     before(() => {

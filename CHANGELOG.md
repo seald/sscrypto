@@ -1,8 +1,10 @@
 ## Unreleased
+
 - \[enhancement\] Massive rewrite.
 - \[new feature\] Creating a new SymKey should be done through `SymKey.generate(size)`. Using `new SymKey(size)` is deprecated.
 - \[new feature\] There are now both sync and async versions of functions.
 - \[new feature\] (Async only) Asym encryption/decryption with actual WebCrypto: much faster.
+- \[enhancement\] Compatibility with Edge 1x and Safari
 
 
 ## v0.4.2

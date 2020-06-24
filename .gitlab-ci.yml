@@ -15,7 +15,10 @@ before_script:
     when: always
     expire_in: 1 mos
     paths:
-    - coverage/
+      - coverage/
+    reports:
+      junit: test-results/*.xml
+      cobertura: coverage/*/cobertura-coverage.xml
 
 test-node-10:
   image: node:10
@@ -26,13 +29,28 @@ test-node-12:
   <<: *test-node
 
 test-browser:
-  image: nexus-docker.tardis.seald.io/seald/docker-browser-testing:CHROME_76
+  image: nexus-docker.tardis.seald.io/seald/docker-browser-testing:CHROME_83
   stage: test
   script:
     - npm run test-browser
+  artifacts:
+    reports:
+      junit: test-results/*.xml
+      cobertura: coverage/*/cobertura-coverage.xml
+
+test-saucelabs:
+  image: node:12
+  stage: test
+  script:
+    - npm run test-saucelabs
+  artifacts:
+    reports:
+      junit: test-results/*.xml
+      cobertura: coverage/*/cobertura-coverage.xml
+  when: manual
 
 .deploy:
-  image: node:10
+  image: node:12
   stage: deploy
   script:
     - npm run build

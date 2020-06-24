@@ -1,7 +1,7 @@
 import { mixClasses, staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge/rsa'
-import { isWebCryptoAvailable } from './utils'
+import { getEngine, isWebCryptoAvailable } from './utils'
 import forge from 'node-forge'
 
 /**
@@ -49,31 +49,32 @@ class PublicKeyWebCrypto extends PublicKeyForge {
 
   // using the Subtle Crypto implementation if available, else falls back to forge
   async _rawEncryptAsync (clearText: Buffer): Promise<Buffer> {
-    return isWebCryptoAvailable()
-      ? Buffer.from(await window.crypto.subtle.encrypt(
-        {
-          name: 'RSA-OAEP'
-        },
-        await this._getPublicKey('encrypt'), // from generateKey or importKey above
-        clearText // ArrayBuffer of the data
-      ))
-      : this._rawEncryptSync(clearText)
+    if (!isWebCryptoAvailable()) return this._rawEncryptSync(clearText)
+    return Buffer.from(await window.crypto.subtle.encrypt(
+      {
+        name: 'RSA-OAEP',
+        // @ts-ignore : stupid old Edge needs this, even if it's against spec
+        hash: 'SHA-1'
+      },
+      await this._getPublicKey('encrypt'), // from generateKey or importKey above
+      clearText // ArrayBuffer of the data
+    ))
   }
 
   // using the Subtle Crypto implementation if available, else falls back to forge
   async verifyAsync (textToCheckAgainst: Buffer, signature: Buffer): Promise<boolean> {
-    if (isWebCryptoAvailable()) {
-      const privateKey = await this._getPublicKey('verify')
-      return window.crypto.subtle.verify(
-        {
-          name: 'RSA-PSS',
-          saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
-        },
-        await this._getPublicKey('verify'), // from generateKey or importKey above
-        signature,
-        textToCheckAgainst
-      )
-    } else return this.verify(textToCheckAgainst, signature)
+    if (!isWebCryptoAvailable()) return this.verify(textToCheckAgainst, signature)
+    if (getEngine() === 'EdgeHTML') return this.verify(textToCheckAgainst, signature) // old Edge does not like RSA-PSS
+    const privateKey = await this._getPublicKey('verify')
+    return window.crypto.subtle.verify(
+      {
+        name: 'RSA-PSS',
+        saltLength: Math.ceil(((privateKey.algorithm as RsaHashedKeyGenParams).modulusLength - 1) / 8) - 32 - 2
+      },
+      await this._getPublicKey('verify'), // from generateKey or importKey above
+      signature,
+      textToCheckAgainst
+    )
   }
 }
 
@@ -154,10 +155,14 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
   }
 
   async _rawDecryptAsync (cipherText: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super._rawDecryptAsync(cipherText)
+    if (!isWebCryptoAvailable()) return this._rawDecryptSync(cipherText) // using `super` causes problems on old Edge
     try {
       return Buffer.from(await window.crypto.subtle.decrypt(
-        { name: 'RSA-OAEP' },
+        {
+          name: 'RSA-OAEP',
+          // @ts-ignore : stupid old Edge needs this, even if it's against spec
+          hash: 'SHA-1'
+        },
         await this.getPrivateKey('decrypt'),
         cipherText
       ))
@@ -167,7 +172,9 @@ class PrivateKeyWebCrypto extends mixClasses(PublicKeyWebCrypto, PrivateKeyForge
   }
 
   async signAsync (textToSign: Buffer): Promise<Buffer> {
-    if (!isWebCryptoAvailable()) return super.signAsync(textToSign)
+    if (!isWebCryptoAvailable()) return this.sign(textToSign)
+    if (getEngine() === 'EdgeHTML') return this.sign(textToSign) // old Edge does not like RSA-PSS
+    if (getEngine() === 'WebKit') return this.sign(textToSign) // Safari does not like a salt length this long *when signing*, apparently it's OK when verifying...
     const privateKey = await this.getPrivateKey('sign')
     return Buffer.from(await window.crypto.subtle.sign(
       {

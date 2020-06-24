@@ -1,6 +1,6 @@
 # Config files
 /.babelrc
-/.nycrc
+/nyc.config.js
 /.gitignore
 /.gitlab-ci.yml
 /tsconfig.json
@@ -38,3 +38,8 @@ karma.conf.template.js
 
 # CI
 .npm
+
+/test-results/
+mochaReportConfig.json
+browsers.js
+run-karma-saucelabs.spec.js

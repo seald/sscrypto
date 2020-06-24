@@ -252,6 +252,18 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.isTrue(hmacSync.equals(hmacStream))
         })
 
+        it('HMAC sync, async & stream empty', async () => {
+          const input = Buffer.alloc(0)
+          const hmacSync = key.calculateHMACSync_(input)
+          const hmacAsync = await key.calculateHMACAsync_(input)
+          const hmacStream = await _streamHelper(
+            splitLength(input, 20),
+            key.HMACStream_()
+          )
+          assert.isTrue(hmacSync.equals(hmacAsync))
+          assert.isTrue(hmacSync.equals(hmacStream))
+        })
+
         it('cipher stream & decipher sync', async () => {
           const input = randomBytes(100)
           const chunks = splitLength(input, 20)
@@ -587,6 +599,18 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
 export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer): void => {
   describe(`AES perf ${name}`, function () {
     this.timeout(30000)
+
+    it('Generate keys', async () => {
+      const nKeys = 500
+      const keys = []
+      const start = Date.now()
+      for (let i = 0; i < nKeys; i++) {
+        keys.push(await SymKeyClass.generate(256))
+      }
+      const end = Date.now()
+      const delta = (end - start) / 1000
+      console.log(`Finished generating AES keys for ${name} in ${delta.toFixed(1)}s:\n${(nKeys / delta).toFixed(1)} keys/s`)
+    })
 
     it('Encrypt/Decrypt sync perf', async () => {
       const inputSize = 10000

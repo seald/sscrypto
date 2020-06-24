@@ -13,6 +13,11 @@ module.exports = function (config) {
 
   config.set(Object.assign({}, template(config), {
     customLaunchers: localBrowser,
-    browsers: Object.keys(localBrowser)
+    browsers: ['ChromeHeadlessNoSandbox']
+    // browsers: ['FirefoxHeadless'],
+    // browsers: ['Safari'],
+    // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless', 'Safari'],
+
+    // concurrency: 3
   }))
 }

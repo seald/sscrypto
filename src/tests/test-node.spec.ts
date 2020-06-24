@@ -31,13 +31,8 @@ const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }
 testAsymKeyImplem('node', AsymKeyNode, randomBytes)
 testAsymKeyImplem('forge', AsymKeyForge, randomBytes)
 
-testAsymKeyCompatibility('node/forge', 1024, AsymKeyNode, AsymKeyForge)
-testAsymKeyCompatibility('node/forge', 2048, AsymKeyNode, AsymKeyForge)
-testAsymKeyCompatibility('node/forge', 4096, AsymKeyNode, AsymKeyForge)
-
-testAsymKeyCompatibility('forge/node', 1024, AsymKeyForge, AsymKeyNode)
-testAsymKeyCompatibility('forge/node', 2048, AsymKeyForge, AsymKeyNode)
-testAsymKeyCompatibility('forge/node', 4096, AsymKeyForge, AsymKeyNode)
+testAsymKeyCompatibility('node/forge', AsymKeyNode, AsymKeyForge)
+testAsymKeyCompatibility('forge/node', AsymKeyForge, AsymKeyNode)
 
 testAsymKeyPerf('node', 1024, AsymKeyNode, randomBytes)
 testAsymKeyPerf('node', 2048, AsymKeyNode, randomBytes)

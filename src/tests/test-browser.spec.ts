@@ -41,25 +41,20 @@ const AsymKeyWebCrypto = { PrivateKey: PrivateKeyWebCrypto, PublicKey: PublicKey
 testAsymKeyImplem('forge', AsymKeyForge, randomBytesSync)
 testAsymKeyImplem('webcrypto', AsymKeyWebCrypto, randomBytesSync)
 
-testAsymKeyCompatibility('forge/webcrypto', 1024, AsymKeyForge, AsymKeyWebCrypto)
-testAsymKeyCompatibility('forge/webcrypto', 2048, AsymKeyForge, AsymKeyWebCrypto)
-testAsymKeyCompatibility('forge/webcrypto', 4096, AsymKeyForge, AsymKeyWebCrypto)
-
-testAsymKeyCompatibility('webcrypto/forge', 1024, AsymKeyWebCrypto, AsymKeyForge)
-testAsymKeyCompatibility('webcrypto/forge', 2048, AsymKeyWebCrypto, AsymKeyForge)
-testAsymKeyCompatibility('webcrypto/forge', 4096, AsymKeyWebCrypto, AsymKeyForge)
+testAsymKeyCompatibility('forge/webcrypto', AsymKeyForge, AsymKeyWebCrypto)
+testAsymKeyCompatibility('webcrypto/forge', AsymKeyWebCrypto, AsymKeyForge)
 
 testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
 
 testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytesSync)
 testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytesSync)
-testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytesSync) // this is a bit long, so we disable it by default
+// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytesSync) // this is a bit long, so we disable it by default
 testAsymKeyPerf('webcrypto', 1024, AsymKeyWebCrypto, randomBytesSync)
 testAsymKeyPerf('webcrypto', 2048, AsymKeyWebCrypto, randomBytesSync)
-testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytesSync)
+// testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytesSync)
 testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
 testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
-testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
+// testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
 
 // Utils
 testUtilsImplem('forge', utilsForge)

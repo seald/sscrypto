@@ -1,3 +1,4 @@
+'use strict'
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 const path = require('path')
@@ -16,6 +17,10 @@ module.exports = (env, argv) => {
           test: /\.js$/,
           enforce: 'pre',
           use: ['source-map-loader']
+        },
+        {
+          exclude: [/node_modules/],
+          use: ['@jsdevtools/coverage-istanbul-loader']
         }
       ]
     },

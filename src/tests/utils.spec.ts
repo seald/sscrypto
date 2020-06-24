@@ -39,7 +39,7 @@ export const testUtilsImplem = (name: string, { sha256, randomBytesSync, randomB
     })
 
     it('randomBytes sync', () => {
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 200; i++) {
         const rand = randomBytesSync(i)
         const rand2 = randomBytesSync(i)
         assert.notStrictEqual(rand, rand2)
@@ -49,7 +49,7 @@ export const testUtilsImplem = (name: string, { sha256, randomBytesSync, randomB
     })
 
     it('randomBytes', async () => {
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 200; i++) {
         const rand = await randomBytes(i)
         const rand2 = await randomBytes(i)
         assert.notStrictEqual(rand, rand2)
