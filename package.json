@@ -1,6 +1,6 @@
 {
   "name": "sscrypto",
-  "version": "0.4.2",
+  "version": "1.0.0-0",
   "description": "Super Simple Cryptography",
   "main": "index.js",
   "scripts": {
