@@ -46,6 +46,7 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
     it('Fail to construct a PublicKey because of an invalid type of argument', () =>
       expect(
         PrivateKey_
+          // @ts-ignore : ts-expect-error is not supported yet
           // @ts-expect-error
           .generate('notAValidType')
       ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
@@ -57,6 +58,7 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
     it('fail to produce a new PrivateKey with a wrong size', () =>
       expect(
         PrivateKey_
+          // @ts-ignore : ts-expect-error is not supported yet
           // @ts-expect-error
           .generate(588)
       ).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
@@ -74,6 +76,7 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
 
     it('fail to import PrivateKey because of an invalid type', () => {
       expect(
+        // @ts-ignore : ts-expect-error is not supported yet
         // @ts-expect-error
         () => new PrivateKey_(2)
       ).to.throw(Error).and.satisfy((error: Error) => {

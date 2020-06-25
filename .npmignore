@@ -4,6 +4,9 @@
 /.gitignore
 /.gitlab-ci.yml
 /tsconfig.json
+/.eslintrc
+/.ncurc.json
+/README_DEV.md
 
 # Doc
 /doc

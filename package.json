@@ -37,7 +37,7 @@
     "@types/chai-as-promised": "^7.1.2",
     "@types/jsbn": "^1.2.29",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^14.0.13",
+    "@types/node": "^14.0.14",
     "@types/node-forge": "^0.9.4",
     "@types/pump": "^1.1.0",
     "@types/pumpify": "^1.4.1",
@@ -73,7 +73,7 @@
     "ts-node": "^8.10.2",
     "typedoc": "^0.17.7",
     "typedoc-plugin-markdown": "^2.3.1",
-    "typescript": "^3.9.5",
+    "typescript": "3.8.3",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12",
     "xvfb-maybe": "^0.2.1"
