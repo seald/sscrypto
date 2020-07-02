@@ -4,7 +4,7 @@
 /.gitignore
 /.gitlab-ci.yml
 /tsconfig.json
-/.eslintrc
+/.eslintrc.js
 /.ncurc.json
 /README_DEV.md
 
