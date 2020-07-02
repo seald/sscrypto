@@ -100,10 +100,22 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
       assert.strictEqual(publicKeyImported.toB64(), privateKey.toB64({ publicOnly: true }))
     })
 
+    it('export public key with toString then import', () => {
+      const publicKeyImported = new PublicKey_(Buffer.from(privateKey.toString({ publicOnly: true }), 'binary'))
+
+      assert.strictEqual(publicKeyImported.toString(), privateKey.toString({ publicOnly: true }))
+    })
+
     it('export the private key then import it', () => {
       const privateKeyImported = PrivateKey_.fromB64(privateKey.toB64())
 
       assert.strictEqual(privateKeyImported.toB64(), privateKey.toB64({ publicOnly: false }))
+    })
+
+    it('export the private key with toString then import it', () => {
+      const privateKeyImported = new PrivateKey_(Buffer.from(privateKey.toString(), 'binary'))
+
+      assert.strictEqual(privateKeyImported.toString(), privateKey.toString({ publicOnly: false }))
     })
 
     it('cipher & decipher sync', () => {

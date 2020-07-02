@@ -173,6 +173,14 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.isTrue(message.equals(decipheredMessage))
         })
 
+        it('serialize and import key with toString', async () => {
+          const cipheredMessage = await key.encryptAsync(message)
+          const exportedKey = key.toString()
+          const importedKey = new SymKeyClass(Buffer.from(exportedKey, 'binary'))
+          const decipheredMessage = await importedKey.decryptAsync(cipheredMessage)
+          assert.isTrue(message.equals(decipheredMessage))
+        })
+
         it('cipher sync & decipher async', async () => {
           const cipheredMessage = key.encrypt(messageBinary)
           const decipheredMessage = await key.decryptAsync(cipheredMessage)
@@ -543,7 +551,7 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
 
     before(async () => {
       key1 = await SymKeyClass1.generate(256)
-      key2 = SymKeyClass2.fromString(key1.toString())
+      key2 = new SymKeyClass2(key1.key)
     })
 
     it('cipher 1 & decipher 2 sync', () => {

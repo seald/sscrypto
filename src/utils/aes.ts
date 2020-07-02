@@ -93,6 +93,7 @@ export abstract class SymKey {
   /**
    * Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
    * @method
+   * @deprecated
    * @returns {string}
    */
   toString (): string {

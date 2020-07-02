@@ -86,6 +86,19 @@ export abstract class PublicKey {
   }
 
   /**
+   * Exports the instance of an RSA PrivateKey in binary string using ASN.1 syntax with DER encoding wrapped in a PKCS#8
+   * enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
+   * If publicOnly is specified, it exports the RSA PublicKey in binary string using ASN.1 syntax with DER encoding wrapped
+   * in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
+   * @deprecated
+   * @param {options} [options=null] useless options argument in a PublicKey.
+   * @returns {string}
+   */
+  toString (options: { publicOnly?: boolean } = {}): string {
+    return Buffer.from(this.toB64(options), 'base64').toString('binary')
+  }
+
+  /**
    * Encrypts synchronously with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
    * function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
    * @param {Buffer} clearText
@@ -262,6 +275,7 @@ export class PrivateKey extends PublicKey {
    * If publicOnly is specified, it exports the RSA PublicKey in base64 using ASN.1 syntax with DER encoding wrapped
    * in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
    * @param {boolean} [publicOnly = false] Specify if it should export only the public key.
+   * @returns {string}
    */
   // implementations are going to have to copy this, because it will get overridden by their PublicKey implementation
   toB64 ({ publicOnly = false } = {}): string {
