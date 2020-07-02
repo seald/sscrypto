@@ -13,7 +13,7 @@ import {
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyCompatibility, testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
-import { randomBytesSync } from '../forge/utils'
+import { randomBytes } from '../forge/utils'
 
 const disableWebCrypto = {
   duringBefore: () => {
@@ -25,36 +25,36 @@ const disableWebCrypto = {
 }
 
 // SymKey
-testSymKeyImplem('forge', SymKeyForge, randomBytesSync)
-testSymKeyImplem('webcrypto', SymKeyWebCrypto, randomBytesSync)
+testSymKeyImplem('forge', SymKeyForge, randomBytes)
+testSymKeyImplem('webcrypto', SymKeyWebCrypto, randomBytes)
 
-testSymKeyCompatibility('forge/webcrypto', SymKeyForge, SymKeyWebCrypto, randomBytesSync)
+testSymKeyCompatibility('forge/webcrypto', SymKeyForge, SymKeyWebCrypto, randomBytes)
 
-testSymKeyPerf('forge', SymKeyForge, randomBytesSync)
-testSymKeyPerf('webcrypto', SymKeyWebCrypto, randomBytesSync)
+testSymKeyPerf('forge', SymKeyForge, randomBytes)
+testSymKeyPerf('webcrypto', SymKeyWebCrypto, randomBytes)
 
-testSymKeyImplem('webcrypto fallback', SymKeyWebCrypto, randomBytesSync, disableWebCrypto)
+testSymKeyImplem('webcrypto fallback', SymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // AsymKey
 const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }
 const AsymKeyWebCrypto = { PrivateKey: PrivateKeyWebCrypto, PublicKey: PublicKeyWebCrypto }
-testAsymKeyImplem('forge', AsymKeyForge, randomBytesSync)
-testAsymKeyImplem('webcrypto', AsymKeyWebCrypto, randomBytesSync)
+testAsymKeyImplem('forge', AsymKeyForge, randomBytes)
+testAsymKeyImplem('webcrypto', AsymKeyWebCrypto, randomBytes)
 
 testAsymKeyCompatibility('forge/webcrypto', AsymKeyForge, AsymKeyWebCrypto)
 testAsymKeyCompatibility('webcrypto/forge', AsymKeyWebCrypto, AsymKeyForge)
 
-testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
+testAsymKeyImplem('webcrypto fallback', AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 
-testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytesSync)
-testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytesSync)
-// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytesSync) // this is a bit long, so we disable it by default
-testAsymKeyPerf('webcrypto', 1024, AsymKeyWebCrypto, randomBytesSync)
-testAsymKeyPerf('webcrypto', 2048, AsymKeyWebCrypto, randomBytesSync)
-// testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytesSync)
-testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
-testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
-// testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytesSync, disableWebCrypto)
+testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytes)
+testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytes)
+// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes) // this is a bit long, so we disable it by default
+testAsymKeyPerf('webcrypto', 1024, AsymKeyWebCrypto, randomBytes)
+testAsymKeyPerf('webcrypto', 2048, AsymKeyWebCrypto, randomBytes)
+// testAsymKeyPerf('webcrypto', 4096, AsymKeyWebCrypto, randomBytes)
+testAsymKeyPerf('webcrypto fallback', 1024, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+testAsymKeyPerf('webcrypto fallback', 2048, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
+// testAsymKeyPerf('webcrypto fallback', 4096, AsymKeyWebCrypto, randomBytes, disableWebCrypto)
 
 // Utils
 testUtilsImplem('forge', utilsForge)

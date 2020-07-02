@@ -49,7 +49,7 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytesSync = (length = 10): Buffer => {
+export const randomBytes = (length = 10): Buffer => {
   if (length === 0) {
     return Buffer.alloc(0) // workaround for some dumb browsers that really don't like crypto.getRandomValues with length 0
   } else if (isWebCryptoAvailable()) {
@@ -64,7 +64,7 @@ export const randomBytesSync = (length = 10): Buffer => {
  * @param {number} [length=10]
  * @return {Promise<Buffer>}
  */
-export const randomBytes = async (length = 10): Promise<Buffer> => {
+export const randomBytesAsync = async (length = 10): Promise<Buffer> => {
   if (length === 0) {
     return Buffer.alloc(0) // workaround for some dumb browsers that really don't like crypto.getRandomValues with length 0
   } else if (isWebCryptoAvailable()) {

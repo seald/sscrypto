@@ -2,7 +2,7 @@ import forge from 'node-forge'
 import { staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor } from '../utils/aes'
-import { randomBytes, randomBytesSync } from './utils'
+import { randomBytes, randomBytesAsync } from './utils'
 
 const forgeCipherToStream = (cipher: forge.cipher.BlockCipher): Transform => {
   return new Transform({
@@ -41,11 +41,11 @@ class SymKeyForge extends SymKey {
   }
 
   static randomBytesAsync_ (size: number): Promise<Buffer> {
-    return randomBytes(size)
+    return randomBytesAsync(size)
   }
 
   static randomBytesSync_ (size: number): Buffer {
-    return randomBytesSync(size)
+    return randomBytes(size)
   }
 
   calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {

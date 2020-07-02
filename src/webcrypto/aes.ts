@@ -1,6 +1,6 @@
 import { Transform } from 'stream'
 import SymKeyForge from '../forge/aes'
-import { getEngine, isWebCryptoAvailable, randomBytes, randomBytesSync } from './utils'
+import { getEngine, isWebCryptoAvailable, randomBytes, randomBytesAsync } from './utils'
 import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
 
 class SymKeyWebCrypto extends SymKeyForge {
@@ -59,11 +59,11 @@ class SymKeyWebCrypto extends SymKeyForge {
   }
 
   static randomBytesAsync_ (size: number): Promise<Buffer> {
-    return randomBytes(size)
+    return randomBytesAsync(size)
   }
 
   static randomBytesSync_ (size: number): Buffer {
-    return randomBytesSync(size)
+    return randomBytes(size)
   }
 
   async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {

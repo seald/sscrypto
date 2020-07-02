@@ -25,11 +25,11 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytesSync = (length = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')
+export const randomBytes = (length = 10): Buffer => Buffer.from(forge.random.getBytesSync(length), 'binary')
 
 /**
  * Returns a Buffer of random bytes
  * @param {number} [length=10]
  * @return {Promise<Buffer>}
  */
-export const randomBytes = async (length = 10): Promise<Buffer> => Buffer.from(await promisify(forge.random.getBytes)(length), 'binary')
+export const randomBytesAsync = async (length = 10): Promise<Buffer> => Buffer.from(await promisify(forge.random.getBytes)(length), 'binary')
