@@ -1,4 +1,4 @@
-## Unreleased
+## v1.0.0
 
 - \[enhancement\] Massive rewrite.
 - \[new feature\] Creating a new SymKey should be done through `SymKey.generate(size)`. Using `new SymKey(size)` is deprecated.
