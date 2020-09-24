@@ -86,10 +86,8 @@ export abstract class PublicKey {
   }
 
   /**
-   * Exports the instance of an RSA PrivateKey in binary string using ASN.1 syntax with DER encoding wrapped in a PKCS#8
-   * enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
-   * If publicOnly is specified, it exports the RSA PublicKey in binary string using ASN.1 syntax with DER encoding wrapped
-   * in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
+   * Exports the instance of an RSA PublicKey in binary string using ASN.1 syntax with DER encoding wrapped in an SPKI
+   * enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
    * @deprecated
    * @param {options} [options=null] useless options argument in a PublicKey.
    * @returns {string}
@@ -212,6 +210,12 @@ export class PrivateKey extends PublicKey {
 
   private static isPrivateKey = Symbol('isPrivateKey')
 
+  /**
+   * Returns true if instance is PrivateKey.
+   * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/hasInstance
+   * @param instance
+   * @return {boolean}
+   */
   static [Symbol.hasInstance] (instance: unknown) : instance is PrivateKey {
     return instance instanceof PublicKey && (instance.constructor as typeof PrivateKey).isPrivateKey === this.isPrivateKey
   }
@@ -219,7 +223,7 @@ export class PrivateKey extends PublicKey {
   /**
    * PrivateKey constructor. Should be given a Buffer either encoded in a PKCS#8 enveloppe or as a bare private
    * key representation using ASN.1 syntax with DER encoding.
-   * @constructs PrivateKeyWebCrypto
+   * @constructs PrivateKey
    * @param {Buffer} key
    */
   constructor (key: Buffer) {
@@ -304,8 +308,8 @@ export class PrivateKey extends PublicKey {
   }
 
   /**
-   * Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result synchronously
-   * with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the instantiated PrivateKey
+   * Decrypts the given cipherText synchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the
+   * instantiated PrivateKey, and optionally checks that the result is prefixed with a valid CRC32.
    * @param {Buffer} cipherText
    * @param {boolean} [doCRC=true]
    * @returns {Buffer}
@@ -316,8 +320,8 @@ export class PrivateKey extends PublicKey {
   }
 
   /**
-   * Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result asynchronously
-   * with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the instantiated PrivateKey
+   * Decrypts the given cipherText asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the
+   * instantiated PrivateKey, and optionally checks that the result is prefixed with a valid CRC32.
    * @param {Buffer} cipherText
    * @param {boolean} [doCRC=true]
    * @returns {Promise<Buffer>}
