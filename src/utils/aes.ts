@@ -23,8 +23,11 @@ export abstract class SymKey {
 
   /**
    * Constructor of SymKey
-   * Using a number as argument is deprecated.
+   *
+   * Using a number as argument, or relying on default, is deprecated. Use `SymKey.generate` instead.
+   *
    * Defaults to a new 256 bits key.
+   *
    * @constructs SymKey
    * @param {Buffer|SymKeySize} [key = 256] The key to construct the SymKey with. Passing a keySize is deprecated. Use `SymKey.generate` instead.
    */
@@ -49,7 +52,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Static method to generate a new SymKey of a given size
+   * Static method to generate a new SymKey of a given size asynchronously
    * @method
    * @static
    * @param {SymKeySize} [size=256]
@@ -60,10 +63,10 @@ export abstract class SymKey {
   }
 
   /**
-   * Static method to construct a new SymKey from a binary string encoded messageKey
+   * Static method to construct a new SymKey from a binary string encoded key
    * @method
    * @static
-   * @param {string} messageKey binary encoded messageKey
+   * @param {string} messageKey binary encoded key
    * @returns {SymKey}
    */
   static fromString<T extends SymKey> (this: SymKeyConstructor<T>, messageKey: string): T {
@@ -74,7 +77,7 @@ export abstract class SymKey {
    * Static method to construct a new SymKey from a b64 encoded key
    * @method
    * @static
-   * @param {string} messageKey b64 encoded messageKey
+   * @param {string} messageKey b64 encoded key
    * @returns {SymKey}
    */
   static fromB64<T extends SymKey> (this: SymKeyConstructor<T>, messageKey: string): T {
@@ -82,7 +85,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated encoded with b64
+   * Returns the SymKey's key encoded with b64
    * @method
    * @returns {string}
    */
@@ -91,7 +94,7 @@ export abstract class SymKey {
   }
 
   /**
-   * Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
+   * Returns the SymKey's key encoded as a binary string
    * @method
    * @deprecated
    * @returns {string}

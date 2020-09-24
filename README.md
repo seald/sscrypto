@@ -155,17 +155,21 @@ const { PrivateKey, PublicKey } = require('sscrypto/webcrypto/rsa')
 
 ## Constructor
 
-⊕ **new SymKey**(arg?: *[SymKeySize](#symkeysize) \| `Buffer`*): [SymKey](#symkey)
+⊕ **new SymKey**(key: *`Buffer` | [SymKeySize](#symkeysize)*): [SymKey](#symkey)
+    
+Constructor of SymKey
 
-Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static methods SymKey.fromString or fromB64 Defaults to a new 256 bits key.
+Using a number as argument, or relying on default, is deprecated. Use [`SymKey.generate`](#symkey-generate) instead.
 
+Defaults to a new 256 bits key (deprecated).
+  
 *__constructs__*: SymKey
 
 **Parameters:**
 
-| Name | Type | Default value |
-| ------ | ------ | ------ |
-| `Default value` arg | [SymKeySize](#symkeysize) \| `Buffer` | 256 |
+Name | Type | Default | Description |
+------ | ------ | ------ | ------ |
+`key` | Buffer &#124; [SymKeySize](#symkeysize) | 256 | The key to construct the SymKey with. Passing a keySize is deprecated. Use `SymKey.generate` instead. |
 
 **Returns:** [SymKey](#symkey)
 
@@ -173,54 +177,30 @@ ___
 
 ## Properties
 
-<a id="symkey-encryptionkey"></a>
+<a id="symkey-key"></a>
 
-### `<Private>` encryptionKey
+### `Readonly` key
 
-**● encryptionKey**: *`string`*
+**● key**: *`Buffer`*
 
 ___
 <a id="symkey-keysize"></a>
 
-###  keySize
+###  `Readonly` keySize
 
-**● keySize**: *`number`*
-
-___
-<a id="symkey-authenticationkey"></a>
-
-### `<Private>` authenticationKey
-
-**● authenticationKey**: *`string`*
+**● keySize**: *`[SymKeySize](#symkeysize)`*
 
 ___
 
 ## Methods
 
-<a id="symkey-calculatehmac"></a>
-
-###  calculateHMAC
-
-▸ **calculateHMAC**(textToAuthenticate: *`Buffer`*): `Buffer`
-
-Calculates a SHA-256 HMAC with the SymKey#authenticationKey on the textToAuthenticate
-
-**Parameters:**
-
-| Name | Type | Description |
-| ------ | ------ | ------ |
-| textToAuthenticate | `Buffer` |  \- |
-
-**Returns:** `Buffer`
-
-___
 <a id="symkey-decrypt"></a>
 
 ###  decrypt
 
 ▸ **decrypt**(cipheredMessage: *`Buffer`*): `Buffer`
 
-Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
+Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
 
 **Parameters:**
 
@@ -229,6 +209,23 @@ Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
 | cipheredMessage | `Buffer` |  \- |
 
 **Returns:** `Buffer`
+
+___
+<a id="symkey-decryptasync"></a>
+
+###  decryptAsync
+
+▸ **decryptAsync**(cipheredMessage: *`Buffer`*): `Promise<Buffer>`
+
+Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| cipheredMessage | `Buffer` |  \- |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="symkey-decryptstream"></a>
@@ -248,7 +245,9 @@ ___
 
 ▸ **encrypt**(clearText: *`Buffer`*): `Buffer`
 
-Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with SymKey#authenticationKey, returns it concatenated in the following order: InitializationVector CipherText HMAC
+Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+SymKey#authenticationKey, returns it concatenated in the following order:
+InitializationVector CipherText HMAC
 
 **Parameters:**
 
@@ -257,6 +256,25 @@ Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HM
 | clearText | `Buffer` |  \- |
 
 **Returns:** `Buffer`
+
+___
+<a id="symkey-encryptasync"></a>
+
+###  encryptAsync
+
+▸ **encryptAsync**(clearText: *`Buffer`*): `Promise<Buffer>`
+
+Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+SymKey#authenticationKey, returns it concatenated in the following order:
+InitializationVector CipherText HMAC
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| clearText | `Buffer` |  \- |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="symkey-encryptstream"></a>
@@ -276,7 +294,7 @@ ___
 
 ▸ **toB64**(): `string`
 
-Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated encoded with b64
+Returns the SymKey's key encoded with b64
 
 **Returns:** `string`
 
@@ -287,7 +305,7 @@ ___
 
 ▸ **toString**(): `string`
 
-Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
+Returns the SymKey's key encoded as a binary string
 
 **Returns:** `string`
 
@@ -298,13 +316,13 @@ ___
 
 ▸ **fromB64**(messageKey: *`string`*): [SymKey](#symkey)
 
-Static method to construct a new SymKey from a b64 encoded messageKey
+Static method to construct a new SymKey from a b64 encoded key
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| messageKey | `string` |  b64 encoded messageKey |
+| messageKey | `string` |  b64 encoded key |
 
 **Returns:** [SymKey](#symkey)
 
@@ -315,15 +333,32 @@ ___
 
 ▸ **fromString**(messageKey: *`string`*): [SymKey](#symkey)
 
-Static method to construct a new SymKey from a binary string encoded messageKey
+Static method to construct a new SymKey from a binary string encoded key
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| messageKey | `string` |  binary encoded messageKey |
+| messageKey | `string` |  binary encoded key |
 
 **Returns:** [SymKey](#symkey)
+
+___
+<a id="symkey-generate"></a>
+
+### `<Static>` generate
+
+▸ **generate**(size?: *[SymKeySize](#symkeysize)*): `Promise`<[SymKey](#symkey)>
+
+Static method to generate a new SymKey of a given size asynchronously
+
+**Parameters:**
+
+| Name | Type | Default value |
+| ------ | ------ | ------ |
+| `Default value` size | [SymKeySize](#symkeysize) | 256 |
+
+**Returns:** `Promise`<[SymKey](#symkey)>
 
 ___
 
