@@ -17,34 +17,37 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * [constructor](#symkey-constructor)
 
   * Properties
-    * [encryptionKey](#symkey-encryptionkey)
+    * [key](#symkey-key)
     * [keySize](#symkey-keysize)
-    * [authenticationKey](#symkey-authenticationkey)
 
   * Methods
-    * [calculateHMAC](#symkey-calculatehmac)
     * [decrypt](#symkey-decrypt)
+    * [decryptAsync](#symkey-decryptasync)
     * [decryptStream](#symkey-decryptstream)
     * [encrypt](#symkey-encrypt)
+    * [encryptAsync](#symkey-encryptasync)
     * [encryptStream](#symkey-encryptstream)
     * [toB64](#symkey-tob64)
     * [toString](#symkey-tostring)
     * [fromB64](#symkey-fromb64)
     * [fromString](#symkey-fromstring)
+    * [generate](#symkey-generate)
 
 - [PublicKey](#publickey)
   
   * [constructor](#publickey-constructor)
   
   * Properties
-    * [publicKey](#publickey-publickey)
+    * [publicKeyBuffer](#publickey-publickeybuffer)
   
   * Methods
     * [encrypt](#publickey-encrypt)
-    * [getB64Hash](#publickey-getb64hash)
+    * [encryptAsync](#publickey-encryptasync)
     * [getHash](#publickey-gethash)
     * [toB64](#publickey-tob64)
+    * [toString](#publickey-tostring)
     * [verify](#publickey-verify)
+    * [verifyAsync](#publickey-verifyasync)
     * [fromB64](#publickey-fromb64)
   
 - [PrivateKey](#privatekey)
@@ -52,23 +55,27 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * [constructor](#privatekey-constructor)
 
   * Properties
-    * [privateKey](#privatekey-privatekey)
-    * [publicKey](#privatekey-publickey)
+    * [privateKeyBuffer](#privatekey-privatekeybuffer)
+    * [publicKeyBuffer](#privatekey-publickeybuffer)
 
   * Methods
     * [decrypt](#privatekey-decrypt)
+    * [decryptAsync](#privatekey-decryptasync)
     * [encrypt](#privatekey-encrypt)
-    * [getB64Hash](#privatekey-getb64hash)
+    * [encryptAsync](#privatekey-encryptasync)
     * [getHash](#privatekey-gethash)
     * [sign](#privatekey-sign)
+    * [signAsync](#privatekey-signasync)
     * [toB64](#privatekey-tob64)
     * [verify](#privatekey-verify)
+    * [verifyAsync](#privatekey-verifyasync)
     * [fromB64](#privatekey-fromb64)
     * [generate](#privatekey-generate)
 
 - [Utils](#utils)
 
   * [randomBytes](#randombytes)
+  * [randomBytesAsync](#randombytesasync)
   * [sha256](#sha256)
 
 
