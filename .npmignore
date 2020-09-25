@@ -39,6 +39,7 @@ Thumbs.db
 # Tests
 karma.conf.local.js
 karma.conf.template.js
+karma.conf.saucelabs.js
 
 # CI
 .npm
@@ -46,4 +47,5 @@ karma.conf.template.js
 /test-results/
 mochaReportConfig.json
 browsers.js
-run-karma-saucelabs.spec.js
+check_readme.sh
+webpack.config.js

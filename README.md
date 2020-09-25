@@ -78,6 +78,7 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * [randomBytesAsync](#randombytesasync)
   * [sha256](#sha256)
 
+<a id="installation"></a>
 
 # Installation
 
