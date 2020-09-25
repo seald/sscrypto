@@ -3,6 +3,7 @@
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { TestHooks } from './specUtils.spec'
+import { Utils } from '../index'
 
 chai.use(chaiAsPromised)
 const { assert } = chai
@@ -13,13 +14,7 @@ const knownHashes: { [key: string]: string } = {
   testTEST: '3a16f0fd02b75b2607d5157a73dab35453dbeb02cdca2d50b73392503e56c6dc'
 }
 
-type utils = {
-  sha256: (data: Buffer) => Buffer
-  randomBytes: (length: number) => Buffer
-  randomBytesAsync: (length: number) => Promise<Buffer>
-}
-
-export const testUtilsImplem = (name: string, { sha256, randomBytes, randomBytesAsync }: utils, { duringBefore, duringAfter }: TestHooks = {}): void => {
+export const testUtilsImplem = (name: string, { sha256, randomBytes, randomBytesAsync }: Utils, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`Utils ${name}`, function () {
     this.timeout(10000)
 
@@ -60,7 +55,7 @@ export const testUtilsImplem = (name: string, { sha256, randomBytes, randomBytes
   })
 }
 
-export const testUtilsCompatibility = (name: string, utils1: utils, utils2: utils) => {
+export const testUtilsCompatibility = (name: string, utils1: Utils, utils2: Utils) => {
   describe(`Utils compatibility ${name}`, () => {
     it('sha256 & randomBytes', () => {
       const rand1 = utils1.randomBytes(1000)

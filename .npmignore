@@ -1,5 +1,4 @@
 # Config files
-/.babelrc
 /nyc.config.js
 /.gitignore
 /.gitlab-ci.yml
@@ -14,9 +13,11 @@
 # Source files
 /src/**/*
 
+# Maps
+/**/*.map
+
 # Tests
 /**/*spec.js
-/**/*spec.js.map
 /**/*spec.d.ts
 
 # Coverage reports

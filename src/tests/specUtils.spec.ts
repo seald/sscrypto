@@ -36,3 +36,7 @@ export const splitLength = (input: Buffer, length: number): Buffer[] => {
 }
 
 export type TestHooks = { duringBefore?: () => void, duringAfter?: () => void }
+
+export const assertType = <T>(x: T): void => {
+  // this function is just to assert that the argument type is correct, so nothing to actually do
+}
