@@ -1,3 +1,9 @@
+## Unreleased
+
+- \[enhancement\] Exporting type for SSCrypto implementation
+- \[enhancement\] Update documentation
+
+
 ## v1.0.0
 
 - \[enhancement\] Massive rewrite.

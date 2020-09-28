@@ -17,34 +17,37 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * [constructor](#symkey-constructor)
 
   * Properties
-    * [encryptionKey](#symkey-encryptionkey)
+    * [key](#symkey-key)
     * [keySize](#symkey-keysize)
-    * [authenticationKey](#symkey-authenticationkey)
 
   * Methods
-    * [calculateHMAC](#symkey-calculatehmac)
     * [decrypt](#symkey-decrypt)
+    * [decryptAsync](#symkey-decryptasync)
     * [decryptStream](#symkey-decryptstream)
     * [encrypt](#symkey-encrypt)
+    * [encryptAsync](#symkey-encryptasync)
     * [encryptStream](#symkey-encryptstream)
     * [toB64](#symkey-tob64)
     * [toString](#symkey-tostring)
     * [fromB64](#symkey-fromb64)
     * [fromString](#symkey-fromstring)
+    * [generate](#symkey-generate)
 
 - [PublicKey](#publickey)
   
   * [constructor](#publickey-constructor)
   
   * Properties
-    * [publicKey](#publickey-publickey)
+    * [publicKeyBuffer](#publickey-publickeybuffer)
   
   * Methods
     * [encrypt](#publickey-encrypt)
-    * [getB64Hash](#publickey-getb64hash)
+    * [encryptAsync](#publickey-encryptasync)
     * [getHash](#publickey-gethash)
     * [toB64](#publickey-tob64)
+    * [toString](#publickey-tostring)
     * [verify](#publickey-verify)
+    * [verifyAsync](#publickey-verifyasync)
     * [fromB64](#publickey-fromb64)
   
 - [PrivateKey](#privatekey)
@@ -52,25 +55,30 @@ It was created by [Seald](https://www.seald.io/) to unify crypto accross its pro
   * [constructor](#privatekey-constructor)
 
   * Properties
-    * [privateKey](#privatekey-privatekey)
-    * [publicKey](#privatekey-publickey)
+    * [privateKeyBuffer](#privatekey-privatekeybuffer)
+    * [publicKeyBuffer](#privatekey-publickeybuffer)
 
   * Methods
     * [decrypt](#privatekey-decrypt)
+    * [decryptAsync](#privatekey-decryptasync)
     * [encrypt](#privatekey-encrypt)
-    * [getB64Hash](#privatekey-getb64hash)
+    * [encryptAsync](#privatekey-encryptasync)
     * [getHash](#privatekey-gethash)
     * [sign](#privatekey-sign)
+    * [signAsync](#privatekey-signasync)
     * [toB64](#privatekey-tob64)
     * [verify](#privatekey-verify)
+    * [verifyAsync](#privatekey-verifyasync)
     * [fromB64](#privatekey-fromb64)
     * [generate](#privatekey-generate)
 
 - [Utils](#utils)
 
   * [randomBytes](#randombytes)
+  * [randomBytesAsync](#randombytesasync)
   * [sha256](#sha256)
 
+<a id="installation"></a>
 
 # Installation
 
@@ -155,17 +163,21 @@ const { PrivateKey, PublicKey } = require('sscrypto/webcrypto/rsa')
 
 ## Constructor
 
-⊕ **new SymKey**(arg?: *[SymKeySize](#symkeysize) \| `Buffer`*): [SymKey](#symkey)
+⊕ **new SymKey**(key: *`Buffer` | [SymKeySize](#symkeysize)*): [SymKey](#symkey)
+    
+Constructor of SymKey
 
-Constructor of SymKey, if you want to construct an SymKey with an existing key, use the static methods SymKey.fromString or fromB64 Defaults to a new 256 bits key.
+Using a number as argument, or relying on default, is deprecated. Use [`SymKey.generate`](#symkey-generate) instead.
 
+Defaults to a new 256 bits key (deprecated).
+  
 *__constructs__*: SymKey
 
 **Parameters:**
 
-| Name | Type | Default value |
-| ------ | ------ | ------ |
-| `Default value` arg | [SymKeySize](#symkeysize) \| `Buffer` | 256 |
+Name | Type | Default | Description |
+------ | ------ | ------ | ------ |
+`key` | Buffer &#124; [SymKeySize](#symkeysize) | 256 | The key to construct the SymKey with. Passing a keySize is deprecated. Use `SymKey.generate` instead. |
 
 **Returns:** [SymKey](#symkey)
 
@@ -173,62 +185,55 @@ ___
 
 ## Properties
 
-<a id="symkey-encryptionkey"></a>
+<a id="symkey-key"></a>
 
-### `<Private>` encryptionKey
+### `Readonly` key
 
-**● encryptionKey**: *`string`*
+**● key**: *`Buffer`*
 
 ___
 <a id="symkey-keysize"></a>
 
-###  keySize
+###  `Readonly` keySize
 
-**● keySize**: *`number`*
-
-___
-<a id="symkey-authenticationkey"></a>
-
-### `<Private>` authenticationKey
-
-**● authenticationKey**: *`string`*
+**● keySize**: *`[SymKeySize](#symkeysize)`*
 
 ___
 
 ## Methods
 
-<a id="symkey-calculatehmac"></a>
-
-###  calculateHMAC
-
-▸ **calculateHMAC**(textToAuthenticate: *`Buffer`*): `Buffer`
-
-Calculates a SHA-256 HMAC with the SymKey#authenticationKey on the textToAuthenticate
-
-**Parameters:**
-
-| Name | Type | Description |
-| ------ | ------ | ------ |
-| textToAuthenticate | `Buffer` |  \- |
-
-**Returns:** `Buffer`
-
-___
 <a id="symkey-decrypt"></a>
 
 ###  decrypt
 
 ▸ **decrypt**(cipheredMessage: *`Buffer`*): `Buffer`
 
-Decrypts the cipheredMessage using the same algorithms as SymKey#encrypt
+Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| cipheredMessage | `Buffer` |  \- |
+| cipheredMessage | `Buffer` | - |
 
 **Returns:** `Buffer`
+
+___
+<a id="symkey-decryptasync"></a>
+
+###  decryptAsync
+
+▸ **decryptAsync**(cipheredMessage: *`Buffer`*): `Promise<Buffer>`
+
+Decrypts the cipherText using AES-CBC with the embedded IV, and checking the embedded SHA-256 HMAC
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| cipheredMessage | `Buffer` | - |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="symkey-decryptstream"></a>
@@ -248,15 +253,36 @@ ___
 
 ▸ **encrypt**(clearText: *`Buffer`*): `Buffer`
 
-Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with SymKey#authenticationKey, returns it concatenated in the following order: InitializationVector CipherText HMAC
+Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+SymKey#authenticationKey, returns it concatenated in the following order:
+InitializationVector CipherText HMAC
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| clearText | `Buffer` |  \- |
+| clearText | `Buffer` | - |
 
 **Returns:** `Buffer`
+
+___
+<a id="symkey-encryptasync"></a>
+
+###  encryptAsync
+
+▸ **encryptAsync**(clearText: *`Buffer`*): `Promise<Buffer>`
+
+Encrypts the clearText with SymKey#encryptionKey using AES-CBC, and a SHA-256 HMAC calculated with
+SymKey#authenticationKey, returns it concatenated in the following order:
+InitializationVector CipherText HMAC
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| clearText | `Buffer` | - |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="symkey-encryptstream"></a>
@@ -276,7 +302,7 @@ ___
 
 ▸ **toB64**(): `string`
 
-Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated encoded with b64
+Returns the SymKey's key encoded with b64
 
 **Returns:** `string`
 
@@ -287,7 +313,7 @@ ___
 
 ▸ **toString**(): `string`
 
-Returns both SymKey#authenticationKey and SymKey#encryptionKey concatenated as a binary string
+Returns the SymKey's key encoded as a binary string
 
 **Returns:** `string`
 
@@ -298,13 +324,13 @@ ___
 
 ▸ **fromB64**(messageKey: *`string`*): [SymKey](#symkey)
 
-Static method to construct a new SymKey from a b64 encoded messageKey
+Static method to construct a new SymKey from a b64 encoded key
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| messageKey | `string` |  b64 encoded messageKey |
+| messageKey | `string` |  b64 encoded key |
 
 **Returns:** [SymKey](#symkey)
 
@@ -315,15 +341,32 @@ ___
 
 ▸ **fromString**(messageKey: *`string`*): [SymKey](#symkey)
 
-Static method to construct a new SymKey from a binary string encoded messageKey
+Static method to construct a new SymKey from a binary string encoded key
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| messageKey | `string` |  binary encoded messageKey |
+| messageKey | `string` |  binary encoded key |
 
 **Returns:** [SymKey](#symkey)
+
+___
+<a id="symkey-generate"></a>
+
+### `<Static>` generate
+
+▸ **generate**(size?: *[SymKeySize](#symkeysize)*): `Promise`<[SymKey](#symkey)>
+
+Static method to generate a new SymKey of a given size asynchronously
+
+**Parameters:**
+
+| Name | Type | Default value |
+| ------ | ------ | ------ |
+| size | [SymKeySize](#symkeysize) | 256 |
+
+**Returns:** `Promise`<[SymKey](#symkey)>
 
 ___
 
@@ -346,7 +389,9 @@ ___
 
 ⊕ **new PublicKey**(key: *`Buffer`*): [PublicKey](#publickey)
 
-PublicKey constructor. Should be given a Buffer containing a DER serialization of the key.
+Constructor for PublicKey class for every public key implementation of SSCrypto.
+It ensures that given buffer is a valid PublicKey, either encoded in an SPKI enveloppe or as a bare public key
+representation using ASN.1 syntax with DER encoding, and sets the [`publicKeyBuffer`](#publickey-publickeybuffer)
 
 *__constructs__*: PublicKey
 
@@ -362,11 +407,14 @@ ___
 
 ## Properties
 
-<a id="publickey-publickey"></a>
+<a id="publickey-publickeybuffer"></a>
 
-### `<Protected>` publicKey
+### `Readonly` publicKeyBuffer
 
-**● publicKey**: *`PublicKey`*
+**● publicKeyBuffer**: *`Buffer`*
+
+A Buffer that contains a representation of the instantiated RSA PublicKey using ASN.1 syntax with DER encoding
+wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
 
 ___
 
@@ -378,27 +426,38 @@ ___
 
 ▸ **encrypt**(clearText: *`Buffer`*, doCRC?: *`boolean`*): `Buffer`
 
-Encrypts a clearText for the Private Key corresponding to this PublicKey.
-
-*__method__*: 
+Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result synchronously
+with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
 
 **Parameters:**
 
 | Name | Type | Default value | Description |
 | ------ | ------ | ------ | ------ |
-| clearText | `Buffer` | - |  \- |
-| `Default value` doCRC | `boolean` | true |  \- |
+| clearText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
 
 **Returns:** `Buffer`
 
 ___
-<a id="publickey-getb64hash"></a>
+<a id="publickey-encryptasync"></a>
 
-###  getB64Hash
+###  encryptAsync
 
-▸ **getB64Hash**(): `string`
+▸ **encryptAsync**(clearText: *`Buffer`*, doCRC?: *`boolean`*): `Promise‹Buffer›`
 
-**Returns:** `string`
+Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result asynchronously
+with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
+
+**Parameters:**
+
+| Name | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| clearText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
+
+**Returns:** `Promise‹Buffer›`
 
 ___
 <a id="publickey-gethash"></a>
@@ -407,6 +466,9 @@ ___
 
 ▸ **getHash**(): `string`
 
+Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
+wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
+
 **Returns:** `string`
 
 ___
@@ -414,17 +476,40 @@ ___
 
 ###  toB64
 
-▸ **toB64**(options?: *`__type`*): `string`
+▸ **toB64**(options?: *`object`*): `string`
 
-Serializes the key to DER format and encodes it in b64.
-
-*__method__*: 
+Exports the instance of an RSA PublicKey in base64 using ASN.1 syntax with DER encoding wrapped in an SPKI
+enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
 
 **Parameters:**
 
-| Name | Type | Default value |
-| ------ | ------ | ------ |
-| `Default value` options | `__type` |  null |
+▪`Default value`  **options**: *object*= null
+
+| Name | Type |
+| ------ | ------ |
+| publicOnly? | `boolean` |
+
+**Returns:** `string`
+
+___
+<a id="publickey-tostring"></a>
+
+###  toString
+
+▸ **toString**(options?: *`object`*): `string`
+
+Exports the instance of an RSA PublicKey in binary string using ASN.1 syntax with DER encoding wrapped in an SPKI
+enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
+
+**`deprecated`** 
+
+**Parameters:**
+
+▪`Default value`  **options**: *object*= null
+
+| Name | Type |
+| ------ | ------ |
+| publicOnly? | `boolean` |
 
 **Returns:** `string`
 
@@ -435,16 +520,40 @@ ___
 
 ▸ **verify**(textToCheckAgainst: *`Buffer`*, signature: *`Buffer`*): `boolean`
 
-Verify that the message has been signed with the Private Key corresponding to this PublicKey.
+Verifies synchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
+uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2 using
+instantiated PublicKey.
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| textToCheckAgainst | `Buffer` |  \- |
-| signature | `Buffer` |  \- |
+| textToCheckAgainst | `Buffer` | - |
+| signature | `Buffer` | - |
 
 **Returns:** `boolean`
+
+___
+<a id="publickey-verifyasync"></a>
+
+###  verifyAsync
+
+▸ **verifyAsync**(textToCheckAgainst: *`Buffer`*, signature: *`Buffer`*): `Promise<boolean>`
+
+Verifies asynchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
+uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2 using
+instantiated PublicKey.
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| textToCheckAgainst | `Buffer` | - |
+| signature | `Buffer` | - |
+
+**Returns:** `Promise<boolean>`
 
 ___
 <a id="publickey-fromb64"></a>
@@ -453,9 +562,8 @@ ___
 
 ▸ **fromB64**(b64DERFormattedPublicKey: *`string`*): [PublicKey](#publickey)
 
-Returns a PublicKey from it's DER base64 serialization.
-
-*__method__*: 
+Instantiates a PublicKey from a base64 representation of an RSA public key using ASN.1 syntax with DER encoding
+per PKCS#1 v2.2 specification and optionally wrapped in an SPKI enveloppe as per RFC 5280.
 
 *__static__*: 
 
@@ -489,7 +597,8 @@ ___
 
 *Overrides [PublicKey](#publickey).[constructor](#publickey-constructor)*
 
-Private Key constructor. Shouldn't be used directly, use `fromB64` or `generate` static methods
+PrivateKey constructor. Should be given a Buffer either encoded in a PKCS#8 enveloppe or as a bare private
+key representation using ASN.1 syntax with DER encoding.
 
 *__constructs__*: PrivateKey
 
@@ -505,20 +614,20 @@ ___
 
 ## Properties
 
-<a id="privatekey-privatekey"></a>
+<a id="privatekey-privatekeybuffer"></a>
 
-### `<Protected>` privateKey
+### `Readonly` privateKeyBuffer
 
-**● privateKey**: *`PrivateKey`*
+**● privateKeyBuffer**: *`Buffer`*
 
 ___
-<a id="privatekey-publickey"></a>
+<a id="privatekey-publickeybuffer"></a>
 
-### `<Protected>` publicKey
+### `Readonly` publicKeyBuffer
 
-**● publicKey**: *`PublicKey`*
+**● publicKeyBuffer**: *`Buffer`*
 
-*Inherited from [PublicKey](#publickey).[publicKey](#publickey-publickey)*
+*Inherited from [PublicKey](#publickey).[publicKeyBuffer](#publickey-publickeybuffer)*
 
 ___
 
@@ -530,16 +639,36 @@ ___
 
 ▸ **decrypt**(cipherText: *`Buffer`*, doCRC?: *`boolean`*): `Buffer`
 
-Deciphers the given message.
+Decrypts the given cipherText synchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the
+instantiated PrivateKey, and optionally checks that the result is prefixed with a valid CRC32.
 
 **Parameters:**
 
 | Name | Type | Default value | Description |
 | ------ | ------ | ------ | ------ |
-| cipherText | `Buffer` | - |  \- |
-| `Default value` doCRC | `boolean` | true |
+| cipherText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
 
 **Returns:** `Buffer`
+
+___
+<a id="privatekey-decryptasync"></a>
+
+###  decryptAsync
+
+▸ **decryptAsync**(cipherText: *`Buffer`*, doCRC?: *`boolean`*): `Promise<Buffer>`
+
+Decrypts the given cipherText asynchronously with RSAES-OAEP-DECRYPT as per PKCS#1 v2.2 section 7.1.2 using the
+instantiated PrivateKey, and optionally checks that the result is prefixed with a valid CRC32.
+
+**Parameters:**
+
+| Name | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| cipherText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="privatekey-encrypt"></a>
@@ -550,29 +679,40 @@ ___
 
 *Inherited from [PublicKey](#publickey).[encrypt](#publickey-encrypt)*
 
-Encrypts a clearText for the Private Key corresponding to this PublicKey.
-
-*__method__*: 
+Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result synchronously
+with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
 
 **Parameters:**
 
 | Name | Type | Default value | Description |
 | ------ | ------ | ------ | ------ |
-| clearText | `Buffer` | - |  \- |
-| `Default value` doCRC | `boolean` | true |  \- |
+| clearText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
 
 **Returns:** `Buffer`
 
 ___
-<a id="privatekey-getb64hash"></a>
+<a id="privatekey-encryptasync"></a>
 
-###  getB64Hash
+###  encryptAsync
 
-▸ **getB64Hash**(): `string`
+▸ **encryptAsync**(clearText: *`Buffer`*, doCRC?: *`boolean`*): `Promise<Buffer>`
 
-*Inherited from [PublicKey](#publickey).[getB64Hash](#publickey-getb64hash)*
+*Inherited from [PublicKey](#publickey).[encryptAsync](#publickey-encryptasync)*
 
-**Returns:** `string`
+Optionally prefixes the cleartext with a CRC32 of the initial clearText then, encrypts the result asynchronously
+with RSAES-OAEP-ENCRYPT with SHA-1 as a Hash function and MGF1-SHA-1 as a mask generation
+function as per PKCS#1 v2.2 section 7.1.1 using the instantiated PublicKey
+
+**Parameters:**
+
+| Name | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| clearText | `Buffer` | - | - |
+| doCRC | `boolean` | true | - |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="privatekey-gethash"></a>
@@ -583,6 +723,9 @@ ___
 
 *Inherited from [PublicKey](#publickey).[getHash](#publickey-gethash)*
 
+Gives a SHA-256 hash encoded in base64 of the RSA PublicKey encoded in base64 using ASN.1 syntax with DER encoding
+wrapped in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification
+
 **Returns:** `string`
 
 ___
@@ -592,15 +735,38 @@ ___
 
 ▸ **sign**(textToSign: *`Buffer`*): `Buffer`
 
-Signs the given message with this Private Key.
+Generates synchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
+encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
+8.1.1 using instantiated PrivateKey.
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| textToSign | `Buffer` |  \- |
+| textToSign | `Buffer` | - |
 
 **Returns:** `Buffer`
+
+___
+<a id="privatekey-signasync"></a>
+
+###  signAsync
+
+▸ **signAsync**(textToSign: *`Buffer`*): `Promise‹Buffer›`
+
+Generates asynchronously a signature for the given textToSign using RSASSA-PSS-Sign which itself uses EMSA-PSS
+encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section
+8.1.1 using instantiated PrivateKey.
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| textToSign | `Buffer` | - |
+
+**Returns:** `Promise‹Buffer›`
 
 ___
 <a id="privatekey-tob64"></a>
@@ -611,9 +777,36 @@ ___
 
 *Overrides [PublicKey](#publickey).[toB64](#publickey-tob64)*
 
-Serializes the key to DER format and encodes it in b64.
+Exports the instance of an RSA PrivateKey in base64 using ASN.1 syntax with DER encoding wrapped in a PKCS#8
+enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
+If publicOnly is specified, it exports the RSA PublicKey in base64 using ASN.1 syntax with DER encoding wrapped
+in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
 
-*__method__*: 
+**Parameters:**
+
+**`Default value` __namedParameters: `object`**
+
+| Name | Type | Default value |
+| ------ | ------ | ------ |
+| publicOnly | `boolean` | false |
+
+**Returns:** `string`
+
+___
+<a id="privatekey-tostring"></a>
+
+###  toString
+
+▸ **toString**(__namedParameters?: *`object`*): `string`
+
+*Overrides [PublicKey](#publickey).[toB64](#publickey-tostring)*
+
+Exports the instance of an RSA PrivateKey in binary string using ASN.1 syntax with DER encoding wrapped in a PKCS#8
+enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
+If publicOnly is specified, it exports the RSA PublicKey in binary string using ASN.1 syntax with DER encoding wrapped
+in an SPKI enveloppe as per RFC 5280, and encoded per PKCS#1 v2.2 specification.
+
+**`deprecated`** 
 
 **Parameters:**
 
@@ -634,16 +827,42 @@ ___
 
 *Inherited from [PublicKey](#publickey).[verify](#publickey-verify)*
 
-Verify that the message has been signed with the Private Key corresponding to this PublicKey.
+Verifies synchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
+uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2 using
+instantiated PublicKey.
 
 **Parameters:**
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| textToCheckAgainst | `Buffer` |  \- |
-| signature | `Buffer` |  \- |
+| textToCheckAgainst | `Buffer` | - |
+| signature | `Buffer` | - |
 
 **Returns:** `boolean`
+
+___
+<a id="privatekey-verifyasync"></a>
+
+###  verifyAsync
+
+▸ **verifyAsync**(textToCheckAgainst: *`Buffer`*, signature: *`Buffer`*): `Promise‹boolean›`
+
+*Inherited from [PublicKey](#publickey).[verify](#publickey-verifyasync)*
+
+Verifies asynchronously that the given signature is valid for textToCheckAgainst using RSASSA-PSS-VERIFY which itself
+uses EMSA-PSS encoding with SHA-256 as the Hash function and MGF1-SHA-256, and a salt length sLen of
+`Math.ceil((keySizeInBits - 1)/8) - digestSizeInBytes - 2` as per PKCS#1 v2.2 section 8.1.2 using
+instantiated PublicKey.
+
+**Parameters:**
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| textToCheckAgainst | `Buffer` | - |
+| signature | `Buffer` | - |
+
+**Returns:** `Promise‹boolean›`
 
 ___
 <a id="privatekey-fromb64"></a>
@@ -654,9 +873,8 @@ ___
 
 *Overrides [PublicKey](#publickey).[fromB64](#publickey-fromb64)*
 
-Returns a PrivateKey from it's DER base64 serialization.
-
-*__method__*: 
+Instantiates a PrivateKey from a base64 ASN.1 syntax with DER encoding wrapped in a PKCS#8
+enveloppe as per RFC 5958, and encoded per PKCS#1 v2.2 specification.
 
 *__static__*: 
 
@@ -675,7 +893,7 @@ ___
 
 ▸ **generate**(size?: *[AsymKeySize](#asymkeysize)*): `Promise`<[PrivateKey](#privatekey)>
 
-Generates a PrivateKey asynchronously
+Generates asynchronously an RSA Private Key Key and instantiates it.
 
 ⚠️ On nodeJS back-end, this is only available if you have node 10.12 or newer
 
@@ -683,9 +901,25 @@ Generates a PrivateKey asynchronously
 
 | Name | Type | Default value |
 | ------ | ------ | ------ |
-| `Default value` size | [AsymKeySize](#asymkeysize) | 4096 |
+| size | [AsymKeySize](#asymkeysize) | 4096 |
 
 **Returns:** `Promise`<[PrivateKey](#privatekey)>
+
+___
+<a id="privatekey-symbolhasinstance"></a>
+
+### `<Static>` [Symbol.hasInstance]
+
+▸ **[Symbol.hasInstance]**(instance: *`unknown`*): boolean
+
+Returns true if instance is PrivateKey.
+See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/hasInstance
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| instance | `unknown` | - |
+
+**Returns:** boolean
 
 ___
 
@@ -699,15 +933,32 @@ ___
 
 ▸ **randomBytes**(length?: *`number`*): `Buffer`
 
-Returns a Buffer of random bytes
+Returns a Buffer of random bytes synchronously
 
 **Parameters:**
 
 | Name | Type | Default value |
 | ------ | ------ | ------ |
-| `Default value` length | `number` | 10 |
+| length | `number` | 10 |
 
 **Returns:** `Buffer`
+
+___
+<a id="randombytesasync"></a>
+
+### randomBytesAsync
+
+▸ **randomBytesAsync**(length?: *`number`*): `Promise<Buffer>`
+
+Returns a Buffer of random bytes asynchronously
+
+**Parameters:**
+
+| Name | Type | Default value |
+| ------ | ------ | ------ |
+| length | `number` | 10 |
+
+**Returns:** `Promise<Buffer>`
 
 ___
 <a id="sha256"></a>
@@ -722,7 +973,7 @@ Returns a Buffer containing the hash of the given data
 
 | Name | Type | Description |
 | ------ | ------ | ------ |
-| data | `Buffer` |  \- |
+| data | `Buffer` | - |
 
 **Returns:** `Buffer`
 

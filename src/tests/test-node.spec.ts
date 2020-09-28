@@ -1,48 +1,38 @@
-import {
-  PrivateKey as PrivateKeyNode,
-  PublicKey as PublicKeyNode,
-  SymKey as SymKeyNode,
-  utils as utilsNode
-} from '../node'
-import {
-  PrivateKey as PrivateKeyForge,
-  PublicKey as PublicKeyForge,
-  SymKey as SymKeyForge,
-  utils as utilsForge
-} from '../forge'
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyCompatibility, testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsCompatibility, testUtilsImplem } from './utils.spec'
 import { randomBytes } from 'crypto'
+import { assertType } from './specUtils.spec'
+import { SSCrypto, node, forge } from '../index'
+
+// Test types
+assertType<SSCrypto>(node)
+assertType<SSCrypto>(forge)
 
 // SymKey
-testSymKeyImplem('node', SymKeyNode, randomBytes)
-testSymKeyImplem('forge', SymKeyForge, randomBytes)
+testSymKeyImplem('node', node.SymKey, randomBytes)
+testSymKeyImplem('forge', forge.SymKey, randomBytes)
 
-testSymKeyCompatibility('node/forge', SymKeyNode, SymKeyForge, randomBytes)
+testSymKeyCompatibility('node/forge', node.SymKey, forge.SymKey, randomBytes)
 
-testSymKeyPerf('node', SymKeyNode, randomBytes)
-testSymKeyPerf('forge', SymKeyForge, randomBytes)
+testSymKeyPerf('node', node.SymKey, randomBytes)
+testSymKeyPerf('forge', forge.SymKey, randomBytes)
 
-// AsymKey
-const AsymKeyNode = { PrivateKey: PrivateKeyNode, PublicKey: PublicKeyNode }
-const AsymKeyForge = { PrivateKey: PrivateKeyForge, PublicKey: PublicKeyForge }
+testAsymKeyImplem('node', node, randomBytes)
+testAsymKeyImplem('forge', forge, randomBytes)
 
-testAsymKeyImplem('node', AsymKeyNode, randomBytes)
-testAsymKeyImplem('forge', AsymKeyForge, randomBytes)
+testAsymKeyCompatibility('node/forge', node, forge)
+testAsymKeyCompatibility('forge/node', forge, node)
 
-testAsymKeyCompatibility('node/forge', AsymKeyNode, AsymKeyForge)
-testAsymKeyCompatibility('forge/node', AsymKeyForge, AsymKeyNode)
-
-testAsymKeyPerf('node', 1024, AsymKeyNode, randomBytes)
-testAsymKeyPerf('node', 2048, AsymKeyNode, randomBytes)
-// testAsymKeyPerf('node', 4096, AsymKeyNode, randomBytes) // this is a bit long, so we disable it by default
-testAsymKeyPerf('forge', 1024, AsymKeyForge, randomBytes)
-testAsymKeyPerf('forge', 2048, AsymKeyForge, randomBytes)
-// testAsymKeyPerf('forge', 4096, AsymKeyForge, randomBytes)
+testAsymKeyPerf('node', 1024, node, randomBytes)
+testAsymKeyPerf('node', 2048, node, randomBytes)
+// testAsymKeyPerf('node', 4096, node, randomBytes) // this is a bit long, so we disable it by default
+testAsymKeyPerf('forge', 1024, forge, randomBytes)
+testAsymKeyPerf('forge', 2048, forge, randomBytes)
+// testAsymKeyPerf('forge', 4096, forge, randomBytes)
 
 // Utils
-testUtilsImplem('node', utilsNode)
-testUtilsImplem('forge', utilsForge)
+testUtilsImplem('node', node.utils)
+testUtilsImplem('forge', forge.utils)
 
-testUtilsCompatibility('node/forge', utilsNode, utilsForge)
+testUtilsCompatibility('node/forge', node.utils, forge.utils)

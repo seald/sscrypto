@@ -1,5 +1,4 @@
 # Config files
-/.babelrc
 /nyc.config.js
 /.gitignore
 /.gitlab-ci.yml
@@ -14,9 +13,11 @@
 # Source files
 /src/**/*
 
+# Maps
+/**/*.map
+
 # Tests
 /**/*spec.js
-/**/*spec.js.map
 /**/*spec.d.ts
 
 # Coverage reports
@@ -38,6 +39,7 @@ Thumbs.db
 # Tests
 karma.conf.local.js
 karma.conf.template.js
+karma.conf.saucelabs.js
 
 # CI
 .npm
@@ -45,4 +47,5 @@ karma.conf.template.js
 /test-results/
 mochaReportConfig.json
 browsers.js
-run-karma-saucelabs.spec.js
+check_readme.sh
+webpack.config.js
