@@ -16,7 +16,8 @@
     "clean-reports": "rm -rf ./coverage ./.nyc_output ./test-results",
     "build": "tsc",
     "coverage": "nyc npm run test-report",
-    "doc": "typedoc --theme markdown --out doc"
+    "doc": "typedoc --theme markdown --out doc",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
