@@ -1,4 +1,4 @@
-## v1.0.1
+## v1.0.1 / v1.0.2
 
 - \[enhancement\] Exporting type for SSCrypto implementation
 - \[enhancement\] Update documentation
