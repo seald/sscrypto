@@ -55,7 +55,7 @@ export const testUtilsImplem = (name: string, { sha256, randomBytes, randomBytes
   })
 }
 
-export const testUtilsCompatibility = (name: string, utils1: Utils, utils2: Utils) => {
+export const testUtilsCompatibility = (name: string, utils1: Utils, utils2: Utils): void => {
   describe(`Utils compatibility ${name}`, () => {
     it('sha256 & randomBytes', () => {
       const rand1 = utils1.randomBytes(1000)
