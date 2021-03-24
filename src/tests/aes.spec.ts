@@ -500,6 +500,19 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           })
         })
 
+        it('Test decryptStream error with bad key', async () => {
+          const input = randomBytes(100)
+          const chunks = splitLength(input, 20)
+
+          const cipher = key.encryptStream()
+          const decipher = badKey.decryptStream()
+
+          await expect(_streamHelper(chunks, cipher, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
+            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
+            return true
+          })
+        })
+
         it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
           const cipheredMessage = await key.encryptAsync(message)
           cipheredMessage[cipheredMessage.length - 1]++

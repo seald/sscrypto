@@ -366,7 +366,7 @@ export abstract class SymKey {
           if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')
           const outputPromise = streamToData(decryptStream)
-            .catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
+            .catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size or incorrectly padded. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
           setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
             decryptStream.end()
             hmacStream.end()
