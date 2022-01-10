@@ -1,0 +1,1 @@
+- `eslint-plugin-import` is installed manually because old npm versions installed in CI docker images do not respect newer package-lock and do not install peer-dependencies
