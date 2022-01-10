@@ -28,8 +28,16 @@ test-node-12:
   image: node:12
   <<: *test-node
 
+test-node-14:
+  image: node:14
+  <<: *test-node
+
+test-node-16:
+  image: node:16
+  <<: *test-node
+
 test-browser:
-  image: nexus-docker.tardis.seald.io/seald/docker-browser-testing:CHROME_83
+  image: nexus-docker.tardis.seald.io/seald/docker-browser-testing:CHROME_94
   stage: test
   script:
     - npm run test-browser
@@ -39,7 +47,7 @@ test-browser:
       cobertura: coverage/*/cobertura-coverage.xml
 
 test-saucelabs:
-  image: node:12
+  image: node:14
   stage: test
   script:
     - npm run test-saucelabs
@@ -50,7 +58,7 @@ test-saucelabs:
   when: manual
 
 .deploy:
-  image: node:12
+  image: node:14
   stage: deploy
   script:
     - npm run build
