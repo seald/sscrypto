@@ -1,5 +1,5 @@
 import { Transform } from 'stream'
-import { getProgress, streamToData, writeInStream } from './commonUtils'
+import { getProgress, streamToData } from './commonUtils'
 
 export type SymKeySize = 128 | 192 | 256
 
@@ -208,15 +208,15 @@ export abstract class SymKey {
           if (!encryptStream) { // we have not gotten the IV yet, gotta wait for it
             const iv = await ivPromise
             getEncryptStream(iv)
-            await writeInStream(hmacStream, iv)
+            hmacStream.write(iv) // no need to check the return value of `write` and wait for drain, as this HMAC stream drains by itself
             this.push(iv)
           }
           const output = encryptStream.read()
           if (output && output.length) {
-            await writeInStream(hmacStream, output)
+            hmacStream.write(output)
             this.push(output)
           }
-          await writeInStream(encryptStream, chunk)
+          encryptStream.write(chunk) // no need to check the return value of `write` and wait for drain, as this Encrypt stream is necessarily drained in full at the next call to this `transform`
           progress(chunk.length, this)
           callback()
         } catch (e) {
@@ -229,7 +229,7 @@ export abstract class SymKey {
           if (!encryptStream) { // no encryptStream means there was no transform called: stream is empty
             const iv = await ivPromise
             getEncryptStream(iv) // we still have to initialize the encryptStream to get valid padding
-            await writeInStream(hmacStream, iv)
+            hmacStream.write(iv)
             this.push(iv)
           }
           const outputPromise = streamToData(encryptStream)
@@ -239,7 +239,7 @@ export abstract class SymKey {
           })
           const output = await outputPromise
           if (output && output.length) {
-            await writeInStream(hmacStream, output)
+            hmacStream.write(output)
             this.push(output)
           }
           setImmediate(() => { // this is done in setImmediate so Promise has time to be awaited
@@ -342,7 +342,7 @@ export abstract class SymKey {
               const iv = buffer.slice(0, 16)
               buffer = buffer.slice(16)
               getDecryptStream(iv)
-              await writeInStream(hmacStream, iv)
+              hmacStream.write(iv) // no need to check the return value of `write` and wait for drain, as this HMAC stream drains by itself
             }
           }
           if (decryptStream) { // we have the IV, can decrypt
@@ -351,8 +351,8 @@ export abstract class SymKey {
               buffer = buffer.slice(-32)
               const output = decryptStream.read()
               if (output && output.length) this.push(output)
-              await writeInStream(decryptStream, cipherText)
-              await writeInStream(hmacStream, cipherText)
+              decryptStream.write(cipherText) // no need to check the return value of `write` and wait for drain, as this Decrypt stream is necessarily drained in full at the next call to this `transform`
+              hmacStream.write(cipherText)
             }
           }
           progress(chunk.length, this)

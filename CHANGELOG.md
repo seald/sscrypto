@@ -1,6 +1,7 @@
 ## v1.1.0
 - \[enhancement\] Update dependencies
 - \[enhancement\] Exporting types for key instances
+- \[bug fix\] Fix `encryptStream` & `decryptStream` in node@16 for large chunks
 
 
 ## v1.0.1 / v1.0.2

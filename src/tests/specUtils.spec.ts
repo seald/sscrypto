@@ -1,9 +1,9 @@
-import { PassThrough, Readable, Transform, Writable } from 'stream'
+import { PassThrough, pipeline, Transform } from 'stream'
 import { promisify } from 'util'
-import pump from 'pump'
 
-const pipelineAsync: (input: Readable, ...streams: (Transform | Writable)[]) => Promise<void> = promisify(pump)
-// TODO: try node's pipeline thing
+const pipelineAsync = promisify(pipeline) // 'stream/promises' only exists in node@16
+
+export const wait = (t: number): Promise<void> => new Promise(resolve => setTimeout(resolve, t))
 
 // Helper function for the tests.
 export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Transform[]): Promise<Buffer> => {
@@ -16,7 +16,7 @@ export const _streamHelper = async (chunks: Buffer[], ...transformStreams: Trans
     output.push(data)
   })
 
-  const finished = pipelineAsync(inputStream, ...transformStreams, outputStream)
+  const finished = pipelineAsync([inputStream, ...transformStreams, outputStream])
 
   chunks.forEach(chunk => inputStream.push(chunk))
   inputStream.end()
@@ -37,6 +37,6 @@ export const splitLength = (input: Buffer, length: number): Buffer[] => {
 
 export type TestHooks = { duringBefore?: () => void, duringAfter?: () => void }
 
-export const assertType = <T>(x: T): void => {
+export const assertType = <T> (x: T): void => {
   // this function is just to assert that the argument type is correct, so nothing to actually do
 }

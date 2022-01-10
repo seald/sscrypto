@@ -676,7 +676,6 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
     })
 
     it('Encrypt/Decrypt stream perf', async function () {
-      this.timeout(60000)
       const totalSize = 10e6
       const input = Buffer.alloc(totalSize).fill(randomBytes(1000))
 
