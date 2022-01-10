@@ -1,6 +1,5 @@
 import forge from 'node-forge'
 import { mixClasses, staticImplements } from '../utils/commonUtils'
-import { BigInteger } from 'jsbn'
 import { AsymKeySize, PrivateKey, PublicKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { sha256 } from './utils'
 
@@ -53,7 +52,7 @@ class PublicKeyForge extends PublicKey {
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
     try {
       // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
-      const saltLength = ((this._publicKey.n as BigInteger).bitLength() / 8) - 32 - 2
+      const saltLength = (this._publicKey.n.bitLength() / 8) - 32 - 2
       const pss = forge.pss.create({
         md: forge.md.sha256.create(),
         mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
@@ -140,7 +139,7 @@ class PrivateKeyForge extends mixClasses(PublicKeyForge, PrivateKey) {
     const md = forge.md.sha256.create()
     md.update(textToSign.toString('binary'))
     // this corresponds to the RSA_PSS_SALTLEN_MAX : https://cryptography.io/en/latest/_modules/cryptography/hazmat/primitives/asymmetric/padding/#calculate_max_pss_salt_length
-    const saltLength = ((this._privateKeyForge.n as BigInteger).bitLength() / 8) - 32 - 2
+    const saltLength = (this._privateKeyForge.n.bitLength() / 8) - 32 - 2
     const pss = forge.pss.create({
       md: forge.md.sha256.create(),
       mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),

@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 const path = require('path')
+const webpack = require('webpack')
 
 module.exports = (env, argv) => {
   return {
@@ -11,6 +12,21 @@ module.exports = (env, argv) => {
     entry: {
       test: path.join(__dirname, 'tests', 'test-browser.spec.js')
     },
+    resolve: {
+      fallback: {
+        util: require.resolve('util/'),
+        stream: require.resolve('stream-browserify'),
+        crypto: false
+      }
+    },
+    plugins: [
+      new webpack.ProvidePlugin({
+        process: require.resolve('process/browser'),
+        Buffer: ['buffer', 'Buffer'],
+        setImmediate: ['timers-browserify', 'setImmediate'],
+        clearImmediate: ['timers-browserify', 'clearImmediate']
+      })
+    ],
     module: {
       rules: [
         {

@@ -1,3 +1,8 @@
+## v1.1.0
+- \[enhancement\] Update dependencies
+- \[enhancement\] Exporting types for key instances
+
+
 ## v1.0.1 / v1.0.2
 
 - \[enhancement\] Exporting type for SSCrypto implementation

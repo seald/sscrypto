@@ -1,1 +1,0 @@
-- typescript 3.9.x produces weird exports of the form `Object.defineProperty(exports, "SymKey", { enumerable: true, get: function () { return aes_1.default; } });` that rollup does not like
