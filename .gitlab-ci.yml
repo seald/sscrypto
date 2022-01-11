@@ -5,6 +5,7 @@ cache:
 
 before_script:
   - npm ci --cache .npm --prefer-offline
+  - echo "//registry.npmjs.org/:_authToken=${NPM_REGISTRY_TOKEN}" > .npmrc
 
 .test-node: &test-node
   stage: test
@@ -57,11 +58,12 @@ test-saucelabs:
       cobertura: coverage/*/cobertura-coverage.xml
   when: manual
 
-.deploy:
+deploy:
   image: node:14
   stage: deploy
   script:
-    - npm run build
-    - npm publish
+    - npm run prepublishOnly
+    - if (npx semver $CI_COMMIT_TAG --range '>0.0.0'); then NPM_TAG=latest; else NPM_TAG=beta; fi; # Using the fact that semver by default considers that pre-releases do not respect stable ranges
+    - npm publish --tag=$NPM_TAG --access public
   only:
     - tags

@@ -68,6 +68,7 @@
     "nyc": "^15.1.0",
     "process": "^0.11.10",
     "sauce-connect-launcher": "^1.3.2",
+    "semver": "^7.3.5",
     "source-map-loader": "^3.0.1",
     "source-map-support": "^0.5.21",
     "standard": "^16.0.4",
