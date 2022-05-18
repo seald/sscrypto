@@ -1,12 +1,8 @@
 /* eslint-env mocha */
 
-import chai from 'chai'
-import chaiAsPromised from 'chai-as-promised'
 import { TestHooks } from './specUtils.spec'
 import { Utils } from '../index'
-
-chai.use(chaiAsPromised)
-const { assert } = chai
+import assert from 'assert'
 
 const knownHashes: { [key: string]: string } = {
   test: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
@@ -66,8 +62,8 @@ export const testUtilsCompatibility = (name: string, utils1: Utils, utils2: Util
       const sha21 = utils2.sha256(rand1)
       const sha22 = utils2.sha256(rand2)
 
-      assert.isOk(sha21.equals(sha11))
-      assert.isOk(sha22.equals(sha12))
+      assert.ok(sha21.equals(sha11))
+      assert.ok(sha22.equals(sha12))
     })
   })
 }

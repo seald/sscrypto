@@ -14,6 +14,7 @@ module.exports = (env, argv) => {
     },
     resolve: {
       fallback: {
+        assert: require.resolve('assert/'),
         util: require.resolve('util/'),
         stream: require.resolve('stream-browserify'),
         crypto: false

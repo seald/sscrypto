@@ -1,12 +1,8 @@
 /* eslint-env mocha */
 
-import chai from 'chai'
-import chaiAsPromised from 'chai-as-promised'
 import { _streamHelper, splitLength, TestHooks } from './specUtils.spec'
 import { SymKey, SymKeyConstructor, SymKeySize } from '../utils/aes'
-
-chai.use(chaiAsPromised)
-const { assert, expect } = chai
+import assert from 'assert'
 
 export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer, { duringBefore, duringAfter }: TestHooks = {}): void => {
   describe(`AES ${name}`, () => {
@@ -24,28 +20,26 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
 
     describe(`AES ${name} - General`, () => {
       it('Try creating a key with an invalid type in constructor', () => {
-        // @ts-ignore : ts-expect-error is not supported yet
-        // @ts-expect-error
-        expect(() => new SymKeyClass({ thisIs: 'NotAValidType' })).to.throw(Error).and.satisfy((error: Error) => {
-          assert.include(error.message, 'INVALID_ARG')
-          return true
-        })
+        assert.throws(
+          // @ts-expect-error
+          () => new SymKeyClass({ thisIs: 'NotAValidType' }),
+          /INVALID_ARG/
+        )
       })
 
       it('Try creating a key with an invalid size', () => {
-        // @ts-ignore : ts-expect-error is not supported yet
-        // @ts-expect-error
-        expect(() => new SymKeyClass(42)).to.throw(Error).and.satisfy((error: Error) => {
-          assert.include(error.message, 'INVALID_ARG')
-          return true
-        })
+        assert.throws(
+          // @ts-expect-error
+          () => new SymKeyClass({ thisIs: 42 }),
+          /INVALID_ARG/
+        )
       })
 
       it('Try creating a key with an invalid size buffer', () => {
-        expect(() => new SymKeyClass(Buffer.from('zkejglzeigh', 'binary'))).to.throw(Error).and.satisfy((error: Error) => {
-          assert.include(error.message, 'INVALID_ARG')
-          return true
-        })
+        assert.throws(
+          () => new SymKeyClass(Buffer.from('zkejglzeigh', 'binary')),
+          /INVALID_ARG/
+        )
       })
     })
 
@@ -57,72 +51,72 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
         it('generation', async () => {
           key = await SymKeyClass.generate(size)
           badKey = new SymKeyClass(size) // deprecated usage, but we still have to test it
-          assert.instanceOf(key, SymKeyClass)
-          assert.instanceOf(badKey, SymKeyClass)
-          assert.instanceOf(key, SymKey)
-          assert.instanceOf(badKey, SymKey)
+          assert.ok(key instanceof SymKeyClass)
+          assert.ok(badKey instanceof SymKeyClass)
+          assert.ok(key instanceof SymKey)
+          assert.ok(badKey instanceof SymKey)
           assert.strictEqual(key.keySize, size)
           assert.strictEqual(badKey.keySize, size)
         })
 
         it('Try deciphering sync a cipherText with invalid HMAC', () => {
           const cipheredMessage = key.encrypt(message)
-          expect(() => key.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          assert.throws(
+            () => key.decrypt(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering async a cipherText with invalid HMAC', async () => {
           const cipheredMessage = await key.encryptAsync(message)
-          await expect(key.decryptAsync(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          await assert.rejects(
+            key.decryptAsync(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering sync a short invalid cipherText', () => {
           const cipheredMessage = randomBytes(10)
-          expect(() => key.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          assert.throws(
+            () => key.decrypt(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering async a short invalid cipherText', async () => {
           const cipheredMessage = randomBytes(10)
-          await expect(key.decryptAsync(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          await assert.rejects(
+            key.decryptAsync(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering sync a long invalid cipherText', () => {
           const cipheredMessage = randomBytes(100)
-          expect(() => key.decrypt(cipheredMessage.slice(0, -1))).to.throw(Error).and.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          assert.throws(
+            () => key.decrypt(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering async a long invalid cipherText', async () => {
           const cipheredMessage = randomBytes(100)
-          await expect(key.decryptAsync(cipheredMessage.slice(0, -1))).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          await assert.rejects(
+            key.decryptAsync(cipheredMessage.slice(0, -1)),
+            /INVALID_HMAC/
+          )
         })
 
         it('cipher & decipher sync', () => {
           const cipheredMessage = key.encrypt(message)
           const decipheredMessage = key.decrypt(cipheredMessage)
-          assert.isTrue(message.equals(decipheredMessage))
+          assert.ok(message.equals(decipheredMessage))
         })
 
         it('cipher & decipher async', async () => {
           const cipheredMessage = await key.encryptAsync(message)
           const decipheredMessage = await key.decryptAsync(cipheredMessage)
-          assert.isTrue(message.equals(decipheredMessage))
+          assert.ok(message.equals(decipheredMessage))
         })
 
         it('cipher & decipher sync UTF8', () => {
@@ -140,29 +134,29 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
         it('cipher & decipher sync Binary', () => {
           const cipheredMessage = key.encrypt(messageBinary)
           const decipheredMessage = key.decrypt(cipheredMessage)
-          assert.isTrue(messageBinary.equals(decipheredMessage))
+          assert.ok(messageBinary.equals(decipheredMessage))
         })
 
         it('cipher & decipher async Binary', async () => {
           const cipheredMessage = await key.encryptAsync(messageBinary)
           const decipheredMessage = await key.decryptAsync(cipheredMessage)
-          assert.isTrue(messageBinary.equals(decipheredMessage))
+          assert.ok(messageBinary.equals(decipheredMessage))
         })
 
         it('fail with bad key sync', () => {
           const cipheredMessage = key.encrypt(message)
-          expect(() => badKey.decrypt(cipheredMessage)).to.throw(Error).and.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          assert.throws(
+            () => badKey.decrypt(cipheredMessage),
+            /INVALID_HMAC/
+          )
         })
 
         it('fail with bad key async', async () => {
           const cipheredMessage = await key.encryptAsync(message)
-          await expect(badKey.decryptAsync(cipheredMessage)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          await assert.rejects(
+            badKey.decryptAsync(cipheredMessage),
+            /INVALID_HMAC/
+          )
         })
 
         it('serialize and import key async', async () => {
@@ -170,7 +164,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const exportedKey = key.toB64()
           const importedKey = SymKeyClass.fromB64(exportedKey)
           const decipheredMessage = await importedKey.decryptAsync(cipheredMessage)
-          assert.isTrue(message.equals(decipheredMessage))
+          assert.ok(message.equals(decipheredMessage))
         })
 
         it('serialize and import key with toString', async () => {
@@ -178,19 +172,19 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const exportedKey = key.toString()
           const importedKey = new SymKeyClass(Buffer.from(exportedKey, 'binary'))
           const decipheredMessage = await importedKey.decryptAsync(cipheredMessage)
-          assert.isTrue(message.equals(decipheredMessage))
+          assert.ok(message.equals(decipheredMessage))
         })
 
         it('cipher sync & decipher async', async () => {
           const cipheredMessage = key.encrypt(messageBinary)
           const decipheredMessage = await key.decryptAsync(cipheredMessage)
-          assert.isTrue(messageBinary.equals(decipheredMessage))
+          assert.ok(messageBinary.equals(decipheredMessage))
         })
 
         it('cipher async & decipher sync', async () => {
           const cipheredMessage = await key.encryptAsync(messageBinary)
           const decipheredMessage = key.decrypt(cipheredMessage)
-          assert.isTrue(messageBinary.equals(decipheredMessage))
+          assert.ok(messageBinary.equals(decipheredMessage))
         })
 
         it('rawEncrypt & rawDecrypt, sync, async & stream', async () => {
@@ -202,8 +196,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(input, 20),
             key.rawEncryptStream_(iv)
           )
-          assert.isTrue(cipherSync.equals(cipherAsync))
-          assert.isTrue(cipherSync.equals(cipherStream))
+          assert.ok(cipherSync.equals(cipherAsync))
+          assert.ok(cipherSync.equals(cipherStream))
 
           const decipherSync = key.rawDecryptSync_(cipherSync, iv)
           const decipherAsync = await key.rawDecryptAsync_(cipherSync, iv)
@@ -211,9 +205,9 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(cipherSync, 20),
             key.rawDecryptStream_(iv)
           )
-          assert.isTrue(input.equals(decipherSync))
-          assert.isTrue(input.equals(decipherAsync))
-          assert.isTrue(input.equals(decipherStream))
+          assert.ok(input.equals(decipherSync))
+          assert.ok(input.equals(decipherAsync))
+          assert.ok(input.equals(decipherStream))
         })
 
         it('rawEncrypt & rawDecrypt, sync, async & stream empty', async () => {
@@ -225,8 +219,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(input, 20),
             key.rawEncryptStream_(iv)
           )
-          assert.isTrue(cipherSync.equals(cipherAsync))
-          assert.isTrue(cipherSync.equals(cipherStream))
+          assert.ok(cipherSync.equals(cipherAsync))
+          assert.ok(cipherSync.equals(cipherStream))
 
           const decipherSync = key.rawDecryptSync_(cipherSync, iv)
           const decipherAsync = await key.rawDecryptAsync_(cipherSync, iv)
@@ -234,9 +228,9 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(cipherSync, 20),
             key.rawDecryptStream_(iv)
           )
-          assert.isTrue(input.equals(decipherSync))
-          assert.isTrue(input.equals(decipherAsync))
-          assert.isTrue(input.equals(decipherStream))
+          assert.ok(input.equals(decipherSync))
+          assert.ok(input.equals(decipherAsync))
+          assert.ok(input.equals(decipherStream))
         })
 
         it('rawEncryptStream & rawDecryptStream piped', async () => {
@@ -247,7 +241,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             key.rawEncryptStream_(iv),
             key.rawDecryptStream_(iv)
           )
-          assert.isTrue(input.equals(output))
+          assert.ok(input.equals(output))
         })
 
         it('HMAC sync, async & stream', async () => {
@@ -258,8 +252,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(input, 20),
             key.HMACStream_()
           )
-          assert.isTrue(hmacSync.equals(hmacAsync))
-          assert.isTrue(hmacSync.equals(hmacStream))
+          assert.ok(hmacSync.equals(hmacAsync))
+          assert.ok(hmacSync.equals(hmacStream))
         })
 
         it('HMAC sync, async & stream empty', async () => {
@@ -270,8 +264,8 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             splitLength(input, 20),
             key.HMACStream_()
           )
-          assert.isTrue(hmacSync.equals(hmacAsync))
-          assert.isTrue(hmacSync.equals(hmacStream))
+          assert.ok(hmacSync.equals(hmacAsync))
+          assert.ok(hmacSync.equals(hmacStream))
         })
 
         it('cipher stream & decipher sync', async () => {
@@ -281,7 +275,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue(key.decrypt(output).equals(input))
+          assert.ok(key.decrypt(output).equals(input))
         })
 
         it('cipher stream & decipher async', async () => {
@@ -291,7 +285,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue((await key.decryptAsync(output)).equals(input))
+          assert.ok((await key.decryptAsync(output)).equals(input))
         })
 
         it('cipher short stream (single chunk) & decipher sync', async () => {
@@ -301,7 +295,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue(key.decrypt(output).equals(input))
+          assert.ok(key.decrypt(output).equals(input))
         })
 
         it('cipher short stream (single chunk) & decipher async', async () => {
@@ -311,7 +305,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue((await key.decryptAsync(output)).equals(input))
+          assert.ok((await key.decryptAsync(output)).equals(input))
         })
 
         it('cipher empty stream & decipher sync', async () => {
@@ -321,7 +315,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue(key.decrypt(output).equals(input))
+          assert.ok(key.decrypt(output).equals(input))
         })
 
         it('cipher empty stream & decipher async', async () => {
@@ -331,7 +325,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue((await key.decryptAsync(output)).equals(input))
+          assert.ok((await key.decryptAsync(output)).equals(input))
         })
 
         it('cipher stream with small blocks & decipher sync', async () => {
@@ -341,7 +335,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue(key.decrypt(output).equals(input))
+          assert.ok(key.decrypt(output).equals(input))
         })
 
         it('cipher stream with small blocks & decipher async', async () => {
@@ -351,7 +345,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
 
           const output = await _streamHelper(chunks, cipher)
-          assert.isTrue((await key.decryptAsync(output)).equals(input))
+          assert.ok((await key.decryptAsync(output)).equals(input))
         })
 
         it('cipher sync & decipher stream', async () => {
@@ -361,7 +355,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher async & decipher stream', async () => {
@@ -371,7 +365,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher sync & decipher short stream (single chunk)', async () => {
@@ -381,7 +375,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher async & decipher short stream (single chunk)', async () => {
@@ -391,7 +385,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher sync empty & decipher stream', async () => {
@@ -401,7 +395,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher async empty & decipher stream', async () => {
@@ -411,7 +405,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher sync & decipher stream with small blocks', async () => {
@@ -421,7 +415,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher async & decipher stream with small blocks', async () => {
@@ -431,7 +425,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(cipherChunks, decipher)
-          assert.isTrue(output.equals(clearText))
+          assert.ok(output.equals(clearText))
         })
 
         it('cipher stream & decipher stream', async () => {
@@ -442,7 +436,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const decipher = key.decryptStream()
 
           const output = await _streamHelper(chunks, cipher, decipher)
-          assert.isTrue(output.equals(input))
+          assert.ok(output.equals(input))
         })
 
         it('Test encryptStream cancel and progress', async () => {
@@ -464,7 +458,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           })
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
-          assert.include(error.message, 'STREAM_CANCELED')
+          assert.ok(error.message.includes('STREAM_CANCELED'))
         })
 
         it('Test decryptStream cancel and progress', async () => {
@@ -487,17 +481,17 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           })
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
-          assert.include(error.message, 'STREAM_CANCELED')
+          assert.ok(error.message.includes('STREAM_CANCELED'))
         })
 
         it('Test decryptStream error on bad data', async () => {
           const input = randomBytes(100)
           const chunks = splitLength(input, 20)
           const decipher = key.decryptStream()
-          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(chunks, decipher),
+            /INVALID_HMAC|INVALID_STREAM/ // error depends on the implementation :/
+          )
         })
 
         it('Test decryptStream error with bad key', async () => {
@@ -507,10 +501,10 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const cipher = key.encryptStream()
           const decipher = badKey.decryptStream()
 
-          await expect(_streamHelper(chunks, cipher, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(chunks, cipher, decipher),
+            /INVALID_HMAC|INVALID_STREAM/ // error depends on the implementation :/
+          )
         })
 
         it('Try deciphering a stream with a cipherText with invalid HMAC', async () => {
@@ -518,37 +512,37 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           cipheredMessage[cipheredMessage.length - 1]++
           const cipherChunks = splitLength(cipheredMessage, 15)
           const decipher = key.decryptStream()
-          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_HMAC')
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(cipherChunks, decipher),
+            /INVALID_HMAC/
+          )
         })
 
         it('Try deciphering empty stream ', async () => {
           const cipherChunks = [Buffer.alloc(0)]
           const decipher = key.decryptStream()
-          await expect(_streamHelper(cipherChunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_STREAM')
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(cipherChunks, decipher),
+            /INVALID_STREAM/
+          )
         })
 
         it('Test decryptStream error on short stream', async () => {
           const chunks = [randomBytes(10)]
           const decipher = key.decryptStream()
-          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.include(error.message, 'INVALID_STREAM')
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(chunks, decipher),
+            /INVALID_STREAM/
+          )
         })
 
         it('Test decryptStream error on stream of 48b', async () => {
           const chunks = [randomBytes(48)]
           const decipher = key.decryptStream()
-          await expect(_streamHelper(chunks, decipher)).to.be.rejectedWith(Error).and.eventually.satisfy((error: Error) => {
-            assert.match(error.message, /INVALID_HMAC|INVALID_STREAM/) // error depends on the implementation :/
-            return true
-          })
+          await assert.rejects(
+            _streamHelper(chunks, decipher),
+            /INVALID_HMAC|INVALID_STREAM/ // error depends on the implementation :/
+          )
         })
       })
     }
@@ -570,25 +564,25 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
     it('cipher 1 & decipher 2 sync', () => {
       const cipheredMessage = key1.encrypt(message)
       const decipheredMessage = key2.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
+      assert.ok(message.equals(decipheredMessage))
     })
 
     it('cipher 1 & decipher 2 async', async () => {
       const cipheredMessage = await key1.encryptAsync(message)
       const decipheredMessage = await key2.decryptAsync(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
+      assert.ok(message.equals(decipheredMessage))
     })
 
     it('cipher 2 & decipher 1 sync', () => {
       const cipheredMessage = key2.encrypt(message)
       const decipheredMessage = key1.decrypt(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
+      assert.ok(message.equals(decipheredMessage))
     })
 
     it('cipher 2 & decipher 1 async', async () => {
       const cipheredMessage = await key2.encryptAsync(message)
       const decipheredMessage = await key1.decryptAsync(cipheredMessage)
-      assert.isTrue(message.equals(decipheredMessage))
+      assert.ok(message.equals(decipheredMessage))
     })
 
     it('cipher stream 1 & decipher stream 2', () => {
@@ -600,7 +594,7 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
 
       return _streamHelper(chunks, cipher, decipher)
         .then(output => {
-          assert.isTrue(output.equals(input))
+          assert.ok(output.equals(input))
         })
     })
 
@@ -613,7 +607,7 @@ export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstr
 
       return _streamHelper(chunks, cipher, decipher)
         .then(output => {
-          assert.isTrue(output.equals(input))
+          assert.ok(output.equals(input))
         })
     })
   })
@@ -648,7 +642,7 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       for (let i = 0; i < nInput; i++) {
         const cipherText = keys[i].encrypt(inputs[i])
         const clearText = keys[i].decrypt(cipherText)
-        assert.isOk(clearText.equals(inputs[i]))
+        assert.ok(clearText.equals(inputs[i]))
       }
       const end = Date.now()
       const delta = (end - start) / 1000
@@ -668,7 +662,7 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       for (let i = 0; i < nInput; i++) {
         const cipherText = await keys[i].encryptAsync(inputs[i])
         const clearText = await keys[i].decryptAsync(cipherText)
-        assert.isOk(clearText.equals(inputs[i]))
+        assert.ok(clearText.equals(inputs[i]))
       }
       const end = Date.now()
       const delta = (end - start) / 1000
@@ -695,7 +689,7 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
       console.log(`Finished decrypting in ${deltaDecrypt.toFixed(1)}s:\n${(totalSize / deltaDecrypt / 1000000).toFixed(1)} MB/s`)
 
-      assert.isOk(decrypted.equals(input))
+      assert.ok(decrypted.equals(input))
     })
   })
 }
