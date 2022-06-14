@@ -19,7 +19,9 @@ before_script:
       - coverage/
     reports:
       junit: test-results/*.xml
-      cobertura: coverage/*/cobertura-coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/*/cobertura-coverage.xml
 
 test-node-10:
   image: node:10
@@ -45,7 +47,9 @@ test-browser:
   artifacts:
     reports:
       junit: test-results/*.xml
-      cobertura: coverage/*/cobertura-coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/*/cobertura-coverage.xml
 
 test-saucelabs:
   image: node:14
@@ -55,7 +59,9 @@ test-saucelabs:
   artifacts:
     reports:
       junit: test-results/*.xml
-      cobertura: coverage/*/cobertura-coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/*/cobertura-coverage.xml
   when: manual
 
 deploy:
