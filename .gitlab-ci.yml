@@ -30,7 +30,7 @@ test-node-10:
     # installing mocha@9, as mocha@10 is not compatible with node@10
     - npm install mocha@9.2.2
     # bypassing pretest : eslint is not compatible with node@10 anymore
-    - npx nyc npm run test-report mocha --require ts-node/register --require source-map-support/register --timeout 30000 src/tests/test-node.spec.ts --reporter mocha-multi-reporters --reporter-options configFile=./mochaReportConfig.json --forbid-only
+    - npx nyc mocha --require ts-node/register --require source-map-support/register --timeout 30000 src/tests/test-node.spec.ts --reporter mocha-multi-reporters --reporter-options configFile=./mochaReportConfig.json --forbid-only
 
 test-node-12:
   image: node:12
