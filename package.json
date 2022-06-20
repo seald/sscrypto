@@ -15,6 +15,8 @@
     "prebuild": "rm -rf ./forge ./node ./utils ./tests ./webcrypto index.js index.d.ts",
     "clean-reports": "rm -rf ./coverage ./.nyc_output ./test-results",
     "build": "tsc",
+    "prebuild-rn": "npm run build",
+    "build-rn": "webpack --progress --config webpack-rn.config.js",
     "coverage": "nyc npm run test-report",
     "doc": "typedoc --theme markdown --out doc",
     "prepublishOnly": "npm run build"
@@ -27,13 +29,16 @@
   "license": "MIT",
   "dependencies": {
     "asn1.js": "^5.4.1",
-    "crc-32": "^1.2.2"
+    "crc-32": "^1.2.2",
+    "jsbn": "^1.1.0",
+    "react-native-modpow": "^1.1.0"
   },
   "peerDependencies": {
     "node-forge": "^1.2.0"
   },
   "devDependencies": {
     "@jsdevtools/coverage-istanbul-loader": "^3.0.5",
+    "@types/jsbn": "^1.2.30",
     "@types/mocha": "^9.1.1",
     "@types/node": "^18.0.0",
     "@types/node-forge": "^1.0.2",
@@ -43,6 +48,7 @@
     "@typescript-eslint/parser": "^5.28.0",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
+    "constants-browserify": "^1.0.0",
     "eslint": "^8.18.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.26.0",
@@ -62,7 +68,12 @@
     "mocha-multi-reporters": "^1.5.1",
     "node-forge": "^1.3.1",
     "nyc": "^15.1.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
     "process": "^0.11.10",
+    "react-native": "^0.68.2",
+    "react-native-rsa-native": "^2.0.5",
+    "react-native-url-polyfill": "^1.3.0",
     "sauce-connect-launcher": "^1.3.2",
     "semver": "^7.3.7",
     "source-map-loader": "^4.0.0",
@@ -74,6 +85,7 @@
     "typedoc": "^0.22.17",
     "typedoc-plugin-markdown": "^3.12.1",
     "typescript": "4.7.4",
+    "url": "^0.11.0",
     "util": "^0.12.4",
     "webpack": "^5.73.0",
     "webpack-cli": "^4.10.0",
