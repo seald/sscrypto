@@ -2,7 +2,7 @@ import { mixClasses, staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { PrivateKey as PrivateKeyForge, PublicKey as PublicKeyForge } from '../forge/rsa'
 import { getEngine, isWebCryptoAvailable } from './utils'
-import forge from 'node-forge'
+import * as forge from 'node-forge'
 
 /**
  * Implementation of PublicKey using Subtle Crypto (https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) if

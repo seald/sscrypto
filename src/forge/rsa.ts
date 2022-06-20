@@ -1,4 +1,4 @@
-import forge from 'node-forge'
+import * as forge from 'node-forge'
 import { mixClasses, staticImplements } from '../utils/commonUtils'
 import { AsymKeySize, PrivateKey, PublicKey, PrivateKeyConstructor, PublicKeyConstructor } from '../utils/rsa'
 import { sha256 } from './utils'
@@ -56,7 +56,7 @@ class PublicKeyForge extends PublicKey {
       const pss = forge.pss.create({
         md: forge.md.sha256.create(),
         mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
-        saltLength: saltLength
+        saltLength
       })
       return this._publicKey.verify(
         sha256(textToCheckAgainst).toString('binary'),
@@ -143,7 +143,7 @@ class PrivateKeyForge extends mixClasses(PublicKeyForge, PrivateKey) {
     const pss = forge.pss.create({
       md: forge.md.sha256.create(),
       mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
-      saltLength: saltLength
+      saltLength
     })
     return Buffer.from(this._privateKeyForge.sign(md, pss), 'binary')
   }

@@ -1,3 +1,8 @@
+## v1.1.1
+- \[enhancement\] Update dependencies
+- \[bug fix\] Fix import in certain typescript environments
+
+
 ## v1.1.0
 - \[enhancement\] Update dependencies
 - \[enhancement\] Exporting types for key instances

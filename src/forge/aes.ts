@@ -1,4 +1,4 @@
-import forge from 'node-forge'
+import * as forge from 'node-forge'
 import { staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor } from '../utils/aes'
