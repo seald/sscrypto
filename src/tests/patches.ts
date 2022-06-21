@@ -1,6 +1,3 @@
-// RN URL has a lots of know issues. So we have to polyfill it.
-import 'react-native-url-polyfill/auto' // we have to do this before forge
-
 import type { BigInteger } from 'jsbn'
 import Forge from 'node-forge'
 import modPow from 'react-native-modpow'
