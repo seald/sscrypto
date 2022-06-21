@@ -15,7 +15,8 @@
     "react-native": "0.68.2",
     "react-native-get-random-values": "^1.8.0",
     "react-native-modpow": "^1.1.0",
-    "react-native-rsa-native": "^2.0.5"
+    "react-native-rsa-native": "^2.0.5",
+    "react-native-url-polyfill": "^1.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

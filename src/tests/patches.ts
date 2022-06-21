@@ -8,7 +8,6 @@ import { NativeModules } from 'react-native'
 
 const isChromeDebugger = (): boolean => {
   // https://github.com/facebook/react-native/commit/417e191a1cfd6a049d1d4b0a511f87aa7f176082
-  // @ts-ignore
   return typeof global.nativeCallSyncHook === 'undefined'
 }
 
@@ -40,10 +39,8 @@ const isChromeDebugger = (): boolean => {
 const getRandomBase64 = (byteLength: number) => {
   if (NativeModules.RNGetRandomValues) {
     return NativeModules.RNGetRandomValues.getRandomBase64(byteLength)
-  } else if (NativeModules.ExpoRandom) {
-    return NativeModules.ExpoRandom.getRandomBase64String(byteLength)
   } else {
-    throw new Error('Please install react-native-get-random-values or expo-random')
+    throw new Error('Please install react-native-get-random-values')
   }
 }
 

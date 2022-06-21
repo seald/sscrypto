@@ -17,7 +17,7 @@ module.exports = () => {
     entry: {
       testRn: path.join(__dirname, 'tests', 'test-rn.spec.js')
     },
-    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'expo-random', 'react-native/Libraries/Utilities/PolyfillFunctions'],
+    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'react-native-url-polyfill/auto', 'react-native/Libraries/Utilities/PolyfillFunctions'],
     output: {
       library: {
         type: 'commonjs2',
@@ -29,10 +29,12 @@ module.exports = () => {
     devtool: 'source-map',
     resolve: {
       alias: {
+        // TODO: probably removable ?
         punycode: require.resolve('punycode/') // To force using the CJS version. We keep punycode@^2.1.1 in devDependencies to ensure the latest version is bundled (url/ formally depends on a the v1.x.x, but the v2 is non-breaking in this environment).
       },
       aliasFields: ['react-native', 'browser', 'main'],
       fallback: {
+        // TODO: check which dependencies are removable
         assert: require.resolve('assert/'),
         fs: false,
         path: require.resolve('path-browserify'),

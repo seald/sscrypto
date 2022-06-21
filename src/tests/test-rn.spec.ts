@@ -4,7 +4,7 @@ import { testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsImplem } from './utils.spec'
 import { randomBytes } from '../forge/utils'
 import { assertType } from './specUtils.spec'
-import { SSCrypto } from '../index'
+import type { SSCrypto } from '../index'
 import * as SSCryptoRN from '../forge'
 
 // Test types
