@@ -3,8 +3,6 @@ const path = require('path')
 const webpack = require('webpack')
 
 const basename = s => path.basename(s, path.extname(s))
-// react, modpow, async-storage => Peer dependencies, don't bundle it !
-// react-native/[...]/PolyfillFunctions => Direct import from our polyfill of URL.
 module.exports = () => {
   return {
     mode: 'production',
@@ -17,7 +15,7 @@ module.exports = () => {
     entry: {
       testRn: path.join(__dirname, 'tests', 'test-rn.spec.js')
     },
-    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'react-native/Libraries/Utilities/PolyfillFunctions'],
+    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native'],
     output: {
       library: {
         type: 'commonjs2',
