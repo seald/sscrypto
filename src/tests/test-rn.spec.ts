@@ -5,7 +5,7 @@ import { testUtilsImplem } from './utils.spec'
 import { randomBytes } from '../forge/utils'
 import { assertType } from './specUtils.spec'
 import type { SSCrypto } from '../index'
-import * as SSCryptoRN from '../forge'
+import * as SSCryptoRN from '../react-native'
 
 // Test types
 assertType<SSCrypto>(SSCryptoRN)

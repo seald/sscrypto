@@ -242,7 +242,7 @@ export class PrivateKey extends PublicKey {
    */
   static constructor_ (key: Buffer): { publicKeyBuffer: Buffer, privateKeyBuffer: Buffer } {
     // not an actual constructor, because PrivateKey is going to be parasitically inherited, so real constructor will not be called
-    // for the same reason, this cannot be actaually `protected`
+    // for the same reason, this cannot be actually `protected`
     if (!Buffer.isBuffer(key)) throw new Error(`INVALID_KEY : Type of ${key} is ${typeof key}`)
     let n, publicKeyBuffer, privateKeyBuffer
     try {
