@@ -1,6 +1,16 @@
-import { NativeModules } from 'react-native'
 import { randomBytes as randomBytesForge, randomBytesAsync as randomBytesAsyncForge } from '../forge/utils'
-export { sha256 } from '../forge/utils'
+import Cryptopp from 'react-native-cryptopp'
+import { sha256 as sha256Forge } from '../forge/utils'
+
+export const bufferToArrayBuffer = (buffer: Buffer|Uint8Array): ArrayBuffer => {
+  if (buffer.byteOffset === 0 && buffer.buffer.byteLength === buffer.length) return buffer.buffer
+  else return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+}
+
+const sha256RN = (data: Buffer): Buffer => {
+  // @ts-ignore
+  return Buffer.from(Cryptopp.hash.SHA2(bufferToArrayBuffer(data), '256'), 'hex')
+}
 
 /* eslint-disable no-var,@typescript-eslint/ban-types */
 declare global {
@@ -13,15 +23,7 @@ const isChromeDebugger = (): boolean => {
   return typeof global.nativeCallSyncHook === 'undefined'
 }
 
-const getRandomBase64 = (byteLength: number) => {
-  if (NativeModules.RNGetRandomValues) {
-    return NativeModules.RNGetRandomValues.getRandomBase64(byteLength)
-  } else {
-    throw new Error('Please install react-native-get-random-values')
-  }
-}
-
-const randomBytesRN = (length = 10): Buffer => Buffer.from(getRandomBase64(length), 'base64')
+const randomBytesRN = (length = 10): Buffer => Buffer.from(Cryptopp.utils.randomBytes(length))
 
 const randomBytesAsyncRN = async (length = 10): Promise<Buffer> => Promise.resolve(randomBytesRN(length))
 
@@ -38,3 +40,10 @@ export const randomBytes = isChromeDebugger() ? randomBytesForge : randomBytesRN
  * @return {Promise<Buffer>}
  */
 export const randomBytesAsync = isChromeDebugger() ? randomBytesAsyncForge : randomBytesAsyncRN
+
+/**
+ * Returns a Buffer containing the hash of the given data
+ * @param {Buffer} data
+ * @return {Buffer}
+ */
+export const sha256 = isChromeDebugger() ? sha256Forge : sha256RN

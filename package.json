@@ -67,6 +67,7 @@
     "nyc": "^15.1.0",
     "process": "^0.11.10",
     "react-native": "^0.68.2",
+    "react-native-cryptopp": "^0.2.0",
     "react-native-modpow": "^1.1.0",
     "react-native-rsa-native": "^2.0.5",
     "sauce-connect-launcher": "^1.3.2",

@@ -1,17 +1,19 @@
 import './patches'
-import { testSymKeyImplem, testSymKeyPerf } from './aes.spec'
+import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsImplem } from './utils.spec'
-import { randomBytes } from '../forge/utils'
+import { randomBytes } from '../react-native/utils'
 import { assertType } from './specUtils.spec'
 import type { SSCrypto } from '../index'
 import * as SSCryptoRN from '../react-native'
+import * as SSCryptoForge from '../forge'
 
 // Test types
 assertType<SSCrypto>(SSCryptoRN)
 
 // SymKey
 testSymKeyImplem('SSCryptoRN', SSCryptoRN.SymKey, randomBytes)
+testSymKeyCompatibility('RN/forge', SSCryptoRN.SymKey, SSCryptoForge.SymKey, randomBytes)
 
 testSymKeyPerf('SSCryptoRN', SSCryptoRN.SymKey, randomBytes)
 

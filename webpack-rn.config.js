@@ -15,7 +15,7 @@ module.exports = () => {
     entry: {
       testRn: path.join(__dirname, 'tests', 'test-rn.spec.js')
     },
-    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native'],
+    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'react-native-cryptopp'],
     output: {
       library: {
         type: 'commonjs2',
