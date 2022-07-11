@@ -11,7 +11,8 @@ import {
   wrapPrivateKey,
   wrapPublicKey
 } from './rsaUtils'
-import { staticImplements } from './commonUtils'
+import { intToBuffer, staticImplements } from './commonUtils'
+import crc32 from 'crc-32'
 
 /**
  * @type {AsymKeySize} Sizes of key authorized for AsymKeys in bits
@@ -128,7 +129,7 @@ export abstract class PublicKey {
    * @returns {Buffer}
    */
   encrypt (clearText: Buffer, doCRC = true): Buffer {
-    if (doCRC) return this._rawEncryptSync(prefixCRC(clearText))
+    if (doCRC) return this._rawEncryptSync(prefixCRC(clearText, this._calculateCRC32))
     else return this._rawEncryptSync(clearText)
   }
 
@@ -141,7 +142,7 @@ export abstract class PublicKey {
    * @returns {Promise<Buffer>}
    */
   encryptAsync (clearText: Buffer, doCRC = true): Promise<Buffer> {
-    if (doCRC) return this._rawEncryptAsync(prefixCRC(clearText))
+    if (doCRC) return this._rawEncryptAsync(prefixCRC(clearText, this._calculateCRC32))
     else return this._rawEncryptAsync(clearText)
   }
 
@@ -180,6 +181,10 @@ export abstract class PublicKey {
    */
   getHash (): string { // cannot be made actually abstract because of my inheritance trickery
     throw new Error('Must be subclassed')
+  }
+
+  _calculateCRC32 (buffer: Buffer): Buffer {
+    return intToBuffer(crc32.buf(buffer))
   }
 }
 
@@ -316,7 +321,7 @@ export class PrivateKey extends PublicKey {
    */
   decrypt (cipherText: Buffer, doCRC = true): Buffer {
     const clearText = this._rawDecryptSync(cipherText)
-    return doCRC ? splitAndVerifyCRC(clearText) : clearText
+    return doCRC ? splitAndVerifyCRC(clearText, this._calculateCRC32) : clearText
   }
 
   /**
@@ -328,7 +333,7 @@ export class PrivateKey extends PublicKey {
    */
   async decryptAsync (cipherText: Buffer, doCRC = true): Promise<Buffer> {
     const clearText = await this._rawDecryptAsync(cipherText)
-    return doCRC ? splitAndVerifyCRC(clearText) : clearText
+    return doCRC ? splitAndVerifyCRC(clearText, this._calculateCRC32) : clearText
   }
 
   /**

@@ -184,10 +184,11 @@ export const privateToPublic = (buff: Buffer): Buffer => {
 /**
  * Prefixes the cleartext with a CRC32 of the clearText
  * @param {Buffer} clearText
+ * @param {function} calculateCRC32
  * @returns {Buffer}
  */
-export const prefixCRC = (clearText: Buffer): Buffer => Buffer.concat([
-  intToBuffer(crc32.buf(clearText)),
+export const prefixCRC = (clearText: Buffer, calculateCRC32: (b: Buffer) => Buffer): Buffer => Buffer.concat([
+  calculateCRC32(clearText),
   clearText
 ])
 
@@ -197,10 +198,10 @@ export const prefixCRC = (clearText: Buffer): Buffer => Buffer.concat([
  * @param clearText
  * @return {Buffer}
  */
-export const splitAndVerifyCRC = (clearText: Buffer): Buffer => {
-  const crc = clearText.slice(0, 4)
-  const message = clearText.slice(4)
-  const calculatedCRC = intToBuffer(crc32.buf(message))
+export const splitAndVerifyCRC = (clearText: Buffer, calculateCRC32: (b: Buffer) => Buffer): Buffer => {
+  const crc = clearText.subarray(0, 4)
+  const message = clearText.subarray(4)
+  const calculatedCRC = calculateCRC32(message)
   if (crc.equals(calculatedCRC)) return message
   else throw new Error('INVALID_CRC32')
 }

@@ -390,7 +390,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       }
       const endEncrypt = Date.now()
       const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
-      console.log(`Finished encrypting in ${deltaEncrypt.toFixed(1)}s:\n${(nData / deltaEncrypt).toFixed(2)} block / s`)
+      console.log(`Finished signing in ${deltaEncrypt.toFixed(1)}s:\n${(nData / deltaEncrypt).toFixed(2)} block / s`)
 
       const verifications = []
       const startDecrypt = Date.now()
@@ -399,7 +399,7 @@ export const testAsymKeyPerf = (name: string, keySize: AsymKeySize, { PrivateKey
       }
       const endDecrypt = Date.now()
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
-      console.log(`Finished decrypting in ${deltaDecrypt.toFixed(1)}s:\n${(nData / deltaDecrypt).toFixed(2)} block / s`)
+      console.log(`Finished verifying in ${deltaDecrypt.toFixed(1)}s:\n${(nData / deltaDecrypt).toFixed(2)} block / s`)
 
       assert.strictEqual(verifications.length, nData)
       assert.ok(verifications.every(x => x === true))

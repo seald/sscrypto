@@ -1,5 +1,6 @@
 import SymKeyForge from '../forge/aes'
 // TODO: react-native-cryptopp needs to be cloned and linked locally for the moment
+// @ts-ignore
 import Cryptopp from 'react-native-cryptopp'
 import { Transform } from 'stream'
 import { bufferToArrayBuffer, randomBytes, randomBytesAsync } from './utils'
@@ -32,11 +33,13 @@ class SymKeyRN extends SymKeyForge {
   }
 
   calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
+    // @ts-ignore
     return Buffer.from(Cryptopp.HMAC.generate(bufferToArrayBuffer(textToAuthenticate), this.cryptoppAuthenticationKey, 'SHA256'))
   }
 
   HMACStream_ (): Transform {
     let authenticationKey = this.cryptoppAuthenticationKey
+    // @ts-ignore
     if (authenticationKey.byteLength > 64) authenticationKey = bufferToArrayBuffer(Buffer.from(Cryptopp.hash.SHA2(authenticationKey, '256'), 'hex'))
     const K = new Uint8Array(64)
     K.set(new Uint8Array(authenticationKey))
@@ -44,6 +47,7 @@ class SymKeyRN extends SymKeyForge {
     const KxorIpad = K.map((k) => 0xFF & (0x36 ^ k))
     const KxorOpad = K.map((k) => 0xFF & (0x5c ^ k))
 
+    // @ts-ignore
     const inner = Cryptopp.hash.create('SHA256')
     inner.update(bufferToArrayBuffer(KxorIpad))
 
