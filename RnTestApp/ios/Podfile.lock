@@ -282,6 +282,21 @@ PODS:
   - React-jsinspector (0.68.2)
   - React-logger (0.68.2):
     - glog
+  - react-native-cryptopp (0.2.0):
+    - React-Core
+  - react-native-get-random-values (1.8.0):
+    - React-Core
+  - react-native-modpow (1.1.0):
+    - React
+  - react-native-quick-base64 (2.0.5):
+    - React-Core
+  - react-native-quick-crypto (0.4.3):
+    - OpenSSL-Universal
+    - React
+    - React-callinvoker
+    - React-Core
+  - react-native-rsa-native (2.0.5):
+    - React
   - React-perflogger (0.68.2)
   - React-RCTActionSheet (0.68.2):
     - React-Core/RCTActionSheetHeaders (= 0.68.2)
@@ -395,6 +410,12 @@ DEPENDENCIES:
   - React-jsiexecutor (from `../node_modules/react-native/ReactCommon/jsiexecutor`)
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector`)
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
+  - react-native-cryptopp (from `../../../../ExternalProjects/react-native-cryptopp`)
+  - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
+  - react-native-modpow (from `../node_modules/react-native-modpow`)
+  - react-native-quick-base64 (from `../node_modules/react-native-quick-base64`)
+  - react-native-quick-crypto (from `../node_modules/react-native-quick-crypto`)
+  - react-native-rsa-native (from `../node_modules/react-native-rsa-native`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
   - React-RCTAnimation (from `../node_modules/react-native/Libraries/NativeAnimation`)
@@ -464,6 +485,18 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/jsinspector"
   React-logger:
     :path: "../node_modules/react-native/ReactCommon/logger"
+  react-native-cryptopp:
+    :path: "../../../../ExternalProjects/react-native-cryptopp"
+  react-native-get-random-values:
+    :path: "../node_modules/react-native-get-random-values"
+  react-native-modpow:
+    :path: "../node_modules/react-native-modpow"
+  react-native-quick-base64:
+    :path: "../node_modules/react-native-quick-base64"
+  react-native-quick-crypto:
+    :path: "../node_modules/react-native-quick-crypto"
+  react-native-rsa-native:
+    :path: "../node_modules/react-native-rsa-native"
   React-perflogger:
     :path: "../node_modules/react-native/ReactCommon/reactperflogger"
   React-RCTActionSheet:
@@ -523,6 +556,12 @@ SPEC CHECKSUMS:
   React-jsiexecutor: b7b553412f2ec768fe6c8f27cd6bafdb9d8719e6
   React-jsinspector: c5989c77cb89ae6a69561095a61cce56a44ae8e8
   React-logger: a0833912d93b36b791b7a521672d8ee89107aff1
+  react-native-cryptopp: 5a69390f100b2e33b39450c1d0269268af40aa64
+  react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
+  react-native-modpow: cddb1fde29eba5f7acc5cc57398075f7caeeddc4
+  react-native-quick-base64: e657e9197e61b60a9dec49807843052b830da254
+  react-native-quick-crypto: 7e61b719bb079811ab5b1603fc73724c3b6b77be
+  react-native-rsa-native: 12132eb627797529fdb1f0d22fd0f8f9678df64a
   React-perflogger: a18b4f0bd933b8b24ecf9f3c54f9bf65180f3fe6
   React-RCTActionSheet: 547fe42fdb4b6089598d79f8e1d855d7c23e2162
   React-RCTAnimation: bc9440a1c37b06ae9ebbb532d244f607805c6034

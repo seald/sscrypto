@@ -70,6 +70,8 @@
     "react-native": "^0.68.2",
     "react-native-cryptopp": "^0.2.0",
     "react-native-modpow": "^1.1.0",
+    "react-native-quick-base64": "^2.0.5",
+    "react-native-quick-crypto": "^0.4.3",
     "react-native-rsa-native": "^2.0.5",
     "sauce-connect-launcher": "^1.3.2",
     "semver": "^7.3.7",
