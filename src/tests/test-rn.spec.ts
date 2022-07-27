@@ -1,27 +1,42 @@
-import './patches'
 import { testSymKeyCompatibility, testSymKeyImplem, testSymKeyPerf } from './aes.spec'
 import { testAsymKeyImplem, testAsymKeyPerf } from './rsa.spec'
 import { testUtilsImplem } from './utils.spec'
-import { randomBytes } from '../react-native/utils'
+import { randomBytes } from '../react-native-forge/utils'
 import { assertType } from './specUtils.spec'
 import type { SSCrypto } from '../index'
-import * as SSCryptoRN from '../react-native'
-import * as SSCryptoForge from '../forge'
+import * as SSCryptoRNForge from '../react-native-forge'
+import * as SSCryptoRNCryptoPP from '../react-native-cryptopp'
+import * as SSCryptoRNQuickCrypto from '../react-native-quick-crypto'
 
 // Test types
-assertType<SSCrypto>(SSCryptoRN)
+assertType<SSCrypto>(SSCryptoRNForge)
+assertType<SSCrypto>(SSCryptoRNCryptoPP)
+assertType<SSCrypto>(SSCryptoRNQuickCrypto)
 
 // SymKey
-testSymKeyImplem('SSCryptoRN', SSCryptoRN.SymKey, randomBytes)
-testSymKeyCompatibility('RN/forge', SSCryptoRN.SymKey, SSCryptoForge.SymKey, randomBytes)
+testSymKeyImplem('SSCryptoRN', SSCryptoRNForge.SymKey, randomBytes)
+testSymKeyCompatibility('RNForge/SSCryptoRNCryptoPP', SSCryptoRNForge.SymKey, SSCryptoRNCryptoPP.SymKey, randomBytes)
+testSymKeyCompatibility('RNForge/SSCryptoRNQuickCrypto', SSCryptoRNForge.SymKey, SSCryptoRNQuickCrypto.SymKey, randomBytes)
 
-testSymKeyPerf('SSCryptoRN', SSCryptoRN.SymKey, randomBytes)
+testSymKeyPerf('SSCryptoRNForge', SSCryptoRNForge.SymKey, randomBytes)
+testSymKeyPerf('SSCryptoRNCryptoPP', SSCryptoRNCryptoPP.SymKey, randomBytes)
+testSymKeyPerf('SSCryptoRNQuickCrypto', SSCryptoRNQuickCrypto.SymKey, randomBytes)
 
-testAsymKeyImplem('SSCryptoRN', SSCryptoRN, randomBytes)
+testAsymKeyImplem('SSCryptoRNForge', SSCryptoRNForge, randomBytes)
+testAsymKeyImplem('SSCryptoRNCryptoPP', SSCryptoRNCryptoPP, randomBytes)
+testAsymKeyImplem('SSCryptoRNQuickCrypto', SSCryptoRNQuickCrypto, randomBytes)
 
-testAsymKeyPerf('SSCryptoRN', 1024, SSCryptoRN, randomBytes)
-testAsymKeyPerf('SSCryptoRN', 2048, SSCryptoRN, randomBytes)
-// testAsymKeyPerf('SSCryptoRN', 4096, SSCryptoRN, randomBytes)
+testAsymKeyPerf('SSCryptoRNForge', 1024, SSCryptoRNForge, randomBytes)
+testAsymKeyPerf('SSCryptoRNForge', 2048, SSCryptoRNForge, randomBytes)
+testAsymKeyPerf('SSCryptoRNForge', 4096, SSCryptoRNForge, randomBytes)
+testAsymKeyPerf('SSCryptoRNCryptoPP', 1024, SSCryptoRNCryptoPP, randomBytes)
+testAsymKeyPerf('SSCryptoRNCryptoPP', 2048, SSCryptoRNCryptoPP, randomBytes)
+testAsymKeyPerf('SSCryptoRNCryptoPP', 4096, SSCryptoRNCryptoPP, randomBytes)
+testAsymKeyPerf('SSCryptoRNQuickCrypto', 1024, SSCryptoRNQuickCrypto, randomBytes)
+testAsymKeyPerf('SSCryptoRNQuickCrypto', 2048, SSCryptoRNQuickCrypto, randomBytes)
+testAsymKeyPerf('SSCryptoRNQuickCrypto', 4096, SSCryptoRNQuickCrypto, randomBytes)
 
 // Utils
-testUtilsImplem('SSCryptoRN', SSCryptoRN.utils)
+testUtilsImplem('SSCryptoRNForge', SSCryptoRNForge.utils)
+testUtilsImplem('SSCryptoRNCryptoPP', SSCryptoRNCryptoPP.utils)
+testUtilsImplem('SSCryptoRNQuickCrypto', SSCryptoRNQuickCrypto.utils)

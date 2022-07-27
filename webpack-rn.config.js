@@ -15,7 +15,7 @@ module.exports = () => {
     entry: {
       testRn: path.join(__dirname, 'tests', 'test-rn.spec.js')
     },
-    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'react-native-cryptopp'],
+    externals: ['react-native', 'react-native-modpow', 'react-native-get-random-values', 'react-native-rsa-native', 'react-native-cryptopp', 'react-native-quick-crypto', 'react-native-quick-base64'],
     output: {
       library: {
         type: 'commonjs2',
@@ -37,7 +37,7 @@ module.exports = () => {
     plugins: [
       new webpack.ProvidePlugin({
         process: require.resolve('process/browser'), // necessary for `process.nextTick` in streams
-        Buffer: ['buffer', 'Buffer'], // necessary, well, everywhere ^^
+        Buffer: require.resolve('@craftzdog/react-native-buffer'), // necessary, well, everywhere ^^
         setImmediate: ['timers-browserify', 'setImmediate'], // necessary for streams
         clearImmediate: ['timers-browserify', 'clearImmediate']
       })

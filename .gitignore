@@ -2,7 +2,9 @@
 /forge
 /node
 /webcrypto
-/react-native
+/react-native-forge
+/react-native-cryptopp
+/react-native-quick-crypto
 /utils
 /tests
 /index.js
