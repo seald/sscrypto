@@ -51,6 +51,7 @@ class SymKeyRN extends SymKeyForge {
     const inner = Cryptopp.hash.create('SHA256')
     console.log('UPDATE1:', KxorIpad)
     inner.update(bufferToArrayBuffer(KxorIpad))
+    console.log('UPDATE1 DONE')
 
     return new Transform({
       transform (chunk: Buffer, encoding, callback): void {

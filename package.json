@@ -69,7 +69,7 @@
     "nyc": "^15.1.0",
     "process": "^0.11.10",
     "react-native": "^0.68.2",
-    "react-native-cryptopp": "^0.2.0",
+    "react-native-cryptopp": "^0.3.0",
     "react-native-modpow": "^1.1.0",
     "react-native-quick-base64": "^2.0.5",
     "react-native-quick-crypto": "^0.4.3",
