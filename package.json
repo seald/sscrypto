@@ -17,6 +17,7 @@
     "build": "tsc",
     "prebuild-rn": "npm run build",
     "build-rn": "webpack --progress --config webpack-rn.config.js",
+    "postbuild-rn": "cp ./tests/test-rn.spec.bundle.js ./RnTestApp/",
     "coverage": "nyc npm run test-report",
     "doc": "typedoc --theme markdown --out doc",
     "prepublishOnly": "npm run build"

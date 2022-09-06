@@ -40,7 +40,7 @@ class SymKeyRN extends SymKeyForge {
   HMACStream_ (): Transform {
     let authenticationKey = this.cryptoppAuthenticationKey
     // @ts-ignore
-    if (authenticationKey.byteLength > 64) authenticationKey = bufferToArrayBuffer(Buffer.from(Cryptopp.hash.SHA2(authenticationKey, '256'), 'hex'))
+    if (authenticationKey.byteLength > 64) authenticationKey = bufferToArrayBuffer(Buffer.from(Cryptopp.hash.SHA256(authenticationKey), 'hex'))
     const K = new Uint8Array(64)
     K.set(new Uint8Array(authenticationKey))
 
@@ -49,11 +49,13 @@ class SymKeyRN extends SymKeyForge {
 
     // @ts-ignore
     const inner = Cryptopp.hash.create('SHA256')
+    console.log('UPDATE1:', KxorIpad)
     inner.update(bufferToArrayBuffer(KxorIpad))
 
     return new Transform({
       transform (chunk: Buffer, encoding, callback): void {
         try {
+          console.log('UPDATE2:', chunk)
           inner.update(bufferToArrayBuffer(chunk))
           callback()
         } catch (e) {
@@ -61,13 +63,14 @@ class SymKeyRN extends SymKeyForge {
         }
       },
       flush (callback): void {
+        console.log('FLUSH')
         try {
           const outer = new Uint8Array(KxorOpad.byteLength + 32)
           outer.set(KxorOpad)
           outer.set(Buffer.from(inner.finalize(), 'hex'), KxorOpad.byteLength)
 
           // @ts-ignore
-          callback(null, Buffer.from(Cryptopp.hash.SHA2(bufferToArrayBuffer(outer), '256'), 'hex'))
+          callback(null, Buffer.from(Cryptopp.hash.SHA256(bufferToArrayBuffer(outer)), 'hex'))
         } catch (e) {
           callback(e)
         }

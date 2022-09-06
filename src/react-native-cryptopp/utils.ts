@@ -2,8 +2,6 @@ import { randomBytes as randomBytesForge, randomBytesAsync as randomBytesAsyncFo
 // @ts-ignore
 import Cryptopp from 'react-native-cryptopp'
 import { sha256 as sha256Forge } from '../forge/utils'
-import { intToBuffer } from '../utils/commonUtils'
-import crc32 from 'crc-32'
 
 export const bufferToArrayBuffer = (buffer: Buffer|Uint8Array): ArrayBuffer => {
   if (buffer.byteOffset === 0 && buffer.buffer.byteLength === buffer.length) return buffer.buffer
@@ -11,8 +9,11 @@ export const bufferToArrayBuffer = (buffer: Buffer|Uint8Array): ArrayBuffer => {
 }
 
 const sha256RN = (data: Buffer): Buffer => {
-  // @ts-ignore
-  return Buffer.from(Cryptopp.hash.SHA2(bufferToArrayBuffer(data), '256'), 'hex')
+  return Buffer.from(
+    // @ts-ignore
+    Cryptopp.hash.SHA256(bufferToArrayBuffer(data)),
+    'hex'
+  )
 }
 
 /* eslint-disable no-var,@typescript-eslint/ban-types */
@@ -27,8 +28,11 @@ const isChromeDebugger = (): boolean => {
 }
 
 const CRC32 = (buffer: Buffer): Buffer => {
-  // @ts-ignore
-  return Buffer.from(Cryptopp.hash.CRC32(bufferToArrayBuffer(buffer)).padStart(8,'0'), 'hex').reverse()
+  return Buffer.from(
+    // @ts-ignore
+    Cryptopp.hash.CRC32(bufferToArrayBuffer(buffer)).padStart(8, '0'),
+    'hex'
+  ).reverse()
 }
 
 /**

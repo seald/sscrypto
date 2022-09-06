@@ -11,21 +11,7 @@ module.exports = {
   projectRoot: __dirname,
   watchFolders: [root],
 
-  resolver: {
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {
-      'stream': require.resolve('stream-browserify')
-    }),
-  },
+  resolver: {},
 
-  transformer: {
-    getTransformOptions: async () => ({
-      transform: {
-        experimentalImportSupport: false,
-        inlineRequires: true,
-      },
-    }),
-  },
+  transformer: {},
 };

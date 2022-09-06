@@ -4,7 +4,8 @@
 import React, {useState} from 'react';
 import {StyleSheet, Text, View, Button, Switch, Platform} from 'react-native';
 import 'deca/build/lib/bdd-global.js';
-import '../tests/test-rn.spec.bundle.js';
+// import '../tests/test-rn.spec.bundle.js';
+import './test-rn.spec.bundle.js';
 
 const printResult_ = (result, depth = 0) => {
   if (result.success) {
@@ -63,6 +64,7 @@ export default function App() {
   const toggleTestSwitch = () =>
     setIsTestSwitchEnabled(previousState => !previousState);
   console.log('IS HERMES:', Boolean(global.HermesInternal));
+  console.log('IS DEV:', Boolean(__DEV__))
   console.log('PLATFORM:', Platform);
 
   const doTest = async () => {

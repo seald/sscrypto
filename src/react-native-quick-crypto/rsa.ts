@@ -29,7 +29,7 @@ class PublicKeyNode extends PublicKey {
    */
   protected _publicKey: string
 
-  constructor (key: Buffer) {
+  constructor (key: Buffer) { // TODO: sometime this throws with [Error: Exception in HostFunction: <unknown>]
     super(key)
     try {
       this._publicKey = convertDERToPEM(unwrapPublicKey(this.publicKeyBuffer), 'RSA PUBLIC KEY')
