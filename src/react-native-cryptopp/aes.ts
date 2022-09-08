@@ -46,7 +46,16 @@ class SymKeyRN extends SymKeyForge {
 
     const KxorIpad = K.map((k) => 0xFF & (0x36 ^ k))
     const KxorOpad = K.map((k) => 0xFF & (0x5c ^ k))
+    console.log('normal')
 
+    // @ts-ignore
+    const hash = Cryptopp.hash.createHash('SHA256')
+    const buffer = new ArrayBuffer(8)
+    const vue = new Int32Array(buffer)
+    vue[0] = 100
+    vue[1] = 200
+    hash.update(buffer)
+    console.log('not normal')
     // @ts-ignore
     const inner = Cryptopp.hash.create('SHA256')
     console.log('UPDATE1:', KxorIpad)

@@ -550,7 +550,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
 }
 
 export const testSymKeyCompatibility = (name: string, SymKeyClass1: SymKeyConstructor<SymKey>, SymKeyClass2: SymKeyConstructor<SymKey>, randomBytes: (size: number) => Buffer): void => {
-  describe.only(`AES compatibility ${name}`, () => {
+  describe(`AES compatibility ${name}`, () => {
     let key1: SymKey
     let key2: SymKey
 

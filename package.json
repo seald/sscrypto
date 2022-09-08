@@ -17,7 +17,7 @@
     "build": "tsc",
     "prebuild-rn": "npm run build",
     "build-rn": "webpack --progress --config webpack-rn.config.js",
-    "postbuild-rn": "cp ./tests/test-rn.spec.bundle.js ./RnTestApp/",
+    "postbuild-rn": "cp ./tests/test-rn.spec.bundle.js ./RnTestApp/ && cp ./tests/test-rn.spec.bundle.js ./quickcryptotestapp/",
     "coverage": "nyc npm run test-report",
     "doc": "typedoc --theme markdown --out doc",
     "prepublishOnly": "npm run build"
@@ -69,7 +69,6 @@
     "nyc": "^15.1.0",
     "process": "^0.11.10",
     "react-native": "^0.68.2",
-    "react-native-cryptopp": "^0.3.0",
     "react-native-modpow": "^1.1.0",
     "react-native-quick-base64": "^2.0.5",
     "react-native-quick-crypto": "^0.4.3",
