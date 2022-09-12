@@ -62,7 +62,7 @@ export const splitAndVerifyCRC = (clearText: Buffer): Buffer => {
 
 const randomBytesRN = (length = 10): Buffer => Buffer.from(Cryptopp.utils.randomBytes(length))
 
-const randomBytesAsyncRN = async (length = 10): Promise<Buffer> => Promise.resolve(randomBytesRN(length))
+const randomBytesAsyncRN = async (length = 10): Promise<Buffer> => Buffer.from(await Cryptopp.async.utils.randomBytes(length))
 
 /**
  * Returns a Buffer of random bytes

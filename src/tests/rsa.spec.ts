@@ -57,7 +57,7 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
 
     it('fail to import bad PrivateKey', () => {
       assert.throws(
-        () => PrivateKey_.fromB64(privateKey.toB64().slice(2)),
+        () => PrivateKey_.fromB64(privateKey.toB64().slice(4)),
         /INVALID_KEY/
       )
     })

@@ -23,7 +23,7 @@ class PublicKeyRN extends PublicKeyForge {
   }
 
   async _rawEncryptAsync (clearText: Buffer): Promise<Buffer> {
-    return this._rawEncryptSync(clearText)
+    return Buffer.from(await Cryptopp.async.RSA.encrypt(bufferToArrayBuffer(clearText), this.publicKeyCryptopp, "OAEP_SHA1"))
   }
 
   _calculateCRC32 (buffer: Buffer): Buffer {
@@ -56,7 +56,7 @@ class PrivateKeyRN extends mixClasses(PublicKeyRN, PrivateKeyForge) {
     }
 
     // @ts-ignore
-    const keys = Cryptopp.RSA.generateKeyPair(size, 65537)
+    const keys = await Cryptopp.async.RSA.generateKeyPair(size, 65537)
     const privateKey = keys.private
       .replace(/\n/g, '')
       .replace(/\r/g, '') // iOS
@@ -78,8 +78,11 @@ class PrivateKeyRN extends mixClasses(PublicKeyRN, PrivateKeyForge) {
   }
 
   async _rawDecryptAsync (cipherText: Buffer): Promise<Buffer> {
-    return this._rawDecryptSync(cipherText)
-  }
+    try {
+      return Buffer.from(await Cryptopp.async.RSA.decrypt(bufferToArrayBuffer(cipherText), this.privateKeyCryptopp, "OAEP_SHA1"))
+    } catch (e) {
+      throw new Error(`INVALID_CIPHER_TEXT : ${e.message}`)
+    }  }
 }
 
 export { PublicKeyRN as PublicKey, PrivateKeyRN as PrivateKey }

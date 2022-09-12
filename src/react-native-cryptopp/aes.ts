@@ -28,13 +28,26 @@ class SymKeyRN extends SymKeyForge {
     return Buffer.from(Cryptopp.AES.encrypt(bufferToArrayBuffer(clearText), this.cryptoppEncryptionKey, bufferToArrayBuffer(iv), 'cbc'))
   }
 
+  async rawEncryptAsync_ (clearText: Buffer, iv: Buffer): Promise<Buffer> {
+    return Buffer.from(await Cryptopp.async.AES.encrypt(bufferToArrayBuffer(clearText), this.cryptoppEncryptionKey, bufferToArrayBuffer(iv), 'cbc'))
+  }
+
   rawDecryptSync_ (cipherText: Buffer, iv: Buffer): Buffer {
     return Buffer.from(Cryptopp.AES.decrypt(bufferToArrayBuffer(cipherText), this.cryptoppEncryptionKey, bufferToArrayBuffer(iv), 'cbc'))
+  }
+
+  async rawDecryptAsync_ (cipherText: Buffer, iv: Buffer): Promise<Buffer> {
+    return Buffer.from(await Cryptopp.async.AES.decrypt(bufferToArrayBuffer(cipherText), this.cryptoppEncryptionKey, bufferToArrayBuffer(iv), 'cbc'))
   }
 
   calculateHMACSync_ (textToAuthenticate: Buffer): Buffer {
     // @ts-ignore
     return Buffer.from(Cryptopp.HMAC.generate(bufferToArrayBuffer(textToAuthenticate), this.cryptoppAuthenticationKey, 'SHA256'))
+  }
+
+  async calculateHMACAsync_ (textToAuthenticate: Buffer): Promise<Buffer> {
+    // @ts-ignore
+    return Buffer.from(await Cryptopp.async.HMAC.generate(bufferToArrayBuffer(textToAuthenticate), this.cryptoppAuthenticationKey, 'SHA256'))
   }
 
   HMACStream_ (): Transform {
@@ -46,26 +59,14 @@ class SymKeyRN extends SymKeyForge {
 
     const KxorIpad = K.map((k) => 0xFF & (0x36 ^ k))
     const KxorOpad = K.map((k) => 0xFF & (0x5c ^ k))
-    console.log('normal')
 
     // @ts-ignore
-    const hash = Cryptopp.hash.createHash('SHA256')
-    const buffer = new ArrayBuffer(8)
-    const vue = new Int32Array(buffer)
-    vue[0] = 100
-    vue[1] = 200
-    hash.update(buffer)
-    console.log('not normal')
-    // @ts-ignore
     const inner = Cryptopp.hash.create('SHA256')
-    console.log('UPDATE1:', KxorIpad)
     inner.update(bufferToArrayBuffer(KxorIpad))
-    console.log('UPDATE1 DONE')
 
     return new Transform({
       transform (chunk: Buffer, encoding, callback): void {
         try {
-          console.log('UPDATE2:', chunk)
           inner.update(bufferToArrayBuffer(chunk))
           callback()
         } catch (e) {
@@ -73,7 +74,6 @@ class SymKeyRN extends SymKeyForge {
         }
       },
       flush (callback): void {
-        console.log('FLUSH')
         try {
           const outer = new Uint8Array(KxorOpad.byteLength + 32)
           outer.set(KxorOpad)

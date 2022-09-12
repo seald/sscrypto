@@ -14,7 +14,7 @@
     "deca": "^0.1.1",
     "react": "17.0.2",
     "react-native": "0.68.2",
-    "react-native-cryptopp": "^0.3.0",
+    "react-native-cryptopp": "^0.3.1",
     "react-native-get-random-values": "^1.8.0",
     "react-native-modpow": "^1.1.0",
     "react-native-quick-base64": "^2.0.5",
