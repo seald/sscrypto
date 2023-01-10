@@ -1,10 +1,11 @@
 import crypto from 'react-native-quick-crypto'
+import { Buffer as RNBuffer } from '@craftzdog/react-native-buffer'
 import { staticImplements } from '../utils/commonUtils'
 import { Transform } from 'stream'
 import { SymKey, SymKeyConstructor } from '../utils/aes'
 
-@staticImplements<SymKeyConstructor<SymKeyNode>>()
-class SymKeyNode extends SymKey {
+@staticImplements<SymKeyConstructor<SymKeyRNQuickCrypto>>()
+class SymKeyRNQuickCrypto extends SymKey {
   protected readonly authenticationKey: Buffer
   protected readonly encryptionKey: Buffer
 
@@ -47,4 +48,4 @@ class SymKeyNode extends SymKey {
   }
 }
 
-export default SymKeyNode
+export default SymKeyRNQuickCrypto

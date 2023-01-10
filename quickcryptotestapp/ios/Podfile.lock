@@ -278,7 +278,7 @@ PODS:
     - React
   - react-native-quick-base64 (2.0.5):
     - React-Core
-  - react-native-quick-crypto (0.4.5):
+  - react-native-quick-crypto (0.4.6):
     - OpenSSL-Universal
     - React
     - React-callinvoker
@@ -537,7 +537,7 @@ SPEC CHECKSUMS:
   react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
   react-native-modpow: cddb1fde29eba5f7acc5cc57398075f7caeeddc4
   react-native-quick-base64: e657e9197e61b60a9dec49807843052b830da254
-  react-native-quick-crypto: b4e02e045076ea6bbcb9f3d2d53b427328bbc1cb
+  react-native-quick-crypto: e7ac378e827bfab02db29092ff204f13adc60c7c
   react-native-rsa-native: 12132eb627797529fdb1f0d22fd0f8f9678df64a
   React-perflogger: 93075d8931c32cd1fce8a98c15d2d5ccc4d891bd
   React-RCTActionSheet: 7d3041e6761b4f3044a37079ddcb156575fb6d89

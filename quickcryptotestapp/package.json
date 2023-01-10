@@ -18,7 +18,7 @@
     "react-native-get-random-values": "^1.8.0",
     "react-native-modpow": "^1.1.0",
     "react-native-quick-base64": "^2.0.5",
-    "react-native-quick-crypto": "^0.4.5",
+    "react-native-quick-crypto": "^0.4.6",
     "react-native-rsa-native": "^2.0.5"
   },
   "devDependencies": {
