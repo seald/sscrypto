@@ -13,14 +13,6 @@ module.exports = {
     '@typescript-eslint/indent': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/explicit-member-accessibility': 'off',
-    '@typescript-eslint/member-delimiter-style': ['error', {
-      multiline: {
-        delimiter: 'none'
-      },
-      singleline: {
-        delimiter: 'comma'
-      }
-    }],
     '@typescript-eslint/no-unused-vars': ['error', {
       args: 'none'
     }],

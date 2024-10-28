@@ -63,7 +63,7 @@ class PublicKeyForge extends PublicKey {
         signature.toString('binary'),
         pss
       )
-    } catch (e) {
+    } catch {
       return false
     }
   }
