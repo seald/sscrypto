@@ -1,3 +1,8 @@
+## v1.1.2
+- \[bug fix\] Cleaner node crypto imports to fix use with some bundlers
+- \[enhancement\] Stop using deprecated Buffer.slice
+
+
 ## v1.1.1
 - \[enhancement\] Update dependencies
 - \[bug fix\] Fix import in certain typescript environments
