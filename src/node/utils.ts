@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import { createHash, randomBytes as cryptoRandomBytes } from 'crypto'
 
 /**
  * Returns a Buffer containing the hash of the given data
@@ -6,7 +6,7 @@ import crypto from 'crypto'
  * @return {Buffer}
  */
 export const sha256 = (data: Buffer): Buffer => {
-  const md = crypto.createHash('sha256')
+  const md = createHash('sha256')
   md.update(data)
   return md.digest()
 }
@@ -16,11 +16,11 @@ export const sha256 = (data: Buffer): Buffer => {
  * @param {number} [length=10]
  * @return {Buffer}
  */
-export const randomBytes = (length = 10): Buffer => crypto.randomBytes(length)
+export const randomBytes = (length = 10): Buffer => cryptoRandomBytes(length)
 
 /**
  * Returns a Buffer of random bytes
  * @param {number} [length=10]
  * @return {Promise<Buffer>}
  */
-export const randomBytesAsync = async (length = 10): Promise<Buffer> => crypto.randomBytes(length)
+export const randomBytesAsync = async (length = 10): Promise<Buffer> => cryptoRandomBytes(length)

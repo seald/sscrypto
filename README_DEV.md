@@ -1,2 +1,1 @@
-- `eslint-plugin-import` & `eslint-plugin-promise` are installed manually (and to specific versions) because old npm versions installed in CI docker images do not respect newer package-lock and do not install peer-dependencies
-- `eslint` is kept to 7, because eslint@8 is not yet compatible with standard
+- `eslint` is kept to 8, because eslint@9 is not yet compatible with standard

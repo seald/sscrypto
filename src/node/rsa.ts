@@ -1,4 +1,11 @@
-import crypto from 'crypto'
+import {
+  constants,
+  createSign,
+  createVerify,
+  generateKeyPair,
+  privateDecrypt,
+  publicEncrypt
+} from 'crypto'
 import { mixClasses, staticImplements } from '../utils/commonUtils'
 import {
   AsymKeySize,
@@ -12,7 +19,6 @@ import {
   convertDERToPEM,
   unwrapPrivateKey,
   unwrapPublicKey
-
 } from '../utils/rsaUtils'
 
 /**
@@ -39,23 +45,23 @@ class PublicKeyNode extends PublicKey {
   }
 
   _rawEncryptSync (clearText: Buffer): Buffer {
-    return crypto.publicEncrypt(
+    return publicEncrypt(
       {
         key: this._publicKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+        padding: constants.RSA_PKCS1_OAEP_PADDING
       },
       clearText
     )
   }
 
   verify (textToCheckAgainst: Buffer, signature: Buffer): boolean {
-    const verify = crypto.createVerify('SHA256')
+    const verify = createVerify('SHA256')
     verify.update(textToCheckAgainst)
     return verify.verify(
       {
         key: this._publicKey,
-        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-        saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
+        padding: constants.RSA_PKCS1_PSS_PADDING,
+        saltLength: constants.RSA_PSS_SALTLEN_MAX_SIGN
       },
       signature
     )
@@ -102,7 +108,7 @@ class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
       throw new Error('INVALID_ARG')
     } else {
       const privateKey = await new Promise((resolve: (key: Buffer) => void, reject) => {
-        crypto.generateKeyPair(
+        generateKeyPair(
           'rsa',
           {
             modulusLength: size,
@@ -121,10 +127,10 @@ class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
 
   _rawDecryptSync (cipherText: Buffer): Buffer {
     try {
-      return crypto.privateDecrypt(
+      return privateDecrypt(
         {
           key: this._privateKey,
-          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+          padding: constants.RSA_PKCS1_OAEP_PADDING
         },
         cipherText
       )
@@ -134,12 +140,12 @@ class PrivateKeyNode extends mixClasses(PublicKeyNode, PrivateKey) {
   }
 
   sign (textToSign: Buffer): Buffer {
-    const sign = crypto.createSign('SHA256')
+    const sign = createSign('SHA256')
     sign.update(textToSign)
     return sign.sign({
       key: this._privateKey,
-      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-      saltLength: crypto.constants.RSA_PSS_SALTLEN_MAX_SIGN
+      padding: constants.RSA_PKCS1_PSS_PADDING,
+      saltLength: constants.RSA_PSS_SALTLEN_MAX_SIGN
     })
   }
 }
