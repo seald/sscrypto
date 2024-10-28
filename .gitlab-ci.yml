@@ -23,27 +23,6 @@ before_script:
         coverage_format: cobertura
         path: coverage/*/cobertura-coverage.xml
 
-test-node-10:
-  image: node:10
-  <<: *test-node
-  script:
-    # installing mocha@9, as mocha@10 is not compatible with node@10
-    - npm install mocha@9.2.2
-    # bypassing pretest : eslint is not compatible with node@10 anymore
-    - npx nyc mocha --require ts-node/register --require source-map-support/register --timeout 30000 src/tests/test-node.spec.ts --reporter mocha-multi-reporters --reporter-options configFile=./mochaReportConfig.json --forbid-only
-
-test-node-12:
-  image: node:12
-  <<: *test-node
-
-test-node-14:
-  image: node:14
-  <<: *test-node
-
-test-node-16:
-  image: node:16
-  <<: *test-node
-
 test-node-18:
   image: node:18
   <<: *test-node
