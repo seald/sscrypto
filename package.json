@@ -10,8 +10,6 @@
     "test-report": "npm run test -- --reporter mocha-multi-reporters --reporter-options configFile=./mochaReportConfig.json --forbid-only",
     "pretest-browser": "npm run lint && npm run build && webpack --progress --mode development",
     "test-browser": "xvfb-maybe karma start karma.conf.local.js",
-    "pretest-saucelabs": "npm run pretest-browser",
-    "test-saucelabs": "mocha --require source-map-support/register run-karma-saucelabs.spec.js",
     "prebuild": "rm -rf ./forge ./node ./utils ./tests ./webcrypto index.js index.d.ts",
     "clean-reports": "rm -rf ./coverage ./.nyc_output ./test-results",
     "build": "tsc",

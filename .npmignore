@@ -39,7 +39,6 @@ Thumbs.db
 # Tests
 karma.conf.local.js
 karma.conf.template.js
-karma.conf.saucelabs.js
 
 # CI
 .npm
