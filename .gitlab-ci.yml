@@ -47,19 +47,6 @@ test-browser:
         coverage_format: cobertura
         path: coverage/*/cobertura-coverage.xml
 
-test-saucelabs:
-  image: node:14
-  stage: test
-  script:
-    - npm run test-saucelabs
-  artifacts:
-    reports:
-      junit: test-results/*.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/*/cobertura-coverage.xml
-  when: manual
-
 deploy:
   image: node:18
   stage: deploy
