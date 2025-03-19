@@ -37,6 +37,9 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
       assert.ok(_key2 instanceof PublicKey)
       privateKey = _key1
       privateKey2 = _key2
+
+      assert.strictEqual(privateKey.keySize, keySize)
+      assert.strictEqual(privateKey2.keySize, keySize)
     })
 
     it('Fail to construct a PublicKey because of an invalid type of argument', async () => {
@@ -81,24 +84,28 @@ const testAsymKeyImplemSize = (name: string, keySize: AsymKeySize, { PrivateKey:
       const publicKeyImported = PublicKey_.fromB64(privateKey.toB64({ publicOnly: true }))
 
       assert.strictEqual(publicKeyImported.toB64(), privateKey.toB64({ publicOnly: true }))
+      assert.strictEqual(publicKeyImported.keySize, keySize)
     })
 
     it('export public key with toString then import', () => {
       const publicKeyImported = new PublicKey_(Buffer.from(privateKey.toString({ publicOnly: true }), 'binary'))
 
       assert.strictEqual(publicKeyImported.toString(), privateKey.toString({ publicOnly: true }))
+      assert.strictEqual(publicKeyImported.keySize, keySize)
     })
 
     it('export the private key then import it', () => {
       const privateKeyImported = PrivateKey_.fromB64(privateKey.toB64())
 
       assert.strictEqual(privateKeyImported.toB64(), privateKey.toB64({ publicOnly: false }))
+      assert.strictEqual(privateKeyImported.keySize, keySize)
     })
 
     it('export the private key with toString then import it', () => {
       const privateKeyImported = new PrivateKey_(Buffer.from(privateKey.toString(), 'binary'))
 
       assert.strictEqual(privateKeyImported.toString(), privateKey.toString({ publicOnly: false }))
+      assert.strictEqual(privateKeyImported.keySize, keySize)
     })
 
     it('cipher & decipher sync', () => {

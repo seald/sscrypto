@@ -44,6 +44,8 @@ export abstract class PublicKey {
    */
   readonly publicKeyBuffer: Buffer
 
+  readonly keySize: AsymKeySize
+
   /**
    * Constructor for PublicKey class for every public key implementation of SSCrypto.
    * It ensures that given buffer is a valid PublicKey, either encoded in an SPKI enveloppe or as a bare public key
@@ -62,7 +64,8 @@ export abstract class PublicKey {
     } catch (e) {
       throw new Error(`INVALID_KEY : ${e.message}`)
     }
-    if (![1024, 2048, 4096].includes(n.bitLength())) throw new Error(`INVALID_ARG : Key size is invalid, got ${n.bitLength()}`)
+    this.keySize = n.bitLength()
+    if (![1024, 2048, 4096].includes(this.keySize)) throw new Error(`INVALID_ARG : Key size is invalid, got ${this.keySize}`)
   }
 
   /**

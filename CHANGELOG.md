@@ -1,3 +1,7 @@
+## v1.3.0 - Unreleased
+- \[new feature\] Expose keySize for AsymKeys
+
+
 ## v1.2.0
 - \[bug fix\] Cleaner node crypto imports to fix use with some bundlers
 - \[enhancement\] Stop using deprecated Buffer.slice
