@@ -1,4 +1,4 @@
-## v1.3.0 - Unreleased
+## v1.3.0 - 2025/03/20
 - \[new feature\] Expose keySize for AsymKeys
 - \[enhancement\] Update dependencies
 
