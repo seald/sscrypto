@@ -48,7 +48,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       let badKey: InstanceType<typeof SymKeyClass>
 
       describe(`AES ${name} - AES-${size}`, () => {
-        it.only('generation', async () => {
+        it('generation', async () => {
           key = await SymKeyClass.generate(size)
           badKey = new SymKeyClass(size) // deprecated usage, but we still have to test it
           assert.ok(key instanceof SymKeyClass)
