@@ -201,6 +201,11 @@ export abstract class SymKey {
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
+      destroy (error: Error | null, callback: (error?: Error | null) => void): void {
+        if (encryptStream) encryptStream.destroy()
+        hmacStream.destroy()
+        callback(error)
+      },
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
         try {
           if (!encryptStream) progress(0, transformStream, 0)
@@ -332,6 +337,12 @@ export abstract class SymKey {
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
+      destroy (error: Error | null, callback: (error?: Error | null) => void): void {
+        decryptStream.destroy()
+        hmacStream.destroy()
+        buffer = null
+        callback(error)
+      },
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
         try {
           if (!decryptStream) progress(0, transformStream, 0)

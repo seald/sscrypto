@@ -48,7 +48,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       let badKey: InstanceType<typeof SymKeyClass>
 
       describe(`AES ${name} - AES-${size}`, () => {
-        it('generation', async () => {
+        it.only('generation', async () => {
           key = await SymKeyClass.generate(size)
           badKey = new SymKeyClass(size) // deprecated usage, but we still have to test it
           assert.ok(key instanceof SymKeyClass)
@@ -482,6 +482,58 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
           assert.ok(error.message.includes('STREAM_CANCELED'))
+        })
+
+        it('Test encryptStream destroy', async () => {
+          const size = 60
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+          const stream = key.encryptStream()
+
+          const errorPromise = new Promise((resolve: (err: Error) => void) => {
+            stream.on('error', err => {
+              resolve(err)
+            })
+          })
+
+          stream.write(chunks[0])
+          stream.destroy(new Error('Aborting'))
+          assert.ok(stream.destroyed)
+          const destroyedError = await errorPromise
+          assert.equal(destroyedError.message, 'Aborting')
+
+          const writeError = await new Promise((resolve: (err: Error) => void) => {
+            stream.write(chunks[1], err => {
+              resolve(err)
+            })
+          }) as Error & { code: string }
+          assert.equal(writeError.code, 'ERR_STREAM_DESTROYED')
+        })
+
+        it('Test decryptStream destroy', async () => {
+          const size = 60
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+          const stream = key.decryptStream()
+
+          const errorPromise = new Promise((resolve: (err: Error) => void) => {
+            stream.on('error', err => {
+              resolve(err)
+            })
+          })
+
+          stream.write(chunks[0])
+          stream.destroy(new Error('Aborting'))
+          assert.ok(stream.destroyed)
+          const destroyedError = await errorPromise
+          assert.equal(destroyedError.message, 'Aborting')
+
+          const writeError = await new Promise((resolve: (err: Error) => void) => {
+            stream.write(chunks[1], err => {
+              resolve(err)
+            })
+          }) as Error & { code: string }
+          assert.equal(writeError.code, 'ERR_STREAM_DESTROYED')
         })
 
         it('Test decryptStream error on bad data', async () => {
