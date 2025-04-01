@@ -338,7 +338,7 @@ export abstract class SymKey {
       })
     const transformStream = new Transform({
       destroy (error: Error | null, callback: (error?: Error | null) => void): void {
-        decryptStream.destroy()
+        if (decryptStream) decryptStream.destroy()
         hmacStream.destroy()
         buffer = null
         callback(error)
