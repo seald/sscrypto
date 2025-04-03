@@ -43,12 +43,12 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
       })
     })
 
-    for (const size of [128] as Array<SymKeySize>) {
+    for (const size of [128, 192, 256] as Array<SymKeySize>) {
       let key: InstanceType<typeof SymKeyClass>
       let badKey: InstanceType<typeof SymKeyClass>
 
       describe(`AES ${name} - AES-${size}`, () => {
-        it.only('generation', async () => {
+        it('generation', async () => {
           key = await SymKeyClass.generate(size)
           badKey = new SymKeyClass(size) // deprecated usage, but we still have to test it
           assert.ok(key instanceof SymKeyClass)
@@ -461,13 +461,14 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           assert.ok(error.message.includes('STREAM_CANCELED'))
         })
 
-        it.only('Test decryptStream cancel and progress', async () => {
+        it('Test decryptStream cancel and progress', async () => {
           const size = 80
           const input = randomBytes(size)
           const chunks = splitLength(input, 20)
 
           let progress: number
-          const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
+          // eslint-disable-next-line no-async-promise-executor
+          const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
             const stream = key.decryptStream()
               .on('end', () => reject(new Error('stream succeeded')))
               .on('error', resolve)
@@ -476,10 +477,12 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               })
 
             for (const chunk of chunks) stream.write(chunk)
-            stream.emit('cancel')
-            setImmediate(async () => {
-              for (const chunk of chunks) stream.write(chunk)
+            const drainPromise = new Promise<void>((resolve) => {
+              stream.on('drain', resolve) // We must await that all previous call to write are drained due to some old web implementation
             })
+            stream.emit('cancel')
+            await drainPromise
+            for (const chunk of chunks) stream.write(chunk)
           })
 
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
@@ -539,7 +542,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               if (err) reject(err)
               resolve()
             })
-          })
+          }) // We must await that all previous call to write are drained due to some old web implementation
           stream.destroy(new Error('Aborting'))
           assert.ok(stream.destroyed)
           const destroyedError = await errorPromise
