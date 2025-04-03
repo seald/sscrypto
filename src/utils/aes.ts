@@ -186,7 +186,6 @@ export abstract class SymKey {
    * @returns {Transform}
    */
   encryptStream (): Transform {
-    let canceled = false
     const progress = getProgress()
     const ivPromise = (this.constructor as SymKeyConstructor<SymKey>).randomBytesAsync_(16)
     let encryptStream: Transform
@@ -196,8 +195,7 @@ export abstract class SymKey {
     const hmacStream = this.HMACStream_()
     const hmacPromise = streamToData(hmacStream)
       .catch(err => {
-        canceled = true
-        transformStream.emit('error', err)
+        if (!transformStream.destroyed) transformStream.emit('error', err)
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
@@ -209,7 +207,6 @@ export abstract class SymKey {
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
         try {
           if (!encryptStream) progress(0, transformStream, 0)
-          if (canceled) throw new Error('STREAM_CANCELED')
           if (!encryptStream) { // we have not gotten the IV yet, gotta wait for it
             const iv = await ivPromise
             getEncryptStream(iv)
@@ -230,7 +227,6 @@ export abstract class SymKey {
       },
       async flush (callback): Promise<void> {
         try {
-          if (canceled) throw new Error('STREAM_CANCELED')
           if (!encryptStream) { // no encryptStream means there was no transform called: stream is empty
             const iv = await ivPromise
             getEncryptStream(iv) // we still have to initialize the encryptStream to get valid padding
@@ -260,7 +256,8 @@ export abstract class SymKey {
       }
     })
     transformStream.on('cancel', () => {
-      canceled = true
+      console.warn('DEPRECATED: use stream.destroy() instead of using the cancel event')
+      transformStream.destroy(new Error('STREAM_CANCELED'))
     })
     return transformStream
   }
@@ -322,7 +319,6 @@ export abstract class SymKey {
    * @returns {Transform}
    */
   decryptStream (): Transform {
-    let canceled = false
     const progress = getProgress()
     let buffer = Buffer.alloc(0)
     let decryptStream: Transform
@@ -332,8 +328,7 @@ export abstract class SymKey {
     const hmacStream = this.HMACStream_()
     const hmacPromise = streamToData(hmacStream)
       .catch(err => {
-        canceled = true
-        transformStream.emit('error', err)
+        if (!transformStream.destroyed) transformStream.emit('error', err)
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
@@ -346,7 +341,6 @@ export abstract class SymKey {
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
         try {
           if (!decryptStream) progress(0, transformStream, 0)
-          if (canceled) throw new Error('STREAM_CANCELED')
           buffer = Buffer.concat([buffer, chunk])
           if (!decryptStream) { // we have not gotten the IV yet, gotta wait for it
             if (buffer.length >= 16) { // length of IV
@@ -374,7 +368,6 @@ export abstract class SymKey {
       },
       async flush (callback): Promise<void> {
         try {
-          if (canceled) throw new Error('STREAM_CANCELED')
           if (buffer.length !== 32) throw new Error('INVALID_STREAM')
           const outputPromise = streamToData(decryptStream)
             .catch(() => { throw new Error('INVALID_STREAM') }) // This happens when the final block is of invalid size or incorrectly padded. Note: some implementations will not throw in this case, like forge, so they will get INVALID_HMAC
@@ -393,7 +386,8 @@ export abstract class SymKey {
       }
     })
     transformStream.on('cancel', () => {
-      canceled = true
+      console.warn('DEPRECATED: use stream.destroy() instead of using the cancel event')
+      transformStream.destroy(new Error('STREAM_CANCELED'))
     })
     return transformStream
   }
