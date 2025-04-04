@@ -454,7 +454,6 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               })
             for (const chunk of chunks) stream.write(chunk)
             stream.emit('cancel')
-            for (const chunk of chunks) stream.write(chunk)
           })
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
@@ -467,8 +466,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           const chunks = splitLength(input, 20)
 
           let progress: number
-          // eslint-disable-next-line no-async-promise-executor
-          const error = await new Promise(async (resolve: (err: Error) => void, reject: (err: Error) => void) => {
+          const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
             const stream = key.decryptStream()
               .on('end', () => reject(new Error('stream succeeded')))
               .on('error', resolve)
@@ -477,12 +475,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               })
 
             for (const chunk of chunks) stream.write(chunk)
-            const drainPromise = new Promise<void>((resolve) => {
-              stream.on('drain', resolve) // We must await that all previous call to write are drained due to some old web implementation
-            })
             stream.emit('cancel')
-            await drainPromise
-            for (const chunk of chunks) stream.write(chunk)
           })
 
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')

@@ -336,7 +336,6 @@ export abstract class SymKey {
         if (decryptStream) decryptStream.destroy()
         hmacStream.destroy()
         buffer = null
-        transformStream.emit('error', error)
         callback(error)
       },
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
