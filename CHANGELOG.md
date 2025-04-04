@@ -1,3 +1,7 @@
+## UNRELEASED
+- \[new feature\] Add `encryptStream.destroy(error)` and `decryptStream.destroy(error)` functions.
+- \[deprecation\] Deprecate `encryptStream.emit('cancel')'` and `decryptStream.emit('cancel')` in favor of `stream.destroy()`
+
 ## v1.3.0 - 2025/03/20
 - \[new feature\] Expose keySize for AsymKeys
 - \[enhancement\] Update dependencies

@@ -502,7 +502,6 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
             })
           })
 
-          // stream.write(chunks[0])
           await new Promise<void>((resolve, reject: (err: Error) => void) => {
             stream.write(chunks[0], err => {
               if (err) reject(err)
@@ -513,7 +512,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
           stream.destroy(new Error('Aborting'))
           assert.ok(stream.destroyed)
           const destroyedError = await errorPromise
-          assert.equal(destroyedError.message, 'Aborting') // AssertionError [ERR_ASSERTION]
+          assert.equal(destroyedError.message, 'Aborting')
 
           await assert.rejects(
             new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
@@ -521,7 +520,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
                 reject(err)
               })
             }),
-            /Cannot call write after a stream was destroyed/ // error depends on the implementation :/
+            /Cannot call write after a stream was destroyed/
           )
         })
 
@@ -542,7 +541,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               if (err) reject(err)
               resolve()
             })
-          }) // We must await that all previous call to write are drained due to some old web implementation
+          })
           stream.destroy(new Error('Aborting'))
           assert.ok(stream.destroyed)
           const destroyedError = await errorPromise
@@ -554,7 +553,7 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
                 reject(err)
               })
             }),
-            /Cannot call write after a stream was destroyed/ // error depends on the implementation :/
+            /Cannot call write after a stream was destroyed/
           )
         })
 

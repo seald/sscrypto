@@ -195,7 +195,7 @@ export abstract class SymKey {
     const hmacStream = this.HMACStream_()
     const hmacPromise = streamToData(hmacStream)
       .catch(err => {
-        if (!transformStream.destroyed) transformStream.emit('error', err)
+        if (!transformStream.destroyed) transformStream.destroy(err)
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
@@ -328,7 +328,7 @@ export abstract class SymKey {
     const hmacStream = this.HMACStream_()
     const hmacPromise = streamToData(hmacStream)
       .catch(err => {
-        if (!transformStream.destroyed) transformStream.emit('error', err)
+        if (!transformStream.destroyed) transformStream.destroy(err)
         return Buffer.alloc(0) // Fake return to have consistent return type
       })
     const transformStream = new Transform({
@@ -336,6 +336,7 @@ export abstract class SymKey {
         if (decryptStream) decryptStream.destroy()
         hmacStream.destroy()
         buffer = null
+        transformStream.emit('error', error)
         callback(error)
       },
       async transform (chunk: Buffer, encoding, callback): Promise<void> {
