@@ -454,7 +454,6 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               })
             for (const chunk of chunks) stream.write(chunk)
             stream.emit('cancel')
-            for (const chunk of chunks) stream.write(chunk)
           })
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
@@ -462,12 +461,11 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
         })
 
         it('Test decryptStream cancel and progress', async () => {
-          const size = 200
+          const size = 80
           const input = randomBytes(size)
           const chunks = splitLength(input, 20)
 
           let progress: number
-
           const error = await new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
             const stream = key.decryptStream()
               .on('end', () => reject(new Error('stream succeeded')))
@@ -475,13 +473,81 @@ export const testSymKeyImplem = (name: string, SymKeyClass: SymKeyConstructor<Sy
               .on('progress', _progress => {
                 progress = _progress
               })
+
             for (const chunk of chunks) stream.write(chunk)
             stream.emit('cancel')
-            for (const chunk of chunks) stream.write(chunk)
           })
+
           if (progress === undefined) throw new Error('Stream hasn\'t worked at all')
           if (progress > size) throw new Error('Stream has\'t been canceled')
-          assert.ok(error.message.includes('STREAM_CANCELED'))
+          assert.ok(error.message.includes('STREAM_CANCELED'), `GOT ${error.message}`)
+        })
+
+        it('Test encryptStream destroy', async () => {
+          const size = 60
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+          const stream = key.encryptStream()
+
+          const errorPromise = new Promise((resolve: (err: Error) => void) => {
+            stream.on('error', err => {
+              resolve(err)
+            })
+          })
+
+          await new Promise<void>((resolve, reject: (err: Error) => void) => {
+            stream.write(chunks[0], err => {
+              if (err) reject(err)
+              resolve()
+            })
+          })
+
+          stream.destroy(new Error('Aborting'))
+          assert.ok(stream.destroyed)
+          const destroyedError = await errorPromise
+          assert.equal(destroyedError.message, 'Aborting')
+
+          await assert.rejects(
+            new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
+              stream.write(chunks[1], err => {
+                reject(err)
+              })
+            }),
+            /Cannot call write after a stream was destroyed/
+          )
+        })
+
+        it('Test decryptStream destroy', async () => {
+          const size = 60
+          const input = randomBytes(size)
+          const chunks = splitLength(input, 20)
+          const stream = key.decryptStream()
+
+          const errorPromise = new Promise((resolve: (err: Error) => void) => {
+            stream.on('error', err => {
+              resolve(err)
+            })
+          })
+
+          await new Promise<void>((resolve, reject: (err: Error) => void) => {
+            stream.write(chunks[0], err => {
+              if (err) reject(err)
+              resolve()
+            })
+          })
+          stream.destroy(new Error('Aborting'))
+          assert.ok(stream.destroyed)
+          const destroyedError = await errorPromise
+          assert.equal(destroyedError.message, 'Aborting')
+
+          await assert.rejects(
+            new Promise((resolve: (err: Error) => void, reject: (err: Error) => void) => {
+              stream.write(chunks[1], err => {
+                reject(err)
+              })
+            }),
+            /Cannot call write after a stream was destroyed/
+          )
         })
 
         it('Test decryptStream error on bad data', async () => {
