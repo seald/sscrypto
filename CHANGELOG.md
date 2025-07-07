@@ -1,3 +1,7 @@
+## v1.4.1 - 2025/07/07
+- \[bug fix\] Fix node-forge peer dependency version
+
+
 ## v1.4.0 - 2025/07/07
 - \[enhancement\] Correctly handle `encryptStream.destroy(error)` and `decryptStream.destroy(error)` functions.
 - \[deprecation\] Deprecate `encryptStream.emit('cancel')'` and `decryptStream.emit('cancel')` in favor of `stream.destroy()`
