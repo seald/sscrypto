@@ -712,7 +712,7 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       }
       const end = Date.now()
       const delta = (end - start) / 1000
-      console.log(`Finished in ${delta.toFixed(1)}s:\n${(nInput / delta).toFixed(1)} block/s\n${(nInput * inputSize / delta / 1000000).toFixed(1)} MB/s`)
+      console.log(`AES ${name} Encrypt/Decrypt sync : Finished in ${delta.toFixed(1)}s:\n${(nInput / delta).toFixed(1)} block/s\n${(nInput * inputSize / delta / 1000000).toFixed(1)} MB/s`)
     })
 
     it('Encrypt/Decrypt async perf', async () => {
@@ -732,7 +732,7 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       }
       const end = Date.now()
       const delta = (end - start) / 1000
-      console.log(`Finished in ${delta.toFixed(1)}s:\n${(nInput / delta).toFixed(1)} block/s\n${(nInput * inputSize / delta / 1000000).toFixed(1)} MB/s`)
+      console.log(`AES ${name} Encrypt/Decrypt async : Finished in ${delta.toFixed(1)}s:\n${(nInput / delta).toFixed(1)} block/s\n${(nInput * inputSize / delta / 1000000).toFixed(1)} MB/s`)
     })
 
     it('Encrypt/Decrypt stream perf', async function () {
@@ -746,14 +746,14 @@ export const testSymKeyPerf = (name: string, SymKeyClass: SymKeyConstructor<SymK
       const encrypted = await _streamHelper(chunksClear, k.encryptStream())
       const endEncrypt = Date.now()
       const deltaEncrypt = (endEncrypt - startEncrypt) / 1000
-      console.log(`Finished encrypting in ${deltaEncrypt.toFixed(1)}s:\n${(totalSize / deltaEncrypt / 1000000).toFixed(1)} MB/s`)
+      console.log(`AES ${name} stream encrypt : Finished in ${deltaEncrypt.toFixed(1)}s:\n${(totalSize / deltaEncrypt / 1000000).toFixed(1)} MB/s`)
 
       const chunksEncrypted = splitLength(encrypted, 256 * 1024)
       const startDecrypt = Date.now()
       const decrypted = await _streamHelper(chunksEncrypted, k.decryptStream())
       const endDecrypt = Date.now()
       const deltaDecrypt = (endDecrypt - startDecrypt) / 1000
-      console.log(`Finished decrypting in ${deltaDecrypt.toFixed(1)}s:\n${(totalSize / deltaDecrypt / 1000000).toFixed(1)} MB/s`)
+      console.log(`AES ${name} stream decrypt : Finished in ${deltaDecrypt.toFixed(1)}s:\n${(totalSize / deltaDecrypt / 1000000).toFixed(1)} MB/s`)
 
       assert.ok(decrypted.equals(input))
     })
