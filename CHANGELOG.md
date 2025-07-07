@@ -1,4 +1,4 @@
-## v1.4.0 - UNRELEASED
+## v1.4.0 - 2025/07/07
 - \[enhancement\] Correctly handle `encryptStream.destroy(error)` and `decryptStream.destroy(error)` functions.
 - \[deprecation\] Deprecate `encryptStream.emit('cancel')'` and `decryptStream.emit('cancel')` in favor of `stream.destroy()`
 - \[enhancement\] Update dependencies
